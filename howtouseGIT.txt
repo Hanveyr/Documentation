@@ -1,0 +1,137 @@
+ -Install GIT-
+sudo apt install git
+
+-Creat GIT account online-
+Make repository first, in this case Documentation
+https://github.com/username/Documentation
+
+-Generate SSH key so git can connect to your pc-
+cd ~/.ssh/
+ssh-keygen -t rsa -b 4096 -C "your.email@example.com"
+    (no password is also acceptable)
+
+-Key Permissions-
+chmod 600 ~/.ssh/id_rsa      # Private key - read/write for owner only
+chmod 644 ~/.ssh/id_rsa.pub  # Public key - read for all, write for owner
+
+-Add keys-
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_rsa
+
+-Add key to github-
+cat ~/.ssh/id_rsa.pub
+Log into GitHub, Click profile picture → Settings,
+Select "SSH and GPG keys" from sidebar,Click "New SSH key"
+Give it a title (e.g., "Work Laptop"),Paste your public key in the "Key" field
+Click "Add SSH Key"
+
+-Creat and goto your new repository-
+cd your_repository_directory
+git remote set-url origin git@github.com:username/repository.git
+ssh -T git@github.com
+
+-First Push-
+git push -u origin main
+
+-Config GIT-
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+
+
+-Initialize Repository-
+cd /path/to/your/project
+git init
+
+-Clone a repository-
+git clone https://github.com/username/repository.git
+
+-Check-
+git status
+
+-Add file to staging area-
+git add filename
+git add apachedoc.txt FTP.txt Nginx.txt samba.txt vimprofessional.txt
+
+
+-Commit changes-
+git commit -m "your commit message"
+
+-Logs commit history-
+git log
+
+-Make Branch-
+git checkout -b new-branch-name
+
+-Merge branches-
+git checkout main
+git merge new-branch-name
+
+-push changes-
+git push origin branch-name
+
+-Pull changes-
+git pull origin branch-name
+
+
+-remove-
+git rm filename
+
+-undo-
+git checkout -- filename
+
+-reset commits-
+git reset --hard commit-id
+
+
+
+
+
+
+
+
+--Advanced--
+
+-View detailed commit changes-
+git show commit-id
+
+-compare branches-
+git diff branch-name-1..branch-name-2
+git diff commit-id-1..commit-id-2
+
+git stash apply
+
+-rename branch-
+git branch -m old new
+git show commit-id        # Show commit details
+git rm filename           # Remove file from git
+git mv old-name new-name  # Rename/move file
+git checkout -- filename  # Undo changes in working directory
+git branch                 # List branches
+git branch -m old new      # Rename branch
+git checkout branch-name   # Switch branches
+git checkout -b new-branch # Create and switch to new branch
+git merge branch-name      # Merge specified branch into current
+git branch -d branch-name  # Delete branch
+
+-Remote Repository Management-
+git remote -v              # List remote repositories
+git remote add origin url  # Add remote repository
+git remote remove origin   # Remove remote repository
+git push -u origin main    # First push with tracking
+git remote set-url origin url # Change remote URL
+
+-Repository Setup-
+cd your_repository_directory
+git init                     # Initialize new repository
+git remote set-url origin git@github.com:username/repository.git
+ssh -T git@github.com       # Test SSH connection
+git clone https://github.com/username/repository.git  # Clone existing repository
+-Basic Operations-
+git status                  # Check repository status
+git add filename           # Add specific file
+git add .                  # Add all files
+git commit -m "message"    # Commit changes
+git push origin branch-name # Push changes
+git pull origin branch-name # Pull changes
+git log                    # View commit history
+git fetch                  # Get updates without merging
