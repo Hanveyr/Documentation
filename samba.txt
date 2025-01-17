@@ -1,0 +1,53 @@
+-Samaba Server-
+sudo apt install samba
+
+
+Edit Config:
+sudo nano /etc/samba/smb.conf
+
+Add Share to config file: (IP/sharename, change share with own name)
+[share]
+   path = /path/to/your/shared/directory
+   available = yes
+   valid users = @sambashare
+   read only = no
+   browseable = yes
+   public = yes
+   writable = yes
+
+
+Create users:
+sudo smbpasswd -a username  (default is 7 characters password)
+sudo usermod -aG samabashare username
+
+Restart services:
+sudo systemctl restart smbd
+sudo systemctl restart nmbd
+
+Allow firewall:
+sudo ufw allow 'Samba'
+
+
+
+Test:
+smbclient //192.168.0.169/share -U username
+
+Logs:
+sudo tail -f /var/log/samba/log.smbd
+
+
+
+Access the Shared Directory:
+Windows- Open File Explorer and enter \\server-ip\share
+Linux- Use a file manager or the command line to access the share.
+
+
+
+
+Ensure Directory Exists and Permissions Are Set
+
+sudo mkdir -p /path/to/your/shared/directory
+sudo chown -R roots:sambashare /path/to/your/shared/directory
+sudo chmod -R 775 /path/to/your/shared/directory
+
+

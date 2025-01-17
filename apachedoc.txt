@@ -1,0 +1,65 @@
+-Install Apache web server-
+sudo apt install apache2
+
+
+-Enable Services-
+sudo systemctl enable apache2
+sudo systemctl start apache2
+
+-Verify running-
+sudo systemctl status apache2
+
+
+-Adjust Firewall-
+sudo ufw allow 'Apache'
+sudo ufw status
+
+-Verify website up-
+http://localhost or http://127.0.0.1
+
+
+-Website directory files-
+sudo mkdir -p /var/www/html/mywebsite
+replace mywebsite with name
+
+-Permissions-
+Users groups:
+sudo chown -R $USER:$USER /var/wew/html/mywebsite
+
+Run, access permissions:
+sudo chmod -R 755 /var/www/html/mywebsite
+
+
+-Create html website-
+
+Goto directory:
+cd /var/www/html/mywebsite
+
+Create html file:
+sudo vim index.html
+
+""""
+Apache, to serve the default page when a directory is accessed. If you name your file "index.html," Apache will automatically display it when you visit your site's URL (e.g., http://localhost/mywebsite).
+
+However, you can use a different file name if you prefer. If you do, you'll need to specify the file name in the URL. For example, if you name your file "homepage.html," you would access it by navigating to http://localhost/mywebsite/homepage.html.
+
+""""
+
+
+example html:
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Website</title>
+</head>
+<body>
+    <h1>Welcome to My Website</h1>
+    <p>This is a simple website hosted on Apache.</p>
+</body>
+</html>
+
+
+
+
+-Restart Services to load page onto server-
+sudo systemctl restart apache2

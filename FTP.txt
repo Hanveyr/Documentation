@@ -1,0 +1,164 @@
+ -vsftpd FTP service-
+ sudo apt install vsftpd
+
+ -Enable-
+ sudo systemctl enable vsftpd
+ sudo systemctl start vsftpd
+
+
+ -vsftpd Configuration file-
+ sudo vim /etc/vsftpd.Conf
+
+Uncomment local_enable=YES to allow local users
+Uncomment write_enable=YES to allow uploads
+
+
+
+
+
+
+
+
+
+
+ -Restart vsftpd-
+ sudo systemctl restart vsftpd
+ sudo systemctl status vsftpd
+
+ -Create ftp users-
+ sudo useradd -m ftpuser
+ sudo passwd ftpuser
+
+ -permissions-
+ sudo chown -R ftpuser:ftpuser /srv/ftp
+
+
+
+
+
+-vsftpd.userlist- file
+ftpuser1
+ftpuser2
+ftpuser3
+
+Once you've created and saved your vsftpd.userlist file, make sure your vsftpd.conf file includes the following lines to enable and configure the user list:
+userlist_enable=YES
+userlist_file=/etc/vsftpd.userlist
+userlist_deny=NO
+
+
+
+
+
+
+
+
+-Verify vsftpd is listening on the correct port:-
+sudo ss -tuln | grep vsftpd
+
+
+
+
+
+Open File Explorer: Click on the folder icon in your taskbar or press Windows + E.
+
+Enter the FTP Server Address: In the address bar, type the FTP server address, such as ftp://192.168.1.147
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ---Advanced ---
+
+
+Local User Access:
+    local_enable=YES: Allows local system users to log in. Verified.
+
+Write Permissions:
+    write_enable=YES: Allows FTP users to upload files. Verified.
+
+Restrict User to Their Home Directory:
+    chroot_local_user=YES: Prevents users from accessing directories outside their home. Verified.
+
+Logging:
+    xferlog_enable=YES: Enables logging of FTP transactions. Verified.
+
+Enable Passive Mode:
+    pasv_enable=YES: Enables passive mode. Verified.
+    pasv_min_port=10000: Sets the minimum port for passive mode. Verified.
+    pasv_max_port=10100: Sets the maximum port for passive mode. Verified.
+
+FTP Home Directory:
+    local_root=/home/ftpuser: Sets the default directory for users. Verified.
+
+Anonymous FTP Access:
+    anonymous_enable=NO: Disables anonymous access (recommended). Verified.
+    anonymous_enable=YES: Allows anonymous users (less secure). Verified.
+
+Banner Message:
+    ftpd_banner=Welcome to My FTP Server: Displays a custom message when users log in. Verified.
+
+Security Settings:
+    max_clients=5: Limits the maximum number of simultaneous connections. Verified.
+    max_per_ip=2: Limits the maximum number of simultaneous connections per IP address. Verified.
+
+Access Control:
+    userlist_enable=YES: Enables a user list for access control. Verified.
+    userlist_file=/etc/vsftpd.userlist: Specifies the file containing the list of allowed or denied users. Verified.
+    userlist_deny=NO: Specifies that users in the list are allowed access. Verified.
+
+Local Umask:
+    local_umask=022: Sets the default file permissions for uploaded files. Verified.
+
+Directory Messages:
+    dirmessage_enable=YES: Displays a message to users when they enter a directory. Verified.
+
+Use Local Time:
+    use_localtime=YES: Ensures the server uses the local time zone instead of GMT. Verified.
+
+Listen Mode:
+    listen=YES: Makes vsftpd run in standalone mode. Verified.
+
+Dual Logging:
+    dual_log_enable=YES: Enables logging to both the xferlog and vsftpd logs. Verified.
+
+Idle Session Timeout:
+    idle_session_timeout=600: Sets the timeout for idle sessions in seconds. Verified.
+
+Data Connection Timeout:
+    data_connection_timeout=120: Sets the timeout for data connections in seconds. Verified.
+
+ASCII Upload/Download:
+    ascii_upload_enable=YES: Allows ASCII mode file uploads. Verified.
+    ascii_download_enable=YES: Allows ASCII mode file downloads. Verified.
+
+Allow FTP ASCII Mode:
+    ascii_mode=YES: Enables FTP ASCII mode. Verified.
+
+Secure Chroot Jail:
+    secure_chroot_dir=/var/run/vsftpd/empty: Specifies the directory used for secure chroot jails. Verified.
+

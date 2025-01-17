@@ -1,0 +1,305 @@
+-VIM Visual editor IMproved-
+Console text editor
+
+-Modes-
+Starts in command mode
+
+Command mode- File navigation, cut, paste, undo, delete line
+Insert mode - Edit text, press i, esc to leave.
+Replace mode - only replace no insert
+Ex mode - save, quit, open, search, replace,
+    will be show as :, ex :q! (quit without saving)
+
+-Bottom bar-
+txt.txt  46L.105C   1,1   Top, %
+File    #ofLines,#ofCharacters  Line,Character   Location
+
+
+-Insert Mode-
+I - Insert at the first non-blank character of the line
+i - inserts at cursor
+a - after cursor
+A - insert at end of line
+ea - Append at end of word
+o - Open line Below current
+O - Open live Above current
+x - Delete character under the cursor
+X - Delete character before the cursor
+r - Replace character under the cursor
+R - Replace Mode
+s - Substitute character under the cursor
+S - Delete line and enter insert mode
+cc - Change entire line
+J - Join lines
+
+Escape - return to Command Mode
+also use PgUp, PgDown, End, Home
+
+
+-Command Mode-
+Navigation:
+h - Left
+L - right
+J - down
+k - up
+0 - Move to the start of the line
+^ - move to first non-blank character
+$ - end of line
+gg - first line of document
+g_ - Move to the last non-blank character of the line
+G - Last line of document
+w - beginning of next word
+b - previous word
+e - Move to the end of the current word
+C - beginning of sentence
+) - next sentence
+{ - current/previous paragraph
+} - next paragraph
+5gg - Go to line 5
+
+Saving/Quit:
+:wq - Write Quit
+:x - Save current file if
+:w - save file, stay in editor
+:w - filename - save file as new name
+:q - quit only if unsave changes
+:q! - quit no save
+:help - tutorial
+
+
+
+-Replace Mode-
+c - change or replace
+cw - change "word"
+cc - change line
+ciw -
+c$ - or C replace to the end of the line
+r - replace character under cursor
+~ - replace character case
+/ - Search forward
+? - Search backward
+n - Repeat last search
+N - Repeat last search in reverse direction
+
+
+Delete text:
+d - delete
+dd - delete line
+x - delete character under cursor
+
+Copy Paste:
+yy - Yank (copy) line
+y - copy
+P - Paste before
+p - paste after
+
+Undo Redo:
+u - undo
+ctrl + r - redo
+
+
+-Visual Mode-
+v - character based
+V - Line based
+ctrl + V - Block based
+
+-Search and replace example-
+:%s/\<cat\>/dog/gi
+%s all lines, replace, gi case sensitive
+
+
+
+
+
+
+
+
+----Advanced----
+
+
+--Commands mode--
+Ctrl + e - Move screen down one line
+Ctrl + y - Move screen up one line
+Ctrl + f - Move screen down one page
+Ctrl + b - Move screen up one page
+f<char> - Move to the next occurrence of <char>
+F<char> - Move to the previous occurrence of <char>
+t<char> - Move to the character before the next occurrence of <char>
+T<char> - Move to the character after the previous occurrence of <char>
+; - Repeat last f, F, t, or T command
+, - Repeat last f, F, t, or T command in reverse direction
+Ctrl + o - Jump back to the previous cursor position
+Ctrl + i - Jump forward to the next cursor position
+Ctrl + p - Jump to the previous location in the jump list
+Ctrl + n - Jump to the next location in the jump list
+
+--Insert Mode--
+Ctrl + h - Delete the character before the cursor
+Ctrl + w - Delete the word before the cursor
+Ctrl + j - Add a line break at the cursor position
+Ctrl + t - Indent line one shiftwidth
+Ctrl + d - Delete line
+C - Change to the end of the line and enter insert mode
+gi - Enter insert mode at the last place the cursor was in insert mode
+Ctrl + a - Increment number under the cursor
+Ctrl + x - Decrement number under the cursor
+Ctrl + l - Center line
+
+--Editing--
+~ - Toggle case of character under the cursor
+= - Indent line
+> - Shift line right
+< - Shift line left
+gq - Format paragraph
+gU - Convert line to uppercase
+gu - Convert line to lowercase
+gi - Enter insert mode at the last place the cursor was in insert mode
+
+:%s/old/new/g - Substitute 'old' with 'new' in the entire file
+
+--Multiple Files/Windows--
+:e filename - Edit a file
+:ls - List buffers
+:b number - Go to buffer number
+:bn - Next buffer
+:bp - Previous buffer
+Ctrl-w v - Split window vertically
+Ctrl-w s - Split window horizontally
+Ctrl-w c - Close window
+Ctrl-w o - Make current window only one
+:tabe - Open file in new tab
+gt - Next tab
+gT - Previous tab
+Ctrl-w = - Make all windows equal size
+Ctrl-w _ - Maximize window height
+Ctrl-w | - Maximize window width
+Ctrl-w R - Rotate windows upward/leftward
+Ctrl-w r - Rotate windows downward/rightward
+Ctrl-w T - Move window to new tab
+Ctrl-w x - Exchange current window with next
+:windo - Execute command in all windows
+:terminal - Open terminal in Vim
+Ctrl-w N - Terminal normal mode
+:! - Run a shell command
+:shell - Start a shell session
+
+
+----Programming-----
+
+Additional Navigation:
+% - Jump between matching brackets/braces/parentheses (crucial for coding)
+[[ - Jump to previous function/class definition
+]] - Jump to next function/class definition
+[{ - Jump to start of current code block
+]} - Jump to end of current code block
+gd - Go to definition of word under cursor
+* - Search forward for word under cursor
+# - Search backward for word under cursor
+'. - Jump to last edited line
+:marks - Show all marks
+ma - Set mark 'a'
+'a - Jump to mark 'a'
+Ctrl-] - Jump to tag definition (great with ctags)
+gf - Go to file under cursor
+H - Move to top of screen
+M - Move to middle of screen
+L - Move to bottom of screen
+zz - Center current line on screen
+zt - Put current line at top of screen
+zb - Put current line at bottom of screen
+`` - Return to position before last jump
+'. - Jump to last edit position
+'" - Jump to last exit position in file
+'0 - Jump to position where you last exited Vim
+g; - Go to older position in change list
+g, - Go to newer position in change list
+
+
+
+Text Objects (Very powerful for coding):
+ciw - Change inner word
+ci" - Change inside quotes
+ci{ - Change inside curly braces
+ci( - Change inside parentheses
+cit - Change inside HTML/XML tag
+Similar with di (delete), yi (yank), vi (select)
+vap - Select a paragraph
+vis - Select a sentence
+ca[ - Change around square brackets
+ci] - Change inside square brackets
+da{ - Delete around curly braces
+ya( - Yank around parentheses
+gUiw - Convert inner word to uppercase
+guw - Convert word to lowercase
+daw - Delete a word (including space)
+das - Delete a sentence
+dap - Delete a paragraph
+dat - Delete a tag block
+cf<char> - Change until (including) character
+ct<char> - Change until (before) character
+ip - Inner paragraph
+ap - Around paragraph
+i[ - Inside square brackets
+i{ - Inside curly braces
+a" - Around quotes
+i> - Inside angle brackets
+gn - Next search match text object
+`< - Start of last visual selection
+ `> - End of last visual selection
+ `. - Location of last change
+ `^ - Location of last insertion
+m[A-Z] - Set global mark
+'[A-Z] - Jump to global mark
+
+
+Programming-Specific:
+= - Auto-indent line
+== - Auto-indent current line
+=% - Auto-indent current code block
+gg=G - Auto-indent entire file
+:make - Run make command
+:cw - Open quickfix window (compiler errors)
+:cn - Go to next error
+:cp - Go to previous error
+K - Look up word under cursor in man pages
+
+Advanced Operations:
+q{register} - Record macro into register
+@{register} - Play macro
+@@ - Replay last macro
+:g/pattern/d - Delete all lines matching pattern
+:v/pattern/d - Delete all lines NOT matching pattern
+:.!cmd - Replace current line with shell command output
+!!cmd - Replace current line with shell command output
+"+y - Copy to system clipboard
+"+p - Paste from system clipboard
+
+
+Advanced Search/Replace:
+:s/foo/bar/gc - Replace with confirmation
+:%s/foo/bar/gi - Replace case-insensitive
+:g/foo/d - Delete all lines containing 'foo'
+:v/foo/d - Delete all lines not containing 'foo'
+
+Advanced Search:
+g* - Search word under cursor (partial match)
+g# - Search word under cursor backward (partial match)
+:set ic - Ignore case in search
+:set hls - Highlight search results
+/word\c - Search 'word' case-insensitive
+/word\C - Search 'word' case-sensitive
+\v - Very magic (regex) search mode
+
+
+Command Mode Features:
+q: - Command line window for history
+q/ - Search history window
+Ctrl-r " - Paste from default register in command line
+Ctrl-f - Edit command in command window
+
+Count Operations:
+3dw - Delete 3 words
+2dd - Delete 2 lines
+5j - Move down 5 lines
+3yy - Yank 3 lines
+10@a - Execute macro 'a' 10 times

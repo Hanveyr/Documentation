@@ -1,0 +1,102 @@
+-Nginx- (pronounced "Engine-X")
+
+Open-source web server, reverse proxy, load balancer, mail proxy, and HTTP cache
+
+
+Install nginx:
+sudo apt install nginx
+
+Adjust Firewall:
+sudo ufw allow 'Nginx HTTP'
+sudo ufw status
+
+Verify:
+sudo systemctl start nginx
+sudo systemctl stop nginx
+sudo systemctl restart nginx
+
+Find all host names:
+hostname -I
+192.169.1.142 192.169.0.142 110.69.420.64 fd4a:234c:a1e2::b304:d564
+
+Open a Web Browser:
+Enter your server's IP address in the address bar, http://your_server_ip
+
+
+
+
+
+
+
+-Server Blocks-
+Server blocks in Nginx allow you to host multiple websites on a single server.
+Each server block directs incoming traffic to the correct site based on the
+domain name requested.
+
+
+multiple websites:
+sudo mkdir -p /var/www/mywebsite.com/html
+sudo mkdir -p /var/www/anotherwebsite.com/html
+
+
+Server Block Configuration Files:
+/etc/nginx/sites-available/
+
+
+Create website.com file for Each page:
+sudo vim /etc/nginx/sites-available/mywebsite.com
+
+server {
+    listen 80;
+    server_name mywebsite.com www.mywebsite.com;
+
+    root /var/www/mywebsite.com/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Step 5: Enable the Server Blocks
+
+Create symlinks from the configuration files in sites-available to the sites-enabled directory:
+
+sudo ln -s /etc/nginx/sites-available/mywebsite.com /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/anotherwebsite.com /etc/nginx/sites-enabled/
+
+
+
+Step 6: Test Your Configuration
+
+Test the Nginx configuration for syntax errors:
+
+sudo nginx -t
+
+sudo systemctl reload nginx
+
+
+Step 7: Update DNS Settings
+
+Ensure that your domain names (mywebsite.com and anotherwebsite.com) point to your server's IP address. This step is typically done through your domain registrar's DNS management interface.
+Step 8: Access Your Sites
+
+Open your web browser and navigate to http://mywebsite.com and http://anotherwebsite.com. You should see the respective welcome messages for each site.
+
+This setup allows you to host multiple websites on a single server using Nginx server blocks. Each server block configuration file directs traffic based on the domain name, ensuring that the correct website is served.
