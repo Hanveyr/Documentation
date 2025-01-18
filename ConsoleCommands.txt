@@ -1,0 +1,305 @@
+-Terminal/Console Commands Comprehensive Overview-
+
+Middle mouse button will paste into terminal!
+
+
+* - All
+~ - Home
+. - Current directory
+.. - Move up one directory ie cd ..
+cd / - root directory
+
+
+FIRST STEPS: (Terminal Navigation)
+clear - clears screen
+pwd - print work directory
+ls - List files -r recursive
+cd - Change Directory
+whoami - user
+man - Manual
+whatis - explains command
+
+BASIC FILE OPERATIONS:
+touch - make file
+cat - show file contents
+head/tail - show top part or bottom part of a result
+mv - Move
+cp - Copy
+rm - Remove
+mkdir - Make directory
+file - shows file type
+ln - link files
+nl - number of lines in a file
+diff - compare to files
+find - search for file
+grep - search "x" [file]
+
+SYSTEM INFORMATION:
+date - date
+cal - calendar
+uptime - time since reboot
+df - disk file space
+du - disk usage
+stat - file status
+env - environment variables
+printenv - print variables
+who - logged in
+users - logged in
+
+PROCESS MANAGEMENT:
+ps - process -e view all processes
+ps - process, aux all processes, - a all users, -u user/owner, -x attached to terminal
+top - processes program
+kill - terminate process ID
+killall - process by name
+pidof - PID of program
+vmstat - Virtual memory stats
+fuser - processes using file
+lsof - List of open files
+
+SYSTEM CONTROL:
+sudo - one time super user command
+su - switch user
+passwd - Password
+systemctl - control system services
+chmod - change mode read, write, execute
+chown - change ownership / group
+hostnamectl - control host name
+log out, reboot, poweroff, shutdown
+history - shows commands history
+
+DISK MANAGEMENT:
+lsblk - list block devices
+fdisk - format disk
+mount /sda2 /mnt - Mount drive
+mkfs ext4 /dev/sd1 - Make file system on device
+dd - duplicate disk, used for imaging
+tar - compress files
+swapon - swap active partition
+
+NETWORKING BASICS:
+ping - Send packet over the internet
+wget - download from internet link
+ssh - secure shell connection to new machine (internet tunnel)
+ifconfig - IP wired
+iwconfig - wireless
+netstat - network statistics
+iptables - firewall
+nmap - network mapping
+
+ADVANCED SYSTEM:
+dmesg - kernel error messages
+lspci -k - list pci devices -k kermel devices
+tty - TeleType, virtual console
+pts - psuedo terminal (terminal emulated no direct device)
+pacstrap - Install packages to new root
+genfstab - generate file system table
+
+TERMINAL KNOWLEDGE
+user add - new user
+nano - Text editor
+vim - Better text editor
+
+
+
+
+echo lang=us.utf-8 > /etc/local.conf - ">" overwrite to new file
+
+| - Pipe
+
+>> - Redirect output to file (append)
+
+
+
+ctrl+c - Signal interrupt, stop a program instantly
+h - backspace
+d - delete
+j - enter
+L - clear screen
+s - suspsend or freeze screen
+q - un suspend thaw
+u - clear line
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--Advanced--
+
+Essential System Tools:
+htop - Interactive, colorful system monitor (better than top)
+ncdu - Interactive disk usage analyzer (better than du)
+tmux - Terminal multiplexer (essential for multiple sessions)
+ranger - Visual file manager (great for teaching file navigation)
+tree - Display directory structure visually
+curl - Modern tool for data transfer (complement to wget)
+rsync - Efficient file transfer and synchronization
+watch - Execute commands periodically
+screen - Session management (alternative to tmux)
+journalctl - View systemd logs (modern system logging)
+
+NETWORKING & SECURITY:
+traceroute - Trace packet route
+dig - DNS lookup utility
+ss - Socket statistics
+nc - Networking swiss army knife
+nftables - Modern firewall
+fail2ban - Intrusion prevention
+ufw - Uncomplicated firewall
+openssl - SSL/TLS toolkit
+wireshark - Network protocol analyzer
+ssh-keygen - SSH key pair management
+gpg - GNU Privacy Guard encryption
+hashcat - Password recovery tool
+john - Password cracker
+lynis - Security auditing
+tripwire - File integrity monitoring
+
+SYSTEM MONITORING & ANALYSIS:
+perf - Performance analysis
+gdb - GNU debugger
+valgrind - Memory debugging
+ltrace - Library call tracer
+bpftrace - System analysis
+dmidecode - Hardware information
+systemd-analyze - Boot analysis
+nagios - System monitoring
+prometheus - Monitoring system
+grafana - Analytics/monitoring
+collectd - Statistics collection
+sar - System activity reporter
+stress - System stress testing
+
+CONTAINER & VIRTUALIZATION:
+docker - Container management
+podman - Container alternative
+kubectl - Kubernetes control
+helm - Kubernetes package manager
+buildah - OCI image building
+rkt - Container runtime
+containerd - Container runtime
+virsh - VM management
+lxc - Linux container management
+vagrant - VM management
+lsns - List namespaces
+
+AUTOMATION & INFRASTRUCTURE:
+ansible - Automation tool
+terraform - Infrastructure as code
+nvm - Node Version Manager
+git - Version control
+
+FILE SYSTEM & STORAGE:
+lvm - Logical volume management
+parted - Disk partitioning
+smartctl - Drive diagnostics
+fsck - Filesystem check
+testdisk - Data recovery
+foremost - File recovery
+e2fsck - ext2/3/4 checker
+badblocks - Bad block search
+dd_rescue - Data recovery
+clonezilla - Disk cloning
+borg - Deduplicating backup
+restic - Modern backup
+bacula - Network backup
+
+DATABASE & DATA:
+mysqldump - MySQL backup
+pg_dump - PostgreSQL backup
+redis-cli - Redis interface
+mongo - MongoDB shell
+sqlite3 - SQLite interface
+jq - JSON processor
+yq - YAML processor
+bat - Enhanced cat
+fzf - Fuzzy finder
+
+SCHEDULING & PROCESS:
+at - Schedule commands
+crontab - Recurring tasks
+chage - Password expiry
+VERSION CONTROL:
+git branch - List/create/delete branches
+git checkout - Switch branches
+git merge - Merge branches
+git rebase - Rebase commits
+git stash - Stash changes
+
+COMPRESSION:
+gzip - Compress files
+gunzip - Decompress files
+bzip2 - Better compression
+xz - Best compression
+7z - 7-zip archiver
+
+TEXT PROCESSING:
+cut - Extract sections from lines
+sort - Sort lines of text
+uniq - Report/omit repeated lines
+tr - Translate characters
+tee - Read from stdin, write to stdout/files
+
+SYSTEM:
+dstat - Versatile resource statistics tool
+iotop - Simple I/O monitor
+ionice - Set I/O scheduling class/priority
+ethtool - Query/control network driver
+sysctl - Configure kernel parameters
+
+NETWORKING:
+mosh - Mobile shell with roaming
+ngrok - Secure tunnels to localhost
+iftop - Display bandwidth usage
+tcpflow - TCP flow recorder
+ngrep - Network grep
+DISK
+blkid - Block device attributes
+tune2fs - Adjust filesystem parameters
+cryptsetup - Manage encrypted devices
+mdadm - RAID management
+lvcreate/lvremove - Logical volume management
+
+CONTAINERS/ORCHESTRATION:
+buildx - Advanced Docker image building
+crictl - Container Runtime Interface tool
+skopeo - Container image management
+
+HIGH PERFORMANCE:
+nice - Run program with modified scheduling priority
+taskset - Set process CPU affinity
+numactl - Control NUMA policy
+
+SECURITY:
+semanage - SELinux policy management
+ausearch - Search audit logs
+chcon - Change SELinux context
+
+CLOUD NATIVE:
+eksctl - AWS EKS cluster management
+az - Azure command line interface
+gcloud - Google Cloud command line tool
+
+OBSERVABILITY:
+jaeger - Distributed tracing
+vector - Log/metrics pipeline tool
+telegraf - Metrics collection agent
+
+
+
+
+
+
+
