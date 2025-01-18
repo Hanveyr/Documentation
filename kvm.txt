@@ -56,6 +56,15 @@ sudo virt-install \
 virsh start rocky-vm
 virsh console rocky-vm
 virsh list --all
+virt-manager (graphical vm editor)
+virt-viewer rocky-vm
+remote-viewer spice://localhost:5900
+virsh domdisplay rocky-vm
+virsh shutdown rocky-vm
+virsh destroy rocky-vm  (force shut down)
+virsh console rocky-vm  (console access)
+virsh edit [VM-NAME] (edit vm XML config file)
+
 
 
 
@@ -86,7 +95,7 @@ Use virsh commands for CLI VM control
 -virsh Commands-
 virsh list  (Shows running machines)
 virsh list --all    (Shows all machines even if stopped)
-virsh net-list --all (list availablevirstual networks)
+virsh net-list --all (list available virtual networks)
 virsh pool-list     (Storage pool)
 virsh dominfo [VM-NAME]     (detailed VM information)
 virsh edit [VM-NAME]    (Edit VM configuration)
@@ -256,6 +265,14 @@ groups
 Add your user to libvirt group if needed:
 sudo usermod -aG libvirt $USER
 
+cd /var/lib/libvirt/images/rocky-linux
+sudo chown libvirt-qemu:libvirt rocky-vm.qcow2
+sudo chmod 660 rocky-vm.qcow2
+qemu-img check rocky-vm.qcow2
+
+
+
+
 Verify libvirtd service:
 sudo systemctl status libvirtd
 sudo systemctl start libvirtd
@@ -278,7 +295,7 @@ sudo virt-install \
   --cdrom /var/lib/libvirt/images/Rocky-9-Cinnamon-x86_64-latest.iso \
   --network network=default \
   --graphics spice \
-  --os-variant=rocky9 \
+  --os-variant rocky9 \
   --console pty,target_type=serial
 
 
@@ -408,3 +425,48 @@ SNAPSHOT_NAME="backup-$(date +%Y%m%d-%H%M%S)"
 
 # Create automatic snapshot
 virsh snapshot-create-as $VM_NAME $SNAPSHOT_NAME
+
+
+
+Hot-plugging Devices:
+
+Add or remove devices like network interfaces, disks, and USB devices while the VM is running
+Use virsh attach-device and virsh detach-device commands with appropriate XML files
+
+
+resources:
+Use virsh domstats and virsh dommemstat for detailed VM resource usage statistics
+
+
+
+
+
+To use virt-filesystems for checking the disk image contents, you need to provide the -a option followed by the path to the disk image file.
+Here's the corrected command:
+sudo virt-filesystems --long -h --all -a rocky-vm.qcow2
+
+-a rocky-vm.qcow2: Specifies the path to the disk image file.
+--long: Displays additional information about each filesystem.
+-h or --human-readable: Prints sizes in human-readable format.
+--all: Attempts to inspect all filesystems, including unknown ones.
+
+
+
+-Deleting VM-
+virsh shutdown rocky-vm
+virsh undefine rocky-vm
+rm /var/lib/libvirt/images/rocky-linux/rocky-vm.qcow2
+
+-Create new-
+qemu-img create -f qcow2 /var/lib/libvirt/images/rocky-linux/rocky-vm.qcow2 20G
+
+
+sudo virt-install \
+  --name rocky-vm \
+  --memory 2048 \
+  --vcpus 2 \
+  --disk path=/var/lib/libvirt/images/rocky-linux/rocky-vm.qcow2,bus=virtio \
+  --cdrom /var/lib/libvirt/images/Rocky-9-Cinnamon-x86_64-latest.iso \
+  --network network=default \
+  --graphics spice \
+  --os-variant rocky9
