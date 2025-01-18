@@ -1,0 +1,234 @@
+-KVM, Kernel based Virtual Manager-
+
+
+-Install dependencies-
+sudo apt install -y qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager
+
+qemu-kvm: The core virtualization backend
+libvirt-daemon-system: System service for managing virtualization
+libvirt-clients: Command-line tools
+bridge-utils: Network bridging support
+virt-manager: Graphical VM management tool
+
+
+
+-Add your user to libvirt group to manage VMs without sudo-
+sudo usermod -aG libvirt $USER
+After installation, log out and log back in, or use
+    "newgrp libvirt" to apply group changes.
+
+-Verify virtualization support-
+egrep -c '(vmx|svm)' /proc/cpuinfo
+virt-host-validate
+
+-Check KVM installation-
+sudo kvm-ok  (If kvm-ok fails, check BIOS/UEFI settings)
+journalctl -u libvirtd
+journalctl -xe  (verbose)
+
+-Start, enable, verify libvirt service-
+sudo systemctl start libvirtd
+start, enable, status, restart
+
+-After installation you can-
+Use virt-manager for graphical VM management
+Use virsh commands for CLI VM control
+
+
+
+
+
+-virsh Commands-
+virsh list  (Shows running machines)
+virsh list --all    (Shows all machines even if stopped)
+virsh net-list --all (list availablevirstual networks)
+virsh pool-list     (Storage pool)
+virsh dominfo [VM-NAME]     (detailed VM information)
+virsh edit [VM-NAME]    (Edit VM configuration)
+virsh dumpxml [VM-NAME]
+
+virsh start name
+start, shutdown, destroy, suspend, resume, undefine
+
+
+Storage Pools:
+virsh pool-create-as --name [pool-name] --type dir --target /path/to/storage
+virsh vol-list [pool-name]
+virsh vol-create-as [pool-name] [volume-name] [size]
+
+New virtual network:
+virsh net-define [network-xml-file]
+virsh net-start [network-name]
+virsh net-autostart [network-name]
+virsh net-dumpxml [network-name]
+
+sudo nmcli connection add type bridge con-name br0 ifname br0
+(Create a bridge network)
+
+virsh net-update [network-name] add ip-dhcp-host \
+  "<host mac='XX:XX:XX:XX:XX:XX' name='vm-name' ip='192.168.x.x'/>"
+(Configure static IP for a VM)
+
+
+
+Snapshots:
+virsh snapshot-create-as [VM-NAME] [snapshot-name]
+virsh snapshot-list [VM-NAME]
+virsh snapshot-revert [VM-NAME] [snapshot-name]
+virsh snapshot-delete [VM-NAME] [snapshot-name]
+
+Resource management:
+sudo apt install virt-top  (installs virtual TOP)
+virsh domstats [VM-NAME]  (detail resource information)
+sudo apt install htop
+sudo apt install glances
+
+Performance monitoring tools:
+sudo apt install sysstat
+Shows detailed system performance metrics:
+sar -u
+sar -r
+
+
+
+Migration:
+virsh capabilities (Check migration support)
+virsh migrate [VM-NAME] qemu+ssh://destination-host/system
+(Migrate a VM to another host)
+
+
+
+
+
+
+
+
+
+
+
+
+
+-XML, Extended Markup Language-
+
+Key XML Configuration Sections:
+
+<name>: VM name
+<memory>: RAM allocation
+<vcpu>: CPU configuration
+<disk>: Storage devices
+<interface>: Network interfaces
+
+
+
+
+
+
+
+
+
+
+
+
+----Advanced----
+
+
+-Check SELinux or AppArmor configurations-
+sestatus   for SELinux
+aa-status  for AppArmor
+
+
+-Troubleshooting commands-
+Check system virtualization support:
+dmidecode -t processor | grep -i virtualization
+
+Verify KVM modules are loaded:
+lsmod | grep kvm
+
+
+-Formatting images-
+Convert disk images:
+qemu-img convert -f raw -O qcow2 input.img output.qcow2
+
+Resize disk images:
+qemu-img resize [VM-disk-path] +10G
+
+Inspect disk image details:
+qemu-img info [disk-image-path]
+
+
+-Backup/Cloning-
+Clone an existing VM:
+virt-clone --original [SOURCE-VM-NAME] --name [NEW-VM-NAME] --file [NEW-DISK-PATH]
+
+Basic backup using dd:
+virsh shutdown [VM-NAME]
+dd if=[/path/to/disk/image] of=[/backup/location/backup.img]
+
+
+
+-Network advanced-
+Create a macvtap network
+virsh net-define macvtap-network.xml
+# Example XML content:
+<network>
+  <name>macvtap</name>
+  <forward mode="bridge">
+    <interface dev="eth0"/>
+  </forward>
+</network>
+
+List available network interfaces:
+ip link show
+
+
+
+-Security-
+Restrict VM access:
+chmod 600 /etc/libvirt/qemu/[VM-NAME].xml
+
+Check for potential security issues:
+virt-host-validate
+
+Check libvirt socket permissions:
+ls -l /var/run/libvirt/libvirt-sock
+
+Verify network connectivity for VMs:
+ping -c 4 [VM-IP-ADDRESS]
+
+Check kernel log for virtualization errors:
+dmesg | grep -i virtual
+
+
+
+
+-Best Practices-
+Regularly update KVM and libvirt packages
+Use secure networks for VM communications
+Implement backup strategies
+Monitor system resources
+Use minimal ISO images for installations
+
+
+
+
+
+--Extra--
+# CPU Pinning Example
+virsh edit [VM-NAME]
+# Add under <cpu> section
+<cputune>
+  <vcpupin vcpu='0' cpuset='0'/>
+  <vcpupin vcpu='1' cpuset='1'/>
+</cputune>
+
+# Hugepages for performance
+sudo sysctl -w vm.nr_hugepages=512
+
+# Advanced Network Bonding
+virsh net-define bond-network.xml
+# Example XML for bonded network
+<network>
+  <name>bond0</name>
+  <forward mode='bridge'/>
+  <bridge name='bond0'/>
+</network>
