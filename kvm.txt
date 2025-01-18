@@ -12,6 +12,53 @@ virt-manager: Graphical VM management tool
 
 
 
+-Start, enable, verify libvirt service-
+sudo systemctl start libvirtd
+start, enable, status, restart (Start then Enable Required!)
+
+
+
+-Create VM storage directory-
+sudo mkdir -p /var/lib/libvirt/images/
+sudo chown -R libvirt-qemu:libvirt /var/lib/libvirt/images/
+sudo chmod 775 /var/lib/libvirt/images/
+
+-Create storage pool-
+sudo virsh pool-create-as --name rocky-pool --type dir --target /var/lib/libvirt/images/
+
+-Move ISO image file-
+sudo mv ~/Downloads/Rocky-9-Cinnamon-x86_64-latest.iso /var/lib/libvirt/images/
+
+-Create Image directory-
+sudo mkdir -p /var/lib/libvirt/images/rocky-linux
+sudo chown -R libvirt-qemu:libvirt /var/lib/libvirt/images/rocky-linux
+sudo chmod 775 /var/lib/libvirt/images/rocky-linux
+
+-Create virtual disk-
+sudo qemu-img create -f qcow2 /var/lib/libvirt/images/rocky-linux/rocky-vm.qcow2 18G
+
+-Install-
+
+sudo virt-install \
+  --name rocky-vm \
+  --memory 4096 \
+  --vcpus 2 \
+  --disk /var/lib/libvirt/images/rocky-linux/rocky-vm.qcow2,format=qcow2 \
+  --cdrom /var/lib/libvirt/images/Rocky-9-Cinnamon-x86_64-latest.iso \
+  --network network=default \
+  --graphics spice \
+  --os-variant=rocky9 \
+  --console pty,target_type=serial
+
+(Other RAM options include 1024,2048,4096,1GB,2GB,4GB)
+
+-Run-
+virsh start rocky-vm
+virsh console rocky-vm
+virsh list --all
+
+
+
 -Add your user to libvirt group to manage VMs without sudo-
 sudo usermod -aG libvirt $USER
 After installation, log out and log back in, or use
@@ -26,9 +73,7 @@ sudo kvm-ok  (If kvm-ok fails, check BIOS/UEFI settings)
 journalctl -u libvirtd
 journalctl -xe  (verbose)
 
--Start, enable, verify libvirt service-
-sudo systemctl start libvirtd
-start, enable, status, restart
+
 
 -After installation you can-
 Use virt-manager for graphical VM management
@@ -76,6 +121,8 @@ virsh snapshot-create-as [VM-NAME] [snapshot-name]
 virsh snapshot-list [VM-NAME]
 virsh snapshot-revert [VM-NAME] [snapshot-name]
 virsh snapshot-delete [VM-NAME] [snapshot-name]
+
+
 
 Resource management:
 sudo apt install virt-top  (installs virtual TOP)
@@ -201,6 +248,93 @@ dmesg | grep -i virtual
 
 
 
+
+-Troubleshooting-
+Check libvirt group membership:
+groups
+
+Add your user to libvirt group if needed:
+sudo usermod -aG libvirt $USER
+
+Verify libvirtd service:
+sudo systemctl status libvirtd
+sudo systemctl start libvirtd
+sudo systemctl enable libvirtd
+
+
+
+
+-OS naming issues-
+First, install the osinfo package:
+
+sudo apt install -y libosinfo-bin
+osinfo-query os | grep -i rocky
+
+sudo virt-install \
+  --name rocky-vm \
+  --memory 4096 \
+  --vcpus 2 \
+  --disk /var/lib/libvirt/images/rocky-linux/rocky-vm.qcow2,format=qcow2 \
+  --cdrom /var/lib/libvirt/images/Rocky-9-Cinnamon-x86_64-latest.iso \
+  --network network=default \
+  --graphics spice \
+  --os-variant=rocky9 \
+  --console pty,target_type=serial
+
+
+
+-Changing RAM-
+Edit VM configuration:
+virsh edit rocky-vm
+
+# Look for the <memory> and <currentMemory> tags
+# Modify these values to reduce RAM
+
+Alternatively, use this command
+virsh setmem rocky-vm 1024000  # Sets to 1024 MB
+
+XML FILE:
+<!-- 1 GB (1024 MB) -->
+<memory unit='KiB'>1048576</memory>
+<currentMemory unit='KiB'>1048576</currentMemory>
+
+<!-- 2 GB (2048 MB) -->
+<memory unit='KiB'>2097152</memory>
+<currentMemory unit='KiB'>2097152</currentMemory>
+
+<!-- 4 GB (4096 MB) -->
+<memory unit='KiB'>4194304</memory>
+<currentMemory unit='KiB'>4194304</currentMemory>
+
+<!-- 6 GB (6144 MB) -->
+<memory unit='KiB'>6291456</memory>
+<currentMemory unit='KiB'>6291456</currentMemory>
+
+<!-- 8 GB (8192 MB) -->
+<memory unit='KiB'>8388608</memory>
+<currentMemory unit='KiB'>8388608</currentMemory>
+
+<!-- 16 GB (16384 MB) -->
+<memory unit='KiB'>16777216</memory>
+<currentMemory unit='KiB'>16777216</currentMemory>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -Best Practices-
 Regularly update KVM and libvirt packages
 Use secure networks for VM communications
@@ -232,3 +366,45 @@ virsh net-define bond-network.xml
   <forward mode='bridge'/>
   <bridge name='bond0'/>
 </network>
+
+
+
+
+
+
+
+Libvirt Service Management (Add after existing commands):
+# Automatic Startup Configuration
+sudo systemctl enable libvirtd --now
+
+# Log Rotation Configuration
+# Add to /etc/logrotate.d/libvirtd
+/var/log/libvirt/*.log {
+    rotate 7
+    daily
+    compress
+    missingok
+    notifempty
+}
+
+
+
+# Command Chaining Example
+virsh list --all | awk '/running/ {print $2}' | xargs -I {} virsh shutdown {}
+
+# Resource Monitoring Script
+#!/bin/bash
+for VM in $(virsh list --name); do
+    echo "VM: $VM"
+    virsh dominfo $VM | grep "CPU(s)"
+    virsh dominfo $VM | grep "Used memory"
+done
+
+
+snapshot automation-
+#!/bin/bash
+VM_NAME="rocky-vm"
+SNAPSHOT_NAME="backup-$(date +%Y%m%d-%H%M%S)"
+
+# Create automatic snapshot
+virsh snapshot-create-as $VM_NAME $SNAPSHOT_NAME
