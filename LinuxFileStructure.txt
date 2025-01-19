@@ -1,0 +1,155 @@
+-Linux File System Overview-
+
+/ - root directory
+~ - home directory
+Every folder contains .. & . for current and parent directory
+Relative diretory - ../../sample.txt
+
+
+history - lists previous commands
+pwd - print work directory
+"cd -" - return to previous directory
+"ls -a" - show hidden files
+
+(base) user@hostname:~$
+$ is the prompt symbol for a regular user
+# is the prompt symbol for the root user (administrator)
+
+(base) indicates that the "base" environment is active.
+After activating myenv, the prompt changes to (myenv).
+
+Example:
+conda create --name myenv python=3.8
+conda activate myenv
+(myenv) user@hostname:/$
+conda deactivate
+(base) user@hostname:~$
+
+
+--Short--
+
+/bin/ - Essential command binaries
+/boot/ - Boot loader files
+/dev/ - Device files
+/etc/ - Configuration files
+/home/ - User home directories
+/lib/ - Essential shared libraries and kernel modules
+/lib32/ - 32-bit libraries
+/lib64/ - 64-bit libraries
+/media/ - Mount points for removable media
+/mnt/ - Temporary mount points
+/opt/ - Optional application software packages
+/proc/ - Process and kernel information as files
+/root/ - Home directory for the root user
+/run/ - Application runtime data
+/sbin/ - System binaries
+/snap/ - Snap application packages
+/srv/ - Data for services provided by the system
+/sys/ - System files, including device information
+/tmp/ - Temporary, scratch space, deleted automatically
+/usr/ - User utilities and applications
+/var/ - Variable files like logs and databases
+
+
+
+
+
+--Long--
+
+/bin/ - Essential command binaries
+Contains essential command binaries (executables) that are required for the system to boot and run in single-user mode. Commands that are used by all users, such as ls, cp, mv, rm, cat, and echo, are typically found here.
+
+/boot/ - Boot loader files
+Contains the files needed to boot the system, including the kernel and bootloader configuration files. Common files include vmlinuz (the compressed kernel image), initrd (initial RAM disk), and grub (the GRUB bootloader files).
+
+/dev/ - Device files
+Contains special device files that represent hardware devices, such as hard drives, terminals, and printers. These files allow software to interact with hardware devices using standard input/output system calls.
+
+/etc/ - Configuration files
+Contains system-wide configuration files and shell scripts that configure the system's initial state. Examples include passwd (user account information), fstab (filesystem mount points), and network/interfaces (network configuration). The "Nervous system"
+
+/home/ - User home directories
+Contains the home directories of all users on the system. Each user has a subdirectory under /home, such as /home/username, where personal files and settings are stored.
+
+/lib/ - Essential shared libraries and kernel modules
+Contains essential shared libraries needed by binaries in /bin/ and /sbin/. Also includes kernel modules, which are loadable components that extend the capabilities of the kernel. C Libraries
+
+/lib32/ - 32-bit libraries
+Contains 32-bit shared libraries for compatibility with 32-bit applications on 64-bit systems. Ensures that older 32-bit applications can run on modern 64-bit systems.
+
+/lib64/ - 64-bit libraries
+Contains 64-bit shared libraries for 64-bit applications. Ensures that modern 64-bit applications have access to the necessary libraries.
+
+/media/ - Mount points for removable Media
+Contains subdirectories where removable media, such as USB drives and CDs, are automatically mounted. Example subdirectories might include /media/usb or /media/cdrom.
+
+/mnt/ - Temporary mount points
+Used to temporarily mount Filesystems, such as network filesystems or additional hard drives. System administrators often use this directory for manual mounts.
+
+/opt/ - Optional application software packages
+Contains optional software packages and third-party applications that are not part of the default installation. Each application might have its own subdirectory, such as /opt/application_name.
+
+/proc/ - Process and kernel information as files
+A virtual filesystem that provides information about running processes and the kernel. Contains directories for each running process (e.g., /proc/123 for process ID 123) and files like /proc/cpuinfo for CPU information.
+
+/root/ - Home directory for the root user
+The home directory for the root user (administrator). Typically, only the root user has access to this directory.
+
+/run/ - Application runtime data
+Contains runtime data for applications and services, such as process IDs and sockets. This directory is typically cleared at boot.
+
+/sbin/ - System binaries
+Contains essential system binaries that are typically used by the root user for system administration. Commands like ifconfig, iptables, reboot, and shutdown are found here.
+
+/snap/ - Snap application packages
+Contains directories for snap packages, which are self-contained applications packaged with their dependencies. Managed by the snapd daemon.
+
+/srv/ - Data for services provided by the system
+Contains data for services provided by the system, such as web servers and FTP servers. For example, a web server might store its files in /srv/www. site specific data
+
+/sys/ - System files, including device information
+A virtual filesystem that provides information about the system and its devices. Contains directories like /sys/class and /sys/devices to represent different types of hardware.
+
+/tmp/ - Temporary files
+Used to store temporary files created by applications and the system. Files in this directory are typically cleared at boot or after a certain period.
+
+/usr/ - User utilities and applications
+Contains user utilities and applications, as well as their libraries and documentation. Subdirectories include:
+/usr/bin/: Non-essential command binaries for all users.
+/usr/sbin/: Non-essential system binaries for the root user.
+/usr/lib/: Libraries for binaries in /usr/bin/ and /usr/sbin/.
+/usr/local/: Locally installed software and custom scripts.
+
+/var/ - Variable files like logs and databases
+Contains variable data files that change frequently, such as logs, databases, and spool files. Subdirectories include:
+/var/log/: System and application log files.
+/var/tmp/: Temporary files that should persist across reboots.
+/var/lib/: Application state information and databases.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Additional Commands:
+cp - copy files and directories
+    Usage: cp source_file destination_file
+
+mv - move or rename files and directories
+    Usage: mv source_file destination_file
+
+rm - remove files or directories
+    Usage: rm file_name
+
+mkdir - create new directories
+    Usage: mkdir directory_name
