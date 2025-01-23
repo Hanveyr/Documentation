@@ -1,0 +1,811 @@
+ -Logical Volume Management-
+
+LV (Logical Volume)
+VG (Volume Group)
+PV (Physical Volume)
+LE (Logical Extent)
+PE (Physical Extent)
+
+
+
+gdisk - Modern disk partitioning tool for GPT partitions,
+     Globally Unique Identifier Partition Table
+fdisk -Basic disk partitioning tool for MBR partitions Master Boot Record (old)
+GPT - Modern partition table format, replaces MBR (See Advanced for details)
+mkfs - Create new filesystems on partitions
+parted - Advanced partition manager with GPT support
+set partition - Set partition flags and attributes
+pvcreate - Convert physical disk/partition to LVM physical volume
+lvcreate - Create logical volume from volume group
+lvremove - Delete logical volume
+lvdisplay - Show logical volume information
+vgremove - Delete volume group
+pvremove - Remove physical volume from LVM
+umount - Detach mounted filesystem
+
+
+
+
+/etc/fstab  (File for System Configuration. See Advanced Section)
+
+
+
+
+MODERN PARTITIONING - Tools for working with modern GPT partitions
+gdisk - GPT disk partition editor
+gdisk /dev/sdb # Start GPT editor
+Common commands inside gdisk: n (new partition) d (delete partition) t (change type - 8e00 for LVM) w (write changes) q (quit without saving)
+
+OLD PARTITIONING TOOLS - Tools used to create and manage disk partitions
+fdisk - Interactive disk partition editor for MBR partitions
+fdisk /dev/sdb # Start partition editor
+fdisk -l # List all partitions
+Common commands inside fdisk: n (new partition) d (delete partition) t (change type) w (write changes) q (quit without saving)
+
+FILESYSTEM CREATION - Tools to create and format filesystems
+mkfs - Make filesystem
+mkfs.ext4 /dev/sdb1 # Create ext4 filesystem
+mkfs.ext4 -L "LABEL" /dev/sdb1 # With label
+mkfs.xfs /dev/sdb1 # Create XFS filesystem
+mkfs.vfat /dev/sdb1 # Create FAT filesystem
+
+ADVANCED PARTITIONING - Modern partition management with more features
+parted - Modern partition editor
+parted /dev/sdb # Start parted
+parted /dev/sdb print # Show partitions
+Common commands inside parted: mklabel gpt # Create GPT partition table mkpart primary ext4 0% 100% # Create partition rm 1 # Remove partition number 1
+
+PARTITION FLAGS - Setting special attributes on partitions
+set partition - Used in parted
+set 1 lvm on # Set partition 1 as LVM
+set 1 boot on # Set partition 1 as bootable
+set 1 raid on # Set partition 1 as RAID
+
+PHYSICAL VOLUME MANAGEMENT - Creating and managing physical volumes for LVM
+pvcreate - Initialize physical volume
+pvcreate /dev/sdb1 # Create single PV
+pvcreate /dev/sdb{1,2,3} # Create multiple PVs
+pvcreate --metadatasize 10M /dev/sdb1 # Specify metadata size
+
+LOGICAL VOLUME OPERATIONS - Creating and managing logical volumes
+lvcreate - Create logical volume
+lvcreate -L 10G -n lvname vgname # Create 10GB LV
+lvcreate -l 100%FREE -n lvname vgname # Use all space
+lvcreate -s -n snapshot -L 1G /dev/vgname/lvname # Create snapshot
+
+VOLUME MANAGEMENT - Commands for managing logical volumes and volume groups
+lvremove - Remove logical volume
+lvremove /dev/vgname/lvname # Remove LV
+lvremove -f /dev/vgname/lvname # Force remove
+lvdisplay - Show logical volume info
+lvdisplay # Show all LVs
+lvdisplay -v # Verbose output
+vgremove - Remove volume group
+vgremove vgname # Remove VG
+vgremove -f vgname # Force remove
+pvremove - Remove physical volume
+pvremove /dev/sdb1 # Remove PV
+pvremove -ff /dev/sdb1 # Force remove
+
+MOUNTING AND UNMOUNTING - Commands for attaching and detaching filesystems
+umount - Unmount filesystem
+umount /mnt/point # Unmount by mountpoint
+umount /dev/sdb1 # Unmount by device
+umount -f /mnt/point # Force unmount
+mount -a # Mount all entries in fstab
+mount -av # Verbose mount all
+mount -a -o remount # Remount all
+
+PARTITION TABLE TYPES - Information about partition table formats
+GPT - GUID Partition Table
+Modern partition table format
+Supports drives larger than 2TB
+Supports up to 128 partitions by default
+Stores backup table at end of disk
+
+FILESYSTEM CONFIGURATION - System configuration for filesystems
+/etc/fstab - Filesystem table
+Format: <device> <mountpoint> <filesystem> <options> <dump> <fsck>
+Example: /dev/vg/lv /mnt/data ext4 defaults 0 2
+UUID example: UUID=xxxx-xxxx /mnt/data ext4 defaults 0 2
+Options: defaults,noatime,nofail,user
+
+
+
+
+
+
+
+
+
+
+
+---USB DRIVE LVM PROJECT GUIDE----
+
+PREREQUISITES
+USB drive (minimum 8GB recommended)
+
+IDENTIFYING YOUR USB DRIVE
+lsblk
+
+example 32GB flash drive:
+sdb      8:16   1 116.7G  0 disk
+└─sdb1   8:17   1    32G  0 part
+
+
+fdisk -l /dev/sdb1
+Check size matches your USB
+
+sudo mkdir -p /media/flashdrive
+sudo mount /dev/sdb1 /media/flashdrive
+cd /media/flashdrive
+verify files on drive
+mount | grep /dev/sdb1 (check if mounted)
+sudo umount /dev/sdb1 (unmount)
+sudo lsof /dev/sdb1  (list processes using drive)
+sudo fuser -m /dev/sdb1 (list users on drive)
+sudo fuser -km /dev/sdb1
+sudo umount /dev/sdb1
+lsblk ( you will see it is no longer mounted)
+
+
+sudo wipefs -a /dev/sdb
+
+-GDISK Program-
+sudo gdisk /dev/sdb
+
+Press 'o' to create a new empty GUID Partition Table (GPT)
+Press 'n' to create a new partition
+Accept the default partition number (1)
+Accept the default start sector (Press Enter to accept the default last sector (244709375).)
+Set the end sector or size (e.g., +30G to use 30GB for the partition)
+Set the partition type to '8e00' for Linux LVM
+Press 'w' to write the changes and exit
+
+
+sudo pvcreate /dev/sdb1
+sudo vgcreate vg_usb /dev/sdb1
+sudo lvcreate -L 31G -n lv_data vg_usb
+sudo mkfs.ext4 /dev/vg_usb/lv_data
+sudo mkdir /mnt/usb_data
+sudo mount /dev/vg_usb/lv_data /mnt/usb_data
+
+Verify mount:
+df -h
+You should see /dev/mapper/vg_usb-lv_data mounted on /mnt/usb_data.
+
+
+
+
+
+Initialize the Partition Table:
+sudo gdisk /dev/sdc
+Use the following commands within gdisk:
+
+    o: Create a new empty GUID partition table (GPT)
+    n: Create a new partition (follow the prompts to allocate the whole disk)
+    w: Write the changes and exit
+
+
+Create a New Filesystem:
+sudo mkfs.ext4 /dev/sdc1 (linux)
+sudo mkfs.vfat /dev/sdc1  (both)
+sudo mkfs.ntfs /dev/sdc1 (windows)
+
+Mount the New Filesystem:
+sudo mount /dev/sdc1 /media/flashdrive
+
+Verify the New Setup:
+lsblk
+df -h
+
+
+
+
+
+
+
+
+
+
+
+
+---End Of Project---
+
+
+
+
+
+
+
+
+
+
+
+BASIC LVM SETUP
+Create partition
+Create PV
+Create VG
+Create LV
+Create filesystem
+Mount and test
+
+EXPANSION EXERCISE
+Create second partition
+Extend VG
+Extend LV
+Resize filesystem
+
+SNAPSHOT EXERCISE
+Create snapshot
+Modify data
+Restore from snapshot
+
+TROUBLESHOOTING GUIDE
+USB Not Detected:
+Check connections
+Try different USB port
+Run: dmesg | tail
+Check: lsusb
+Common Error Messages:
+Device busy - Check mount status: lsof /dev/sdX
+Force unmount if needed: umount -f /path
+No space left - Check space: vgs, lvs
+Use df -h to verify filesystem space
+Device not found - Verify device name hasn't changed
+Check dmesg for errors
+Cleaning Failed LVM:
+dmsetup remove_all
+vgchange -an
+wipefs -a /dev/sdX
+
+VERIFICATION STEPS
+fdisk -l /dev/sdX
+pvs
+vgs
+lvs
+df -h
+mount | grep sdX
+
+SAFETY NOTES
+Always backup important data
+Double-check device names
+Use lsblk before and after plugging in USB
+Never use drive letters without verification
+Keep track of all commands executed
+
+COMMON MISTAKES TO AVOID
+Wrong device selection
+Forgetting to create partition table
+Not extending filesystem after LV extension
+Not using force flag when needed
+Forgetting to unmount before removal
+
+RECOVERY STEPS
+If wrong drive selected:
+Stop immediately
+Don't write anything else
+Use testdisk for recovery
+If LVM structure corrupted:
+vgck to check VG
+vgscan to rediscover VGs
+vgchange -ay to reactivate
+
+COMPLETION CHECKLIST
+Successfully created GPT partition table
+Created working LVM structure
+Performed extension operation
+Created and restored snapshot
+Properly cleaned up configuration
+Documented all steps taken
+Submit your terminal history and short report explaining what you did and any issues encountered.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--Advanced--
+
+PREPARATION & PARTITIONING
+lsblk
+gdisk /dev/sdb
+n = new partition
+t = change partition type (8e00 for Linux LVM)
+w = write changes
+parted /dev/sdb
+mklabel gpt
+mkpart primary 0% 100%
+set 1 lvm on
+
+PHYSICAL VOLUME MANAGEMENT
+pvcreate /dev/sdb1
+pvcreate /dev/sdb1 /dev/sdb2
+pvdisplay /dev/sdb1
+pvs
+pvremove /dev/sdb1
+
+VOLUME GROUP MANAGEMENT
+vgcreate vg_practice /dev/sdb1
+vgextend vg_practice /dev/sdb2
+vgdisplay vg_practice
+vgs
+vgremove vg_practice
+
+LOGICAL VOLUME MANAGEMENT
+lvcreate -L 2G -n lv_test vg_practice
+lvcreate -l 100%FREE -n lv_test vg_practice
+lvdisplay /dev/vg_practice/lv_test
+lvs
+lvremove /dev/vg_practice/lv_test
+
+FILESYSTEM OPERATIONS
+mkfs.ext4 /dev/vg_practice/lv_test
+mount /dev/vg_practice/lv_test /mnt/test
+/dev/vg_practice/lv_test /mnt/test ext4 defaults 0 2
+mount -a
+
+PRACTICE SCENARIOS
+gdisk /dev/sdb
+pvcreate /dev/sdb1 /dev/sdb2 /dev/sdb3
+vgcreate vg_test /dev/sdb1
+lvcreate -L 1G -n lv_first vg_test
+vgextend vg_test /dev/sdb2
+lvextend -L +500M /dev/vg_test/lv_first
+resize2fs /dev/vg_test/lv_first
+resize2fs /dev/vg_test/lv_first 800M
+lvreduce -L 800M /dev/vg_test/lv_first
+
+COMMON ERROR FIXES
+pvremove -ff /dev/sdb1
+fuser -m /dev/vg_test/lv_first
+lsof | grep lv_first
+vgchange -an vg_test
+
+Extra:
+vgscan --mknodes (to ensure device nodes exist)
+pvscan (to verify all PVs are visible)
+vgchange -ay (to ensure VGs are active)
+
+
+mount -a - Mount all file systems
+Reads the /etc/fstab file and mounts all filesystems that aren't already mounted
+Often used after editing /etc/fstab to verify changes
+Common options:
+mount -av (verbose output shows what's being mounted)
+mount -a -o remount (remounts all filesystems with new options)
+mount -a -t type (mount all filesystems of specific type only)
+
+
+DATA VERIFICATION COMMANDS
+blkid - Show block device attributes
+e2fsck - Check ext filesystem
+xfs_repair - Check XFS filesystem
+
+VOLUME GROUP DISPLAY COMMANDS
+vgs - Summary of VGs
+vgdisplay - Detailed VG info
+vgscan - Scan for VGs
+
+PHYSICAL VOLUME DISPLAY COMMANDS
+pvs - Summary of PVs
+pvdisplay - Detailed PV info
+pvscan - Scan for PVs
+
+
+
+
+
+
+--GUID Advanced--
+GUID stands for Globally Unique Identifier. In the context of disk partitioning, GUID refers to the format used by the GUID Partition Table (GPT) to identify partitions.
+A GUID is a 128-bit (16-byte) number that is used to uniquely identify a partition on a GPT disk. The GUID is generated using an algorithm that makes it extremely unlikely for two partitions to have the same GUID, even across different systems.
+Some key points about GUIDs in GPT:
+
+Uniqueness: GUIDs are designed to be globally unique, meaning that no two partitions should have the same GUID.
+Identification: Each partition on a GPT disk is assigned a GUID, which is used to identify and locate the partition.
+Partition table header: The GPT header contains a GUID that identifies the partition table itself.
+Partition entry: Each partition entry in the GPT contains a partition type GUID and a unique partition GUID.
+Standardized format: GUIDs are written in a standardized format, such as "C12A7328-F81F-11D2-BA4B-00A0C93EC93B".
+
+The use of GUIDs is one of the key features that distinguishes GPT from the older MBR partition table format, which uses a simpler and less unique identifier system. GUIDs provide a more robust and flexible way to identify and manage partitions, especially on larger and more complex disk setups.
+
+
+
+
+
+
+
+--fstab--
+The /etc/fstab file is a system configuration file on Unix-like operating systems that contains information about disk drives and partitions. It is used by the system to automatically mount filesystems at boot time or when the mount -a command is used. Each line in the /etc/fstab file represents a filesystem and contains several fields that specify how and where the filesystem should be mounted.
+Structure of /etc/fstab
+
+Each line in the /etc/fstab file typically contains six fields:
+
+    Device: The device or partition to be mounted (e.g., /dev/sda1, UUID=xxxx-xxxx, LABEL=MyDrive).
+    Mount Point: The directory where the filesystem will be mounted (e.g., /mnt/data).
+    Filesystem Type: The type of filesystem (e.g., ext4, xfs, vfat).
+    Options: Mount options (e.g., defaults, noatime, ro, rw).
+    Dump: A number indicating whether the filesystem should be dumped (backed up) by the dump command (0 means no, 1 means yes).
+    Pass: A number indicating the order in which filesystem checks are done at boot time (0 means no check, 1 means first check, 2 means second check).
+
+Example of /etc/fstab
+
+Here is an example of what an /etc/fstab file might look like:
+plaintext
+
+# <file system> <mount point> <type> <options> <dump> <pass>
+UUID=1234-5678 / ext4 defaults 1 1
+/dev/sda1 /boot ext4 defaults 1 2
+/dev/sda2 none swap sw 0 0
+/dev/cdrom /media/cdrom iso9660 ro,user,noauto 0 0
+
+Explanation of Example
+
+    UUID=1234-5678 / ext4 defaults 1 1:
+        Mount the filesystem with UUID 1234-5678 at the root directory / using the ext4 filesystem type with default options. This filesystem will be dumped and checked first.
+
+    /dev/sda1 /boot ext4 defaults 1 2:
+        Mount the partition /dev/sda1 at the /boot directory using the ext4 filesystem type with default options. This filesystem will be dumped and checked second.
+
+    /dev/sda2 none swap sw 0 0:
+        Use the partition /dev/sda2 as swap space. It will not be dumped or checked.
+
+    /dev/cdrom /media/cdrom iso9660 ro,user,noauto 0 0:
+        Mount the CD-ROM device /dev/cdrom at the /media/cdrom directory using the iso9660 filesystem type with read-only (ro) and user-mountable (user) options. It will not be dumped or checked. The noauto option means it will not be automatically mounted at boot time.
+
+Useful Commands
+
+    Mount all filesystems in /etc/fstab:
+    sh
+
+sudo mount -a
+
+Remount all filesystems in /etc/fstab:
+sh
+
+sudo mount -a -o remount
+
+Check the status of mounted filesystems:
+sh
+
+    mount
+
+The /etc/fstab file is an essential part of system configuration, ensuring that filesystems are mounted correctly and consistently at boot time.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---Very Advanced---
+
+
+
+Here is the missing content in the same format as your guide:
+
+ADVANCED LVM FEATURES
+Striping - Combine multiple PVs for improved performance
+lvcreate --stripes 2 --stripesize 64 -n stripe_lv -L 10G vg_name
+Mirroring - Create mirrored copies of LVs for redundancy
+lvcreate --mirrors 1 -n mirror_lv -L 5G vg_name
+Thin Provisioning - Allocate space on-demand from a pool
+lvcreate --thin -L 100G --name thin_pool vg_name
+lvcreate --thin -V 1G --name thin_lv vg_name/thin_pool
+
+# Create a striped logical volume across two physical volumes
+lvcreate --stripes 2 --stripesize 64 -n stripe_lv -L 10G vg_name
+Explanation:
+# --stripes 2: Use two physical volumes for striping
+# --stripesize 64: Set stripe size to 64 KB, which means data is divided into 64 KB chunks and distributed across the two PVs
+# -n stripe_lv: Name the logical volume "stripe_lv"
+# -L 10G: Create a logical volume of 10 GB
+# vg_name: The volume group to which the logical volume belongs
+
+
+# Create a mirrored logical volume
+lvcreate --mirrors 1 -n mirror_lv -L 5G vg_name
+# Explanation:
+# --mirrors 1: Create one mirror copy of the logical volume
+# -n mirror_lv: Name the logical volume "mirror_lv"
+# -L 5G: Create a logical volume of 5 GB
+# vg_name: The volume group to which the logical volume belongs
+
+
+
+
+
+
+FILESYSTEM-SPECIFIC OPTIONS
+EXT4:
+mkfs.ext4 -b 4096 -E stripe_width=32,resize=500G /dev/vg/lv
+-b 4096: Set block size to 4KB for better performance
+-E stripe_width=32: Align filesystem to LVM stripes
+-E resize=500G: Allow for future filesystem resizing
+XFS:
+mkfs.xfs -d su=64k,sw=2 -l version=2,su=128k /dev/vg/lv
+-d su=64k: Set stripe unit to 64KB for better performance
+-d sw=2: Set stripe width to 2 for RAID0 LVM striping
+-l version=2: Use version 2 log format for faster recovery
+-l su=128k: Set log stripe unit to 128KB for better performance
+
+MOUNTING AT BOOT TIME
+/etc/fstab entry:
+/dev/vg_name/lv_name /mount/point xfs defaults,noatime,inode64 0 0
+noatime: Disable access time updates for better performance
+inode64: Enable 64-bit inodes for large filesystems
+systemd mount unit:
+[Unit]
+Description=Mount logical volume lv_name
+
+[Mount]
+What=/dev/vg_name/lv_name
+Where=/mount/point
+Type=xfs
+Options=defaults,noatime,inode64
+
+[Install]
+WantedBy=multi-user.target
+
+PERFORMANCE TUNING
+LVM:
+Align PV start to underlying disk boundary for better performance
+vgextend --dataalignment 1m vg_name /dev/sdx
+Increase PE size for fewer metadata reads/writes
+vgcreate --physicalextentsize 4M vg_name /dev/sdx
+Filesystems:
+Disable access time updates for better performance
+mount -o noatime /dev/vg/lv /mnt/point
+Increase filesystem block size for large files
+mkfs.ext4 -b 4096 /dev/vg/lv
+
+MONITORING AND ALERTING
+Setup lvm2-monitor daemon to detect issues
+systemctl enable lvm2-monitor
+Configure SNMP traps for LVM events
+/etc/lvm/lvm.conf: config { monitoring { events = ["pvmove"] } }
+
+Monitor filesystems with Nagios or Prometheus
+Regularly check for errors with xfs_repair or e2fsck
+Schedule filesystem checks with tune2fs or xfs_admin
+
+
+
+
+
+
+INTEGRATION WITH OTHER STORAGE
+LVM with RAID:
+Create RAID device with mdadm
+pvcreate /dev/md0
+vgcreate vg_raid /dev/md0
+LVM with iSCSI:
+Connect to iSCSI target
+pvcreate /dev/sdb
+vgcreate vg_iscsi /dev/sdb
+LVM with SAN:
+Connect to SAN storage
+pvcreate /dev/sdc
+vgcreate vg_san /dev/sdc
+SCRIPTING AND AUTOMATION
+Bash script to create LV:
+#!/bin/bash
+vgname=$1
+lvname=$2
+lvsize=$3
+lvcreate -L $lvsize -n $lvname $vgname
+mkfs.ext4 /dev/mapper/$vgname-$lvname
+Python script to extend LV:
+import subprocess
+def extend_lv(vgname, lvname, extendsize):
+subprocess.run(["lvextend", "-L", "+"+extendsize, "/dev/"+vgname+"/"+lvname])
+subprocess.run(["resize2fs", "/dev/"+vgname+"/"+lvname])
+Ansible playbook for LVM tasks:
+
+name: Create VG
+lvg:
+vg: vg_ansible
+pvs: /dev/sdd,/dev/sde
+name: Create LV
+lvol:
+vg: vg_ansible
+lv: lv_ansible
+size: 10g
+
+TROUBLESHOOTING SPECIFIC ISSUES
+Disappeared VG:
+vgscan
+vgchange -ay
+Found duplicate PVs:
+pvscan --cache
+vgimportclone -n new_vg /dev/sdf /dev/sdg
+vgremove old_vg
+Corrupted superblock:
+dumpe2fs /dev/vg/lv
+e2fsck -b SUPERBLOCK /dev/vg/lv
+Accidentally removed PV:
+vgcfgrestore vg_name
+vgchange -ay vg_name
+
+
+
+
+
+
+
+
+
+
+
+
+DATA RECOVERY AND BACKUPS
+Create snapshot before changes:
+lvcreate -s -n backup -L 1G /dev/vg_usb/lv_data
+Backup LVM metadata:
+vgcfgbackup vg_usb
+Restore from snapshot:
+lvconvert --merge /dev/vg_usb/backup
+
+ERROR CODES AND FIXES
+Device busy (32):
+lsof /dev/sdX
+fuser -km /dev/sdX
+Invalid metadata (123):
+vgck vg_usb
+pvscan --cache
+Missing PV (124):
+vgscan --mknodes
+vgchange -ay
+
+JOURNAL RECOVERY
+ext4 recovery:
+tune2fs -l /dev/vg_usb/lv_data
+e2fsck -f /dev/vg_usb/lv_data
+xfs recovery:
+xfs_repair /dev/vg_usb/lv_data
+xfs_db -x /dev/vg_usb/lv_data
+
+PERFORMANCE TUNING
+Large files:
+mkfs.ext4 -b 4096 /dev/vg_usb/lv_data
+Many small files:
+mkfs.ext4 -b 1024 /dev/vg_usb/lv_data
+Striping for speed:
+lvcreate --stripes 2 -L 31G -n lv_data vg_usb
+
+SECURE WIPING
+Basic wipe:
+dd if=/dev/zero of=/dev/sdX bs=1M
+Secure wipe:
+shred -v -n 3 /dev/sdX
+cryptsetup open --type plain /dev/sdX temp
+dd if=/dev/urandom of=/dev/mapper/temp
+RAID INTEGRATION
+Create RAID-1:
+mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdX1 /dev/sdY1
+pvcreate /dev/md0
+vgcreate vg_usb /dev/md0
+
+MONITORING
+Check health:
+smartctl -a /dev/sdX
+Monitor LVM:
+lvs -a -o +devices
+dmesg | grep sd
+Set up alerts:
+lvm monitor --interval 60
+
+AUTOMATION
+Basic script:
+#!/bin/bash
+DEV=$1
+VG="vg_usb"
+LV="lv_data"
+SIZE="31G"
+pvcreate $DEV
+vgcreate $VG $DEV
+lvcreate -L $SIZE -n $LV $VG
+CAPACITY PLANNING
+Check space:
+pvdisplay --units g
+vgdisplay --units g
+df -h
+Plan growth:
+vgextend vg_usb /dev/sdY1
+lvextend -L +10G /dev/vg_usb/lv_data
+resize2fs /dev/vg_usb/lv_data
+
+ENTERPRISE DOCUMENTATION
+Required info:
+Device IDs
+VG/LV names
+Filesystem types
+Mount points
+Recovery procedures
+Change tracking:
+date
+command
+result
+verification
+
+
+DATA VALIDATION AND INTEGRITY
+Check filesystem:
+sudo e2fsck -f /dev/vg_usb/lv_data
+Verify metadata:
+sudo vgck vg_usb
+Check blocks:
+sudo badblocks -v /dev/sdb
+
+SYSTEM OPTIMIZATION
+Enable TRIM:
+sudo fstrim -v /mnt/usb_data
+Set scheduler:
+echo deadline > /sys/block/sdb/queue/scheduler
+Configure readahead:
+sudo blockdev --setra 2048 /dev/sdb
+
+USER ACCESS CONTROL
+Set permissions:
+sudo chown -R user:group /mnt/usb_data
+Configure ACLs:
+sudo setfacl -m u:user:rwx /mnt/usb_data
+
+DEVICE EVENT HANDLING
+Log monitoring:
+tail -f /var/log/messages | grep "sd"
+udev rules:
+/etc/udev/rules.d/99-usb.rules
+ATTR{idVendor}=="XXXX", ATTR{idProduct}=="YYYY", RUN+="/usr/local/bin/usb-script.sh"
+
+
+NETWORK STORAGE INTEGRATION
+NFS mount options:
+mount -t nfs -o rw,hard,intr server:/share /mnt/nfs
+Samba configuration:
+mount -t cifs -o credentials=/etc/samba/creds //server/share /mnt/smb
+
+
+
+---End Advanced Guide---
+
+
+
+
+
+For more detailed information on LVM, you can refer to the official [LVM documentation](https://man7.org/linux/man-pages/man8/lvm.8.html).
+
+For more on filesystem creation and management, check out the [mkfs man page](https://man7.org/linux/man-pages/man8/mkfs.8.html).
