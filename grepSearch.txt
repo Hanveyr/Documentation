@@ -1,6 +1,6 @@
 -Grep Introduction-
 
-grep is a command-line utility for searching plain-text data sets for lines that match a regular expression.
+grep (“global regular expression print”) is a command-line utility for searching plain-text data sets for lines that match a regular expression.
 It is one of the most powerful and frequently used commands in Linux for text processing.
 
 
@@ -13,7 +13,46 @@ It is one of the most powerful and frequently used commands in Linux for text pr
     Flags/Options: Various options that modify the behavior of grep.
 
 
-Grep Commands
+-Grep Commands-
+
+
+
+-Line Anchor-
+^ Beginning
+$ end of line
+
+example:
+^cat
+category
+
+dog$
+chilidog
+
+
+
+-usage count-
+grep -c "math" mathbook.txt
+
+-piping output into input search-
+ps aux | grep 'monitor'
+
+
+
+-options-
+
+-i case insensitive
+-v display lines tha tdo not coutnain expression
+-r recursive
+-A# display #of lines after each match
+-B# # of lines before each match
+-e 'or', ie: grep -e 'monitor' -e 'as'
+-o
+
+
+
+
+
+
 
 -Search for a pattern in a file-
 grep "pattern" file.txt
