@@ -1,0 +1,1103 @@
+Comprehensive Guide to Linux File Permissions and User Management
+
+
+-Introduction-
+This guide provides a thorough explanation of Linux file permissions, including chown and chmod commands,
+the permission bits and how they sum up for read, write, and execute permissions,
+special permissions (SUID, SGID, Sticky), umask, and user management files such as /etc/passwd, /etc/shadow, /etc/skel,
+and /etc/login.defs. This document is intended to help engineers understand and manage access permissions effectively.
+
+
+Controlling Access to files with Permissions.
+
+
+-Basic Concepts and Terminology-
+    File Permissions: The access rights assigned to files and directories.
+    Permission Bits: A set of bits that define the read, write, and execute permissions for the owner, group, and others.
+    Special Permissions: Additional permissions like SUID, SGID, and Sticky bit that provide special access rights.
+    umask: A default user mask that controls the permissions set for newly created files and directories.
+
+
+
+
+
+-User Management Files-
+
+
+---Locations---
+
+    /etc/passwd: Contains user account information.
+    Format: username:x:UID:GID:comment:home_directory:shell
+    Example: john:x:1001:1001:John Doe:/home/john:/bin/bash
+
+    /etc/shadow: Contains encrypted password information.
+    Format: username:encrypted_password:last_change:min:max:warn:inactive:expire
+    Example: john:$6$saltsalt$encryptedpassword:18000:0:99999:7::
+
+    /etc/skel: Directory containing default files and directories copied to a new user's home directory.
+
+    /etc/login.defs: Configuration file for user account creation.
+    Contains settings such as default UID/GID ranges, password expiration policies, and more.
+
+
+
+
+-/etc/passwd fields-
+    username: User's login name
+    password: Placeholder (usually 'x' indicating password is stored in /etc/shadow)
+    UID: User ID
+    GID: Group ID
+    comment: User's full name or other comments
+    home_directory: Path to the user's home directory
+    shell: User's login shell
+
+-/etc/shadow fields-
+    username: User's login name
+    password: Encrypted password
+    last_change: Days since Jan 1, 1970, when the password was last changed
+    min: Minimum number of days before the password can be changed
+    max: Maximum number of days the password is valid
+    warn: Number of days before expiration to warn the user
+    inactive: Number of days after password expiration until the account is locked
+    expire: Days since Jan 1, 1970, when the account will be disabled
+    reserved: Reserved field for future use
+
+
+
+/etc/shadow
+-/etc/shadow field explanations-
+username:algorithmsalthash:lastchange:min:max:warn:inactive:expire:reserved
+
+Hash algorithms:
+1 - MD5
+2 a - Blowfish
+2 y - Blowfish (updated)
+5 - SHA-256
+6 - SHA-512
+
+
+
+
+
+
+u,g,o,a  users,group, other, all
++,-,=   add, remove, set exactly
+r,w,x  read, write, execute
+
+
+
+
+
+Advanced user management commands-
+usermod -aG group user # Add a user to a supplementary group
+usermod -L user # Lock a user account
+usermod -U user # Unlock a user account
+userdel -r user # Delete a user and their home directory
+groupadd group # Create a new group
+groupdel group # Delete a group
+gpasswd -a user group # Add a user to a group
+gpasswd -d user group # Remove a user from a group
+newgrp group # Log in to a new group
+
+
+
+
+
+
+
+
+-Common User and Group Names-
+root: Superuser with full system access
+nobody: Unprivileged user
+bin: Binary files owner
+daemon: System daemons and services
+sys: System administration files and directories
+mail: Mail service handling
+games: Gaming applications/data
+www-data: Web server processes
+sshd: SSH daemon
+ftp: FTP service
+mysql: MySQL database
+postgres: PostgreSQL database
+apache: Apache web server
+nginx: NGINX web server
+docker: Docker container service
+backup: Backup service processes
+redis: Redis cache service
+mongodb: MongoDB database
+gitlab: GitLab service
+tomcat: Tomcat application server
+messagebus: D-Bus message system
+syslog: System logging service
+cron: Scheduled task service
+cups: Printing system
+postfix: Mail transfer agent
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---Understanding Permission Bits---
+
+
+Summarized Table of Permission Bits:
+
+| Octal | Binary | Permissions | Description                 |
+|-------|--------|-------------|-----------------------------|
+| 0     | 000    | ---         | No permissions              |
+| 1     | 001    | --x         | Execute only                |
+| 2     | 010    | -w-         | Write only                  |
+| 3     | 011    | -wx         | Write and execute           |
+| 4     | 100    | r--         | Read only                   |
+| 5     | 101    | r-x         | Read and execute            |
+| 6     | 110    | rw-         | Read and write              |
+| 7     | 111    | rwx         | Read, write, and execute    |
+
+
+-Read, Write, Execute Permissions (rwx)-
+
+Each file and directory has three types of permissions for three different categories of users:
+    Owner: The user who owns the file.
+    Group: The group that owns the file.
+    Others: All other users.
+
+The permissions are represented by three characters each for the owner, group, and others:
+    r: Read (4)
+    w: Write (2)
+    x: Execute (1)
+
+The permissions can be represented numerically by summing the values of read, write, and execute:
+    0: No permission (---)
+    1: Execute (--x)
+    2: Write (-w-)
+    3: Write and Execute (-wx)
+    4: Read (r--)
+    5: Read and Execute (r-x)
+    6: Read and Write (rw-)
+    7: Read, Write, and Execute (rwx)
+
+
+For example, 755 means:
+    Owner: Read, Write, Execute (7)
+    Group: Read, Execute (5)
+    Others: Read, Execute (5)
+
+
+Binary representation of permission bits:
+    Owner (first three bits)
+    Group (next three bits)
+    Others (last three bits)
+
+Permissions in binary:
+    r: Read (100 in binary or 4)
+    w: Write (010 in binary or 2)
+    x: Execute (001 in binary or 1)
+
+
+-Binary Representation of Permission Bits-
+Permissions are also represented in binary format, where each bit corresponds to a specific permission:
+    Owner: The first three bits
+    Group: The next three bits
+    Others: The last three bits
+
+Each permission (read, write, execute) is represented as follows:
+    r: Read (100 in binary or 4)
+    w: Write (010 in binary or 2)
+    x: Execute (001 in binary or 1)
+
+For example, rwxr-xr-- translates to:
+    Owner: rwx (111 in binary or 7)
+    Group: r-x (101 in binary or 5)
+    Others: r-- (100 in binary or 4)
+
+Combined, this is represented as 755 in octal (binary: 111 101 100).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Special bits (4 bits in total):
+
+    Set User ID (SUID) - 4 (represented as s in owner's execute position)
+    Set Group ID (SGID) - 2 (represented as s in group's execute position)
+    Sticky Bit - 1 (represented as t in others' execute position)
+
+
+ Binary and Special Bits Representation
+
+-Each permission bit corresponds to a binary value-
+
+    r: Read (100 in binary or 4)
+    w: Write (010 in binary or 2)
+    x: Execute (001 in binary or 1)
+
+For example, 755 in binary:
+Owner: rwx (111 in binary or 7)
+Group: r-x (101 in binary or 5)
+Others: r-x (101 in binary or 5)
+
+
+
+
+Permissions are typically represented as a combination of numeric values for the owner, group, and others, and special permissions are added as an additional digit.
+
+Example:
+Permissions: rwxr-xr--
+Binary: 111 101 100
+Octal: 7 5 4
+
+
+
+# Default System Directory Permissions
+/home - 755
+/root - 550
+/etc - 755
+/tmp - 1777 (sticky bit)
+/var/log - 755
+
+
+
+
+
+
+
+
+
+
+
+
+-Examples and Explanations-
+
+
+
+
+---chmod---
+# Basic Permission Examples
+chmod 755 file           # rwxr-xr-x (standard executable)
+chmod 644 file           # rw-r--r-- (standard file)
+chmod 777 file           # rwxrwxrwx (full access - avoid)
+chmod 000 file           # -------- (no access)
+chmod 600 file           # rw------- (private file)
+chmod 711 dir           # rwx--x--x (execute-only directory)
+
+# Using Letters Instead of Numbers
+chmod u+x file          # Add execute for user
+chmod g+w file          # Add write for group
+chmod o-r file          # Remove read for others
+chmod a+r file          # Add read for all
+chmod ug+rw file        # Add read/write for user/group
+
+# Special Permissions
+chmod 4755 file         # rwsr-xr-x (SUID)
+chmod 2755 dir          # rwxr-sr-x (SGID)
+chmod 1777 dir          # rwxrwxrwt (sticky bit)
+chmod 6755 file         # rwsr-sr-x (SUID + SGID)
+
+# Common Use Cases
+chmod 400 key.pem       # r-------- (secure key file)
+chmod 755 script.sh     # rwxr-xr-x (executable script)
+chmod 750 /home/user    # rwxr-x--- (private home directory)
+chmod -R 644 dir/*      # rw-r--r-- (recursively set files)
+chmod -R 755 dir/       # rwxr-xr-x (recursively set directories)
+
+# Directory Access
+chmod 711 /path         # --x--x--x (traverse only)
+chmod 555 /path         # r-xr-xr-x (read-only + traverse)
+chmod 700 /path         # rwx------ (owner only)
+chmod 770 /path         # rwxrwx--- (owner + group)
+
+
+
+
+
+
+---chown---
+# Basic Ownership
+chown user file                # Change owner
+chown user:group file         # Change owner and group
+chown :group file             # Change group only
+chown -R user dir             # Recursive ownership change
+
+# Common System Users
+chown www-data:www-data /var/www    # Web server files
+chown mysql:mysql /var/lib/mysql     # Database files
+chown root:root /etc/passwd          # System files
+chown nobody:nogroup /tmp/file       # Unprivileged access
+
+# Specific Use Cases
+chown user1.user1 ~user1            # Home directory ownership
+chown -R nginx:nginx /etc/nginx/*    # Web server config
+chown root:docker /var/run/docker.sock # Docker socket
+chown -h user symlink               # Change symlink ownership
+
+# Reference Current User
+chown $USER:$USER file              # Current user ownership
+chown $(id -u):$(id -g) file       # Using UIDs
+chown --reference=ref_file new_file # Copy ownership
+
+# Multiple Files
+chown user:group file1 file2 dir1   # Multiple targets
+chown user:group *.txt              # All text files
+chown -R user:group /path/{dir1,dir2} # Multiple directories
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Setting Permissions and Ownership
+Set file permissions to 755
+chmod 755 file.txt
+
+Set ownership to user 'john' and group 'staff'
+chown john:staff file.txt
+
+
+Using chown and chmod
+
+-Change File Ownership and Permissions-
+    chown: Change file ownership.
+    Syntax: chown [owner][:group] file
+    Example: chown user:group file.txt
+
+    chmod: Change file permissions.
+    Syntax: chmod [permissions] file
+    Example: chmod 755 file.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----Understanding umask----
+
+
+Umask (short for User file-creation mode Mask) is used by UNIX-based systems to set default permissions for newly created files and directories.
+
+umask - Default, Opposite, Take Away, /etc/profile
+
+
+
+
+-umask-
+The umask command sets the default permissions for new files and directories. It subtracts the umask value from the default permissions (666 for files, 777 for directories).
+
+
+Example: umask 022
+Default permissions for files: 666
+Resulting permissions: 666 - 022 = 644 (rw-r--r--)
+Default permissions for directories: 777
+Resulting permissions: 777 - 022 = 755 (rwxr-xr-x)
+
+
+-Advanced umask Usage-
+
+-umask: Using umask in shell scripts-
+Set umask at the beginning of a shell script
+umask 027
+Create a file with specific permissions in a script
+touch scriptfile
+
+
+
+
+
+# Basic umask Examples
+umask 022           # Default (results in 755 dirs, 644 files)
+umask 027           # Restrictive (750 dirs, 640 files)
+umask 077           # Private (700 dirs, 600 files)
+umask 000           # Most permissive (777 dirs, 666 files)
+
+# Calculating Results
+# For directories (base 777):
+umask 022 → 777 - 022 = 755     # rwxr-xr-x
+umask 027 → 777 - 027 = 750     # rwxr-x---
+umask 077 → 777 - 077 = 700     # rwx------
+
+# For files (base 666):
+umask 022 → 666 - 022 = 644     # rw-r--r--
+umask 027 → 666 - 027 = 640     # rw-r-----
+umask 077 → 666 - 077 = 600     # rw-------
+
+# Common Use Cases
+umask 022           # Standard system default
+umask 027           # Secure user default
+umask 007           # Group collaboration
+umask 077           # Maximum privacy
+
+# In Scripts
+umask 077          # Secure temp files
+umask 002          # Group write access
+umask $(umask)     # Save current umask
+umask $old_umask   # Restore umask
+
+
+
+
+
+
+---Advanced umask Concepts---
+
+# Default Base Permissions Explained
+666 for files     = rw-rw-rw- (no execute by default)
+777 for dirs      = rwxrwxrwx (execute needed for traversal)
+
+# Special umasks
+umask 0002        # Group writeable (775/664)
+umask 0006        # Group read-only (771/660)
+umask 0026        # Group read, others read (751/640)
+umask 0227        # Group read, private (550/440)
+umask 0137        # Odd combination (640/530)
+
+# Binary umask calculation
+umask 0002 binary:
+000 000 000 010 = removes write for others
+umask 0077 binary:
+000 000 111 111 = removes all for group/others
+
+# Permanent umask settings
+# In ~/.profile or ~/.bashrc:
+if [ $UID -gt 199 ] && [ "`id -gn`" = "`id -un`" ]; then
+   umask 002     # User private group scheme
+else
+   umask 022     # Otherwise
+fi
+
+# Directory vs File Results
+umask 022:
+dirs: 777 - 022 = 755 (rwxr-xr-x)
+files: 666 - 022 = 644 (rw-r--r--)
+
+umask 027:
+dirs: 777 - 027 = 750 (rwxr-x---)
+files: 666 - 027 = 640 (rw-r-----)
+
+# Enterprise examples
+umask 007         # Team shared directories
+umask 022         # Web content directories
+umask 027         # Configuration directories
+umask 077         # Security-sensitive files
+
+# Process Inheritance
+child_process_umask = parent_process_umask
+daemon_umask = specified_in_service_file
+
+# Conditional umask
+if [ -d "/sensitive" ]; then
+   umask 077
+else
+   umask 022
+fi
+
+# Application-specific umasks
+apache: umask 022 # Web files
+mysql: umask 027  # Database files
+ssh: umask 077    # SSH keys
+
+
+# Leading zero explained
+umask 0022    # 0 for octal notation
+umask u=rwx,g=rx,o=rx  # Symbolic notation alternative
+
+# Practical combinations
+umask 0033    # Remove group+other write (744/644)
+umask 0133    # Remove execute for all except owner (644/544)
+umask 0277    # High security, group read only (500/400)
+
+# Environment-specific defaults
+/etc/profile: umask 022  # System-wide default
+/etc/login.defs: UMASK 027  # Login default
+/etc/init.d/*: umask 0022  # Service default
+
+# Special cases
+umask -S  # Show symbolic notation
+umask -p  # Show in setable format
+umask u+w  # Symbolic modification
+umask u=rw,g=r,o=r  # Set specific bits
+
+# Compound examples
+# Web application deployment
+umask 0002 && mkdir app_dir && umask 0022
+
+# Secure log creation
+umask 0137 && touch log && umask 0022
+
+# Default umask by user type
+root: 0022
+system users: 0022
+regular users: 0002
+service accounts: 0027
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Special Permissions
+
+-SUID, SGID, Sticky Bit-
+    SUID (Set User ID): When set on an executable file, it allows the file to be executed with the privileges of the file owner. Represented as s in the owner's execute position.
+    SGID (Set Group ID): When set on an executable file, it allows the file to be executed with the privileges of the file's group. When set on a directory, new files created within the directory inherit the group of the directory. Represented as s in the group's execute position.
+    Sticky Bit: When set on a directory, it restricts file deletion within the directory to the file's owner. Represented as t in the others' execute position.
+
+Special permissions can be set using the chmod command with an additional digit:
+    4xxx: Set SUID
+    2xxx: Set SGID
+    1xxx: Set Sticky Bit
+
+For example, 4755 means:
+    SUID: Set User ID (4)
+    Owner: Read, Write, Execute (7)
+    Group: Read, Execute (5)
+    Others: Read, Execute (5)
+
+
+
+---Setting Special Permissions---
+
+Set SUID on an executable file
+chmod 4755 script.sh
+
+Set SGID on a directory
+chmod 2755 /shared_directory
+
+Set Sticky Bit on a directory
+chmod 1755 /public_directory
+
+Using umask
+Set umask to 022
+umask 022
+
+Create a new file with default permissions (644)
+touch newfile.txt
+
+Create a new directory with default permissions (755)
+mkdir newdir
+
+Understanding /etc/passwd and /etc/shadow
+/etc/passwd entry for user 'john'
+
+john:x:1001:1001:John Doe:/home/john:/bin/bash
+
+/etc/shadow entry for user 'john'
+
+john: 6 saltsalt$encryptedpassword:18000:0:99999:7:::
+
+Creating a New User
+Create a new user 'jane'
+
+useradd jane
+Set a password for user 'jane'
+
+passwd jane
+Check the home directory and default files for 'jane'
+
+ls /home/jane
+
+Configuring User Defaults in /etc/login.defs
+Example entries in /etc/login.defs
+
+PASS_MAX_DAYS 99999
+PASS_MIN_DAYS 0
+PASS_WARN_AGE 7
+UID_MIN 1000
+UID_MAX 60000
+GID_MIN 1000
+GID_MAX 60000
+
+
+
+
+
+
+
+Example of Combining Special Permissions:
+chmod 6755 file.txt
+- 6: SGID and SUID (4000 + 2000)
+- 7: Owner (rwx)
+- 5: Group (r-x)
+- 5: Others (r-x)
+
+
+Example of combining permissions and special bits:
+
+    6755: SUID (4000) + SGID (2000) + Owner (rwx 700) + Group (r-x 050) + Others (r-x 005)
+
+
+Special permissions in binary:
+
+    SUID: 4000 (set to 1 in the 4th bit position)
+    SGID: 2000 (set to 1 in the 3rd bit position)
+    Sticky Bit: 1000 (set to 1 in the 2nd bit position)
+
+
+
+
+
+Special bits (4 bits in total):
+- Set User ID (SUID) - 4 (represented as s in owner's execute position)
+- Set Group ID (SGID) - 2 (represented as s in group's execute position)
+- Sticky Bit - 1 (represented as t in others' execute position)
+
+Example of combining permissions and special bits:
+chmod 6755 file.txt
+- 6: SGID and SUID (4000 + 2000)
+- 7: Owner (rwx)
+- 5: Group (r-x)
+- 5: Others (r-x)
+
+
+
+
+
+
+
+-Special Permission Combinations-
+chmod 7777 file # Full permissions + all special bits (SUID+SGID+Sticky)
+chmod 6777 file # Full permissions + SUID+SGID
+chmod 3777 file # Full permissions + SGID+Sticky
+chmod 5777 file # Full permissions + SUID+Sticky
+
+Permission Inheritance
+chmod g+s directory # New files inherit directory's group
+chmod +t directory # Only owner can delete files
+chmod u+s,g+s file # Set both SUID and SGID
+
+
+
+
+
+# Special Permission Edge Cases
+chmod u+s /dir     # SUID on directory (no effect)
+chmod +t file.txt  # Sticky on file (no effect on modern systems)
+umask 0000        # Most permissive (not recommended)
+umask 0777        # Most restrictive (blocks all access)
+
+
+
+Setting SUID and SGID on a script for privileged access:
+chmod 4755 /usr/local/bin/myscript.sh
+
+Setting SGID on a shared directory for collaborative projects:
+chmod 2775 /projects/shared
+
+Setting Sticky Bit on a public directory to restrict file deletion:
+chmod 1777 /var/tmp/public
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Special Permissions in Linux: Detailed Explanation and Common Use Cases
+
+In Linux, special permissions provide additional access control features that go beyond the standard read, write, and execute permissions. These special permissions include the Sticky Bit, Set Group ID (SGID), and Set User ID (SUID).
+Sticky Bit (Octal 1 / o+t)
+
+The Sticky Bit, represented by 1 in the octal notation and o+t in symbolic form, is used primarily on directories. When the sticky bit is set on a directory, it restricts file deletion or renaming within that directory to the file owner, the directory owner, or the root user. This is particularly useful in shared directories where multiple users have write access, such as /tmp. For example, setting the sticky bit on /tmp ensures that users can only delete their own files, preventing others from deleting or renaming their files.
+
+Command Example:
+bash
+
+chmod 1777 /tmp
+chmod o+t /tmp
+
+Common Uses:
+
+    /tmp: Temporary files directory.
+    /var/tmp: Temporary files persist across reboots.
+    /home: User home directories.
+
+Set Group ID (SGID) (Octal 2 / g+s)
+
+The Set Group ID (SGID), represented by 2 in octal notation and g+s in symbolic form, has different effects on files and directories. When applied to an executable file, it allows the file to be executed with the group privileges of the file owner rather than the user's group. When set on a directory, SGID ensures that new files created within the directory inherit the directory's group ownership instead of the user's primary group. This is particularly useful for collaborative directories where group ownership is important.
+
+Command Examples:
+
+    On Files:
+    bash
+
+chmod 2755 /usr/bin/write
+chmod g+s /usr/bin/write
+
+On Directories:
+bash
+
+    chmod 2770 /home/shared
+    chmod g+s /home/shared
+
+Common Uses:
+
+    /usr/bin/write: Write to other users' terminals.
+    /var/www/html: Web files inherit www-data group.
+    /home/shared: Team collaboration directories.
+
+Set User ID (SUID) (Octal 4 / u+s)
+
+The Set User ID (SUID), represented by 4 in octal notation and u+s in symbolic form, is used on executable files. When the SUID bit is set, the file runs with the privileges of the file owner, not the user who executed it. This is crucial for programs that need elevated privileges to perform certain operations, such as changing passwords or accessing raw sockets.
+
+Command Example:
+bash
+
+chmod 4755 /usr/bin/passwd
+chmod u+s /usr/bin/passwd
+
+Common Uses:
+
+    /usr/bin/passwd: Run as root to update /etc/shadow.
+    /usr/bin/sudo: Run as root for privilege escalation.
+    /usr/bin/ping: Access raw sockets as root.
+
+Combined Special Permissions
+
+Special permissions can be combined with regular permissions and other special permissions to create specific access control setups.
+
+Examples:
+
+    Full Collaboration Directory (SGID + wide open):
+    bash
+
+chmod 2777 /shared
+
+Results: rwxrwsrwx
+
+    Files inherit group.
+    Everyone can read/write.
+
+Secure Collaboration (SGID + restricted):
+bash
+
+chmod 2770 /team
+
+Results: rwxrws---
+
+    Files inherit group.
+    Only group members access.
+
+Protected Public Directory (Sticky + public):
+bash
+
+chmod 1755 /public
+
+Results: rwxr-xr-t
+
+    Everyone can read.
+    Only owners can delete.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Special Permissions Detailed Guide
+
+1. SUID (Set User ID) - 4 / u+s
+chmod 4755 file
+chmod u+s file
+# Executes as file owner regardless of who runs it
+# Common uses:
+/usr/bin/passwd    # Run as root to update /etc/shadow
+/usr/bin/sudo      # Run as root for privilege escalation
+/usr/bin/ping      # Access raw sockets as root
+
+2. SGID (Set Group ID) - 2 / g+s
+# On Files:
+chmod 2755 file
+chmod g+s file
+# Executes with group privileges of file owner
+# Common uses:
+/usr/bin/wall      # Write to all terminals
+/usr/bin/write     # Write to other users' terminals
+
+# On Directories:
+chmod 2770 directory
+# New files inherit directory's group ownership
+# Common uses:
+/var/www/html      # Web files inherit www-data group
+/home/shared       # Team collaboration directories
+/opt/application   # Application data directories
+
+3. Sticky Bit - 1 / o+t
+chmod 1777 directory
+chmod o+t directory
+# Only file owner can delete/rename files
+# Common uses:
+/tmp               # Temporary files directory
+/var/tmp           # Temporary files persist across reboots
+/home             # User home directories
+
+# Combined Special Permissions
+
+# Full collaboration directory (SGID + wide open)
+chmod 2777 /shared
+# Results: rwxrwsrwx
+# - Files inherit group
+# - Everyone can read/write
+
+# Secure collaboration (SGID + restricted)
+chmod 2770 /team
+# Results: rwxrws---
+# - Files inherit group
+# - Only group members access
+
+# Protected public directory (Sticky + public)
+chmod 1755 /public
+# Results: rwxr-xr-t
+# - Everyone can read
+# - Only owners can delete
+
+# Multi-special flags
+chmod 7755 file    # SUID + SGID + Sticky
+chmod 6755 file    # SUID + SGID
+chmod 5755 file    # SUID + Sticky
+chmod 3755 file    # SGID + Sticky
+
+# Real-world examples
+/usr/bin/write     # 2755 (SGID)
+/usr/bin/passwd    # 4755 (SUID)
+/var/mail          # 2775 (SGID directory)
+/tmp               # 1777 (Sticky)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-File Capabilities-
+getcap file # Show capabilities
+setcap cap_net_bind_service=+ep file # Set capability
+setcap -r file # Remove capabilities
+
+-Extended File Attributes-
+chattr +i file # Make file immutable
+chattr +a file # Append-only mode
+chattr +s file # Secure deletion
+chattr +u file # Undeletable
+lsattr file # List file attributes
+
+-ACL Management-
+getfacl file # Display ACL
+setfacl -m u:user:rwx file # Set user ACL
+setfacl -m g:group:rx file # Set group ACL
+setfacl -x u:user file # Remove user ACL
+setfacl -b file # Remove all ACLs
+
+SELinux Context Inheritance-
+chcon -R --reference=source_file target_file  # Copy security context
+restorecon -R /path  # Restore default security contexts
+
+
+
+# Access Time and File System Attributes
+# noatime Mount Option Effects
+mount -o noatime /dev/sda1 /mnt  # Disable access time updates
+chattr +A file  # No access time updates
+chattr +C file  # No copy-on-write
+chattr +E file  # Use extents for file
+
+
+
+Hash Algorithms Explained:
+$1$ - MD5: An older hash algorithm that is considered less secure by modern standards.
+$2a$ - Blowfish: A cryptographic algorithm with strong security features.
+$2y$ - Blowfish (updated): An updated and more secure version of Blowfish.
+$5$ - SHA-256: A widely used cryptographic hash function offering robust security.
+$6$ - SHA-512: An even stronger hash function with higher security than SHA-256.
+
+
+
+Setting SUID and SGID on a script for privileged access:
+chmod 4755 /usr/local/bin/myscript.sh
+
+Setting SGID on a shared directory for collaborative projects:
+chmod 2775 /projects/shared
+Directory Permission Variations:
+Setting Sticky Bit on a public directory to restrict file deletion:
+chmod 1777 /var/tmp/public
+
+
+
+
+
+
+---Directory Permission Variations---
+777 (rwxrwxrwx) # Full access for everyone
+775 (rwxrwxr-x) # Full group access, others can traverse
+770 (rwxrwx---) # Full group access, no others
+755 (rwxr-xr-x) # Standard, others can traverse
+750 (rwxr-x---) # Group can traverse, no others
+711 (rwx--x--x) # Everyone can traverse only
+710 (rwx--x---) # Group traverse only
+700 (rwx------) # Owner only, complete isolation
+666 (rw-rw-rw-) # Everyone can read/write, no traverse
+665 (rw-rw-r-x) # Everyone read, others traverse
+664 (rw-rw-r--) # Everyone read, no traverse
+660 (rw-rw----) # Owner/group read/write
+655 (rw-r-xr-x) # Others/group traverse, owner read/write
+644 (rw-r--r--) # Standard file permissions
+640 (rw-r-----) # Group read only
+600 (rw-------) # Owner read/write only
+555 (r-xr-xr-x) # Everyone traverse/read only
+554 (r-xr-xr--) # Read only, no others traverse
+550 (r-xr-x---) # Group traverse/read only
+511 (r-x--x--x) # Everyone traverse, owner read
+510 (r-x--x---) # Group traverse, owner read
+500 (r-x------) # Owner read/traverse only
+444 (r--r--r--) # Everyone read only
+440 (r--r-----) # Group read only
+400 (r--------) # Owner read only
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-Conclusion-
+This guide provided an in-depth look at Linux file permissions, including how to use chown and chmod, understanding permission bits and special permissions, using umask, and managing user accounts with /etc/passwd, /etc/shadow, /etc/skel, and /etc/login.defs. By understanding these concepts and commands, engineers can effectively manage access permissions and user accounts in a Linux environment.
+
+
+
+
