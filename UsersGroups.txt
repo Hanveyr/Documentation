@@ -1,0 +1,586 @@
+----Managing Local Users and Groups----
+
+This document provides comprehensive instructions and commands for managing local users and groups on a Linux system. It is intended for engineers and system administrators to use as a reference for performing user and group management tasks.
+
+
+-Table of Contents-
+
+    Helpful Commands
+    Finding Un-owned Files
+    Setting Password
+    Locations
+    Groups
+    Users
+    User Modifications
+    Deleting a User
+    UID Ranges
+    Password Aging
+    Advanced Password Management
+    Password Hashing Options
+    Sudoers Configuration
+    Security Best Practices
+    Error Handling and Troubleshooting
+    System Integration
+    Advanced Features
+    Documentation Structure
+
+
+
+---Helpful Commands---
+
+    id: Shows current logged-in user info.
+        Example: id
+        Output: uid=1001(jdoe) gid=1001(jdoe) groups=1001(jdoe),27(sudo)
+
+    ls -l: Lists permissions, users, and dates.
+        Example: ls -l /home/jdoe
+        Output: -rw-r--r-- 1 jdoe jdoe 4096 Jan 28 14:35
+
+    ps: Displays processes in the current shell.
+        Example: ps
+        Output:
+        Code
+
+    PID TTY TIME CMD
+    1234 pts/0 00:00:00 bash
+    1235 pts/0 00:00:00 ps
+
+ps a: Displays processes for a single terminal.
+
+    Example: ps a
+    Output:
+    Code
+
+    PID TTY TIME CMD
+    1234 pts/0 00:00:00 bash
+    1236 pts/0 00:00:00 sshd
+
+ps au: Displays users associated with processes.
+
+    Example: ps au
+    Output:
+    Code
+
+        USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
+        root 1 0.0 0.1 15820 1012 ? Ss Jan27 0:00 /sbin/init
+        jdoe 1234 0.0 0.2 23220 1384 pts/0 Ss 14:35 0:00 -bash
+
+    su username: Switches user. If no user is specified, it defaults to root.
+        Example: su jdoe
+        Output: Password: (Switches to user jdoe)
+
+Finding Un-owned Files
+
+    find / -nouser -o -nogroup 2> /dev/null: Finds un-owned files.
+        Example: find / -nouser -o -nogroup 2> /dev/null
+        Output:
+        Code
+
+        /var/tmp/unownedfile
+        /tmp/anotherunownedfile
+
+Setting Password
+
+    passwd username: Sets the password for a specified user.
+        Example: passwd jdoe
+        Output:
+        Code
+
+        Changing password for user jdoe.
+        New password:
+        Retype new password:
+        passwd: all authentication tokens updated successfully.
+
+
+
+
+
+
+
+
+---Locations---
+
+    /etc/shadow: Where passwords are encrypted and stored.
+        Example: sudo cat /etc/shadow
+        Output (partial): jdoe:$6$abcd1234$examplehashedpassword:18950:0:99999:7:::
+
+    /etc/passwd: Contains user account information, including GID.
+        Example: cat /etc/passwd
+        Output (partial): jdoe:x:1001:1001:John Doe:/home/jdoe:/bin/bash
+
+    /etc/group: Contains group information.
+        Example: cat /etc/group
+        Output (partial): sudo:x:27:jdoe
+
+    /etc/login.defs: Defines configuration for user and group account creation.
+        Example: cat /etc/login.defs
+        Output (partial):
+        Code
+
+
+
+    # Password aging controls
+    PASS_MAX_DAYS 99999
+    PASS_MIN_DAYS 0
+    PASS_WARN_AGE 7
+
+
+
+/etc/sudoers: Defines sudo permissions.
+
+    Example: sudo visudo
+    Output (opens file for editing): jdoe ALL=(ALL:ALL) ALL
+
+/var/log/secure: Logs all commands used with sudo.
+
+    Example: sudo cat /var/log/secure
+    Output (partial):
+    Code
+
+        Jan 28 14:35:27 hostname sudo: jdoe : TTY=pts/0 ; PWD=/home/jdoe ; USER=root ; COMMAND=/bin/ls
+
+
+
+
+
+
+---Groups---
+
+    groupadd groupname: Adds a new group. If no GID is specified, it will choose the next available GID as defined in /etc/login.defs.
+        Example: groupadd admin
+        Output: groupadd: created group admin
+
+    groupmod: Modifies a group.
+        Example: groupmod -n newgroupname oldgroupname
+        Output: groupmod: group 'oldgroupname' renamed to 'newgroupname'
+
+    groupdel groupname: Deletes a group.
+        Example: groupdel admin
+        Output: groupdel: removed group admin
+
+
+
+
+---Users---
+
+    useradd -g groupname username: Adds a new user and assigns them to a primary group.
+        Example: useradd -g admin jdoe
+        Output: useradd: created user jdoe with primary group admin
+
+    useradd -G groupname1,groupname2 username: Adds a new user and assigns them to multiple groups.
+        Example: useradd -G admin,sudo jdoe
+        Output: useradd: created user jdoe and added to groups admin, sudo
+
+    useradd -N username: Adds a user without creating a new group.
+        Example: useradd -N jdoe
+        Output: useradd: created user jdoe without creating a new group
+
+    useradd -u uid username: Adds a user with a specified user ID.
+        Example: useradd -u 1001 jdoe
+        Output: useradd: created user jdoe with UID 1001
+
+-User Modifications-
+
+    usermod -g groupname username: Changes the primary group of a user.
+        Example: usermod -g admin jdoe
+        Output: usermod: user jdoe has been added to group admin
+
+    usermod -aG groupname username: Adds a user to an additional group.
+        Example: usermod -aG sudo jdoe
+        Output: usermod: user jdoe has been added to group sudo
+
+    usermod -a username: Appends groups to a user without removing them from other groups.
+        Example: usermod -aG wheel jdoe
+        Output: usermod: user jdoe has been added to group wheel
+
+    usermod -c "comment" username: Adds a comment to the user account.
+        Example: usermod -c "John Doe" jdoe
+        Output: usermod: comment added to user jdoe
+
+    usermod -G groupname1,groupname2 username: Adds a user to multiple groups.
+        Example: usermod -G admin,sudo jdoe
+        Output: usermod: user jdoe has been added to groups admin, sudo
+
+    usermod -d /home/newdir username: Changes the home directory of a user.
+        Example: usermod -d /home/newjdoe jdoe
+        Output: usermod: home directory of user jdoe changed to /home/newjdoe
+
+    usermod -m username: Moves the user's home directory to a new location.
+        Example: usermod -d /home/newjdoe -m jdoe
+        Output: usermod: user jdoe's home directory moved to /home/newjdoe
+
+    usermod -s /bin/bash username: Changes the user's login shell.
+        Example: usermod -s /bin/zsh jdoe
+        Output: usermod: user jdoe's login shell changed to /bin/zsh
+
+    usermod -L username: Locks the user account.
+        Example: usermod -L jdoe
+        Output: usermod: user jdoe's account has been locked
+
+    usermod -u uid username: Changes the user ID of a user.
+        Example: usermod -u 2001 jdoe
+        Output: usermod: user jdoe's UID changed to 2001
+
+
+Deleting a User:
+
+    userdel -r username: Deletes a user and their home directory.
+        Example: userdel -r jdoe
+        Output: userdel: user jdoe and their home directory have been removed
+
+
+UID Ranges:
+
+    UID 0: Root.
+    UID 1-200: Assigned statically to processes by system users.
+    UID 201-999: Used by system processes that do not own files on the file system. Dynamic allocation.
+    UID 1000+: Regular users.
+
+
+
+
+
+
+
+
+
+
+-Password Aging-
+
+    min days -m: Minimum days between password changes.
+        Example: chage -m 0 jdoe
+        Output: chage: minimum number of days between password changes for jdoe set to 0
+
+    last day -d: Last password change date.
+        Example: chage -d 0 jdoe
+        Output: chage: last password change date for jdoe set to 0
+
+    warning days -w: Number of days before password expiration to warn the user.
+        Example: chage -W 7 jdoe
+        Output: chage: warning days before password expiration for jdoe set to 7
+
+    inactive days -I: Number of days after password expiration until the account is disabled.
+        Example: chage -I 14 jdoe
+        Output: chage: inactive days after password expiration for jdoe set to 14
+
+    chage -M username: Sets the maximum number of days a password is valid.
+        Example: chage -M 60 jdoe
+        Output: chage: maximum number of days a password is valid for jdoe set to 60
+
+    chage -d 0 username: Forces the user to change their password at the next login.
+        Example: chage -d 0 jdoe
+        Output: chage: user jdoe will be prompted to change their password at the next login
+
+    chage -l username: Displays current password aging settings.
+        Example: chage -l jdoe
+        Output:
+        Code
+
+        Last password change : Jan 28, 2025
+        Password expires : Mar 29, 2025
+        Password inactive : never
+        Account expires : never
+        Minimum number of days between password change : 0
+        Maximum number of days between password change : 60
+        Number of days of warning before password expires : 7
+
+    chage -E yyyy-MM-DD username: Sets the account expiration date.
+        Example: chage -E 2025-12-31 jdoe
+        Output: chage: account expiration date for jdoe set to 2025-12-31
+
+
+
+
+
+
+
+
+
+---Advanced Password Management---
+
+    /etc/shadow: File format:
+        Name: Username.
+        Password: Encrypted password.
+        LastChange: Last password change date.
+        minage: Minimum number of days between password changes.
+        maxage: Maximum number of days a password is valid.
+        Warning: Number of days before password expiration to warn the user.
+        Inactive: Number of days after password expiration until the account is disabled.
+        Expire: Account expiration date.
+        Blank: Unused.
+
+Password Hashing Options:
+
+    1: SHA-256.
+    5: SHA-512.
+    authconfig --passalgo md5, sha256, sha512: Sets the password hashing algorithm.
+    Salt: Random data used as an additional input to the hash function.
+
+Sudoers Configuration:
+
+    /etc/sudoers: Defines who can run commands as root.
+    All commands used with sudo are stored in /var/log/secure.
+    visudo: Command to edit the sudoers file safely.
+
+
+
+
+
+
+-Security Best Practices-
+
+Password complexity requirements and policies:
+        Example: Define password complexity in /etc/login.defs
+        sh
+
+    PASS_MIN_LEN 12
+
+
+Account lockout policies:
+    Example: Configure account lockout in /etc/pam.d/common-auth
+    sh
+    auth required pam_tally2.so deny=5 unlock_time=300
+
+
+SSH key management for user authentication:
+    Example: Generate and add SSH key
+    sh
+    ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+    ssh-copy-id username@remote_host
+
+
+Two-factor authentication setup:
+    Example: Install and configure Google Authenticator
+    sh
+    sudo apt-get install libpam-google-authenticator
+    google-authenticator
+
+
+Security implications of different permission settings:
+    Example: Set secure permissions for a file
+    sh
+        chmod 600 sensitive_file.txt
+
+
+
+
+
+
+
+--Error Handling and Troubleshooting--
+
+    Common error messages and their solutions
+        Example: Fix "Permission denied" error
+        sh
+    sudo chown user:user file
+
+
+Debugging user login issues
+    Example: Check login attempts
+    sh
+    sudo cat /var/log/auth.log | grep "Failed password"
+
+
+Group permission conflicts resolution
+    Example: Change group ownership
+    sh
+    sudo chgrp groupname filename
+
+
+Recovery procedures for locked accounts
+    Example: Unlock an account
+    sh
+    sudo pam_tally2 --user=username --reset
+
+
+
+Backup and restore procedures for user data
+    Example: Backup user home directory
+    sh
+        tar -czvf user_backup.tar.gz /home/username
+
+
+
+-System Integration-
+
+    LDAP/Active Directory integration
+        Example: Configure LDAP client
+        sh
+
+    sudo apt-get install libnss-ldap libpam-ldap ldap-utils
+    sudo auth-client-config -t nss -p lac_ldap
+
+NIS/NIS+ configuration:
+    Example: Configure NIS client
+    sh
+    sudo apt-get install nis
+    sudo ypbind
+
+PAM module configuration and customization:
+    Example: Edit PAM configuration
+    sh
+    sudo nano /etc/pam.d/common-auth
+
+
+NSS configuration:
+    Example: Edit NSS configuration
+    sh
+    sudo nano /etc/nsswitch.conf
+
+User quota management:
+    Example: Set user quota
+    sh
+        sudo setquota -u username 1000 2000 0 0 /home
+
+
+
+
+
+
+
+--Advanced Features--
+
+    ACL (Access Control Lists) management
+        Example: Set ACL for a file
+        sh
+    setfacl -m u:username:rwx filename
+    getfacl filename
+
+
+SELinux user management:
+    Example: Assign SELinux user to a Linux user
+    sh
+    semanage login -a -s SELinux_user linux_user
+
+
+Automated user management scripts:
+    Example: Script to create multiple users from a file
+    sh
+    while IFS=, read -r username password; do
+      useradd -m -p "$(openssl passwd -1 $password)" $username
+    done < users.csv
+
+
+User template creation:
+    Example: Create a user template
+    sh
+    useradd -D -b /home/templates -s /bin/bash
+
+
+Bulk user operations:
+    Example: Bulk add users to a group
+    sh
+        for user in $(cat users.txt); do
+          usermod -aG groupname $user
+        done
+
+
+
+
+
+
+
+
+
+
+
+
+---Flowcharts for User Management Workflows---
+
+
+Start -> Create User -> Assign Group -> Set Password -> End
+
+
+Visual representation:
+plaintext
+
++-------+        +------------+        +-------------+        +------------+        +-----+
+    | Start | -----> | Create User | -----> | Assign Group | -----> | Set Password | -----> | End |
+    +-------+        +------------+        +-------------+        +------------+        +-----+
+
+
+
+Diagrams for System Architecture:
+
+
+User -> Authentication Server -> Database Server -> File Server
+
+Visual representation:
+plaintext
+
++------+          +--------------------+          +----------------+          +------------+
+    | User | -------> | Authentication Server | -------> | Database Server | -------> | File Server |
+    +------+          +--------------------+          +----------------+          +------------+
+
+
+
+Permission Matrices:
+
+
+
++---------+-------------+-------------+
+|  User   | Read Access | Write Access|
++---------+-------------+-------------+
+|  root   |     Yes     |     Yes     |
+|  jdoe   |     Yes     |     No      |
+|  guest  |     No      |     No      |
++---------+-------------+-------------+
+
+
+
+
+Decision Trees for Troubleshooting
+
+
+Login Failure
+     |
+Check Password
+     |
+  Correct?
+   /   \
+  Yes   No
+  /      \
+Check  Reset
+
+
+
+
+Permissions Password:
+
+
+Login Failure
+         |
+   +-------------+
+   | Check Password |
+   +-------------+
+         |
+     +-------+
+     | Correct? |
+     +-------+
+     /       \
+   Yes       No
+    /          \
++------------+  +-------------+
+| Check Permissions |  | Reset Password |
++------------+  +-------------+
+
+
+
+
+
+-Cross-References-
+
+
+See the Flowcharts for User Management Workflows
+
+See the Diagrams for System Architecture
+
+See the Permission Matrices
+
+See the Decision Trees for Troubleshooting
+
+
+
+
+
+
