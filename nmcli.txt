@@ -1,0 +1,646 @@
+NMCLI (Network Manager Command-Line Interface)
+
+
+This definitive guide provides an exhaustive exploration of NMCLI network management, offering system administrators and network professionals a comprehensive toolkit for advanced Linux network configuration.
+
+
+
+
+Table of Contents
+
+    Introduction to NMCLI
+    Connection Management Fundamentals
+    Advanced Connection Types
+    Network Configuration Strategies
+    Troubleshooting and Diagnostics
+    Security and Performance Optimization
+    Scripting and Automation
+    Appendices
+
+
+
+
+
+Locations
+
+    /etc/sysconfig/network-scripts
+    /etc/hosts
+
+
+
+
+Network Configuration File
+
+    /etc/sysconfig/network-scripts/ifcfg-<name>
+
+
+ifcfg File
+
+Static                  Dynamic                 Either
+BootProto=none          BootProto=DHCP          Device=eth0
+ipaddr0=172.25.x.10                             name="system eth0"
+prefix0=24                                      onboot=yes
+Gateway0=172.25.x.254                           UUID=mac
+defrout=yes                                     userctl=yes
+DNS=172.25.253.253
+
+
+
+
+
+
+1. Introduction to NMCLI
+
+
+NMCLI is the command-line interface for NetworkManager, providing:
+
+    Comprehensive network configuration management
+    Flexible connection type handling
+    Advanced scripting capabilities
+    Granular network diagnostics
+
+
+
+
+Network Management Ecosystem Breakdown
+plaintext
+
++------------------+
+| Linux Kernel     |
++------------------+
+        |
+        v
++------------------+
+| NetworkManager   |
++------------------+
+        |
+        v
++------------------+
+| NMCLI Interface  |
++------------------+
+        |
+        v
++------------------+
+| Network Devices  |
+| & Connections    |
++------------------+
+
+
+
+
+
+
+
+
+
+
+Core Command Structure
+
+NMCLI commands follow a consistent pattern:
+
+nmcli [OPTIONS] OBJECT { COMMAND | help }
+
+Key Object Types
+
+    connection: Manage network connections
+    device: Manage network interfaces
+    general: System-wide network management
+    radio: Wireless interface controls
+
+
+
+
+
+
+2. Connection Management Fundamentals
+Connection Viewing and Inspection
+
+Detailed Connection Listing
+
+# Comprehensive connection overview
+nmcli connection show
+
+# Filtered connection view
+nmcli -f NAME,UUID,TYPE,DEVICE connection show
+
+# Active connections
+nmcli connection show --active
+
+Connection Creation Strategies
+Ethernet Connection Example
+sh
+
+# Basic static IP configuration
+nmcli connection add type ethernet \
+    con-name "Office-Network" \
+    ifname eth0 \
+    ipv4.method manual \
+    ipv4.addresses "192.168.1.100/24" \
+    ipv4.gateway "192.168.1.1" \
+    ipv4.dns "8.8.8.8,1.1.1.1"
+
+Reasoning Behind Configuration:
+
+    con-name: Provides a human-readable identifier
+    ifname: Specifies the physical network interface
+    ipv4.method manual: Uses static IP configuration
+    ipv4.addresses: Sets IP address and subnet
+    ipv4.gateway: Defines network gateway
+    ipv4.dns: Configures DNS servers
+
+
+
+
+
+
+
+
+
+3. Advanced Connection Types
+Wireless Network Configuration
+Enterprise WiFi Connection
+# Complex WiFi setup with WPA2-Enterprise
+nmcli connection add type wifi \
+    con-name "Corporate-WiFi" \
+    ifname wlan0 \
+    ssid "CompanyNetwork" \
+    wifi-sec.key-mgmt WPA-EAP \
+    802-1x.eap PEAP \
+    802-1x.phase2-auth MSCHAPV2 \
+    802-1x.identity "username" \
+    802-1x.password "secure_password"
+
+Network Bonding Configuration
+Failover Bond Setup
+# Create network bond for high availability
+nmcli connection add type bond \
+    con-name "HA-Network-Bond" \
+    ifname bond0 \
+    bond.mode active-backup \
+    bond.miimon 100
+
+# Add slave interfaces to bond
+nmcli connection add type ethernet \
+    con-name "Bond-Slave-eth0" \
+    ifname eth0 \
+    master bond0 \
+    slave-type bond
+
+nmcli connection add type ethernet \
+    con-name "Bond-Slave-eth1" \
+    ifname eth1 \
+    master bond0 \
+    slave-type bond
+
+VLAN Configuration
+VLAN Interface Creation
+# Create VLAN interface
+nmcli connection add type vlan \
+    con-name "Production-VLAN" \
+    dev eth0 \
+    id 100 \
+    ipv4.method manual \
+    ipv4.addresses "192.168.100.10/24"
+
+
+
+
+
+
+
+
+
+
+
+
+4. Troubleshooting Workflow
+Detailed Connection Troubleshooting Flowchart
+plaintext
+
+[Start Troubleshooting]
+        |
+        v
++-------------------+
+| Check Connection  | → Verify connection status
+| Overall Status    | `nmcli connection show`
++-------------------+
+        |
+        v
++-------------------+
+| Inspect Network   | → Analyze device connectivity
+| Device Status     | `nmcli device status`
++-------------------+
+        |
+        v
++-------------------+
+| Examine Connection| → Detailed connection info
+| Details           | `nmcli connection show <name>`
++-------------------+
+        |
+        v
++-------------------+
+| Check Network     | → Validate network parameters
+| Configuration     | `nmcli connection show <name>`
++-------------------+
+        |
+        v
++-------------------+
+| Review System     | → Investigate system logs
+| Logs              | `journalctl -u NetworkManager`
++-------------------+
+        |
+        v
+[Identify and Resolve Issue]
+
+Common Error Scenarios and Solutions
+Error Handling Matrix
+
+Error Type: Connection Failure
+
+    Symptoms: No IP assigned
+    Diagnostic Command: nmcli connection show
+
+Error Type: DNS Resolution
+
+    Symptoms: Unable to resolve hostnames
+    Diagnostic Command: nmcli device show
+
+Error Type: No Carrier
+
+    Symptoms: Physical link down
+    Diagnostic Command: nmcli device status
+
+
+
+
+
+
+
+
+5. Security and Performance Optimization
+Security Hardening Techniques
+# Disable MAC address randomization
+nmcli connection modify "Secure-Connection" \
+    802-11-wireless.mac-address-randomization never
+
+# Set strict connection permissions
+nmcli connection modify "Restricted-Network" \
+    connection.permissions user:adminuser
+
+
+
+Performance Tuning-
+
+
+# Optimize network interface MTU
+nmcli connection modify "High-Performance-Net" \
+    802-3-ethernet.mtu 9000
+
+# Configure Quality of Service
+nmcli connection modify "QoS-Enabled" \
+    802-3-ethernet.qos-enable yes
+
+6. Scripting and Automation
+Robust Network Configuration Script
+#!/bin/bash
+# Automated Network Configuration Management
+
+NETWORK_CONFIGS=(
+    "Home:wifi:HomeSSID:password123"
+    "Work:ethernet:static:192.168.1.100/24"
+    "VPN:vpn:/path/to/vpn/config"
+)
+
+configure_network() {
+    local name="$1"
+    local type="$2"
+    local details="$3"
+
+    case "$type" in
+        wifi)
+            nmcli device wifi connect "$details"
+            ;;
+        ethernet)
+            nmcli connection add type ethernet \
+                con-name "$name" \
+                ipv4.method manual \
+                ipv4.addresses "$details"
+            ;;
+        vpn)
+            nmcli connection import type openvpn file "$details"
+            ;;
+        *)
+            echo "Unsupported network type: $type"
+            ;;
+    esac
+}
+
+# Process each network configuration
+for config in "${NETWORK_CONFIGS[@]}"; do
+    IFS=':' read -r name type details <<< "$config"
+    configure_network "$name" "$type" "$details"
+done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----General Commands----
+
+
+Show Network Status
+nmcli general status
+# Displays the overall status of NetworkManager.
+
+
+Get Network Devices
+nmcli device status
+# Lists all network devices and their states.
+
+
+
+Connection Management
+List All Connections
+nmcli connection show
+# Displays all network connections.
+
+
+Show Active Connections
+nmcli connection show --active
+# Lists only the active network connections.
+
+
+Add a New Ethernet Connection
+nmcli connection add type ethernet con-name "New-Ethernet" ifname eth0
+# Adds a new Ethernet connection.
+
+
+Add a WiFi Connection
+nmcli device wifi connect "SSID" password "password"
+# Connects to a WiFi network with the given SSID and password.
+
+
+Modify an Existing Connection
+nmcli connection modify "Connection-Name" \
+    ipv4.method manual \
+    ipv4.addresses "192.168.1.100/24" \
+    ipv4.gateway "192.168.1.1"
+# Modifies an existing connection with a static IP configuration.
+
+
+Up a Connection
+nmcli connection up "Connection-Name"
+# Activates a specific network connection.
+
+Down a Connection
+nmcli connection down "Connection-Name"
+# Deactivates a specific network connection.
+
+Delete a Connection
+nmcli connection delete "Connection-Name"
+# Deletes a specific network connection.
+
+Clone a Connection
+nmcli connection clone "Source-Connection-Name" "New-Connection-Name"
+# Clones an existing network connection.
+
+Reload NetworkManager Configuration
+nmcli connection reload
+# Reloads NetworkManager's configuration files.
+
+Monitor Connection Changes
+nmcli monitor
+# Monitors and displays changes in network connections.
+
+
+
+
+
+
+-Device Management-
+Disconnect a Device
+nmcli device disconnect eth0
+# Disconnects a specific device.
+
+Re-connect a Device
+nmcli device connect eth0
+# Reconnects a specific device.
+
+Rescan WiFi Networks
+nmcli device wifi rescan
+# Rescans available WiFi networks.
+
+List Available WiFi Networks
+nmcli device wifi list
+# Lists available WiFi networks.
+
+Show Device Details
+nmcli device show eth0
+# Displays detailed information about a specific device.
+
+Change Device State
+nmcli device set eth0 managed yes
+# Changes the state of a device to managed or unmanaged.
+
+
+
+
+-Troubleshooting and Diagnostics-
+Check General Connectivity
+nmcli general connectivity
+# Checks the network connectivity status.
+
+Display Connection Logs
+nmcli general logging level INFO
+# Displays connection logs with INFO level.
+
+Ping a Host
+nmcli networking connectivity check
+# Pings a host to check connectivity.
+
+Verify DNS Configuration
+nmcli device show eth0 | grep IP4.DNS
+# Verifies the DNS configuration for a specific device.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----Security and Settings----
+
+Set Network Interface MTU
+nmcli connection modify "Connection-Name" 802-3-ethernet.mtu 1500
+# Sets the Maximum Transmission Unit (MTU) for a network interface.
+
+
+Disable MAC Address Randomization
+nmcli connection modify "Connection-Name" 802-11-wireless.mac-address-randomization never
+# Disables MAC address randomization for a WiFi connection.
+
+
+Set Static IP Address
+nmcli connection modify "Connection-Name" \
+    ipv4.addresses "192.168.1.100/24" \
+    ipv4.gateway "192.168.1.1"
+# Sets a static IP address for a network connection.
+
+
+Enable/Disable Networking
+nmcli networking on
+nmcli networking off
+# Enables or disables all networking.
+
+
+Enable/Disable WiFi
+nmcli radio wifi on
+nmcli radio wifi off
+# Enables or disables WiFi.
+
+
+Enable/Disable WWAN
+nmcli radio wwan on
+nmcli radio wwan off
+# Ena
+bles or disables WWAN (mobile broadband).
+
+Scripting and Automation
+Export Connection Configuration
+nmcli connection export "Connection-Name" /path/to/export.nmconnection
+# Exports a connection configuration to a file.
+
+
+Import Connection Configuration
+nmcli connection import type ethernet file /path/to/import.nmconnection
+# Imports a connection configuration from a file.
+
+
+Create a Script to Automate Network Configuration
+#!/bin/bash
+nmcli connection add type ethernet con-name "Automated-Config" ifname eth0
+nmcli connection modify "Automated-Config" \
+    ipv4.method manual \
+    ipv4.addresses "192.168.1.200/24" \
+    ipv4.gateway "192.168.1.1"
+nmcli connection up "Automated-Config"
+
+
+
+
+Schedule a Network Restart
+echo "nmcli networking off && sleep 10 && nmcli networking on" | at 2:00 AM
+# Schedules a network restart at 2:00 AM.
+
+
+Check NetworkManager Version
+nmcli -v
+# Checks the version of NetworkManager.
+
+
+Set Connection Permissions
+nmcli connection modify "Connection-Name" connection.permissions user:username
+# Sets permissions for a network connection.
+
+
+Enable IPv6
+nmcli connection modify "Connection-Name" ipv6.method auto
+# Enables IPv6 for a network connection.
+
+
+Disable IPv6
+nmcli connection modify "Connection-Name" ipv6.method ignore
+# Disables IPv6 for a network connection.
+
+
+Set DNS Servers
+nmcli connection modify "Connection-Name" ipv4.dns "8.8.8.8,8.8.4.4"
+# Sets DNS servers for a network connection.
+
+
+Enable Autoconnect
+nmcli connection modify "Connection-Name" connection.autoconnect yes
+# Enables autoconnect for a network connection.
+
+
+Disable Autoconnect
+nmcli connection modify "Connection-Name" connection.autoconnect no
+# Disables autoconnect for a network connection.
+
+
+Set Connection Priority
+nmcli connection modify "Connection-Name" connection.autoconnect-priority 10
+# Sets the priority for a network connection.
+
+
+Show Device Statistics
+nmcli device show eth0
+# Displays statistics for a specific device.
+
+
+Restart NetworkManager
+sudo systemctl restart NetworkManager
+# Restarts the NetworkManager service.
+
+
+Check NetworkManager Status
+sudo systemctl status NetworkManager
+# Checks the status of the NetworkManager service.
+
+
+Enable NetworkManager Logging
+nmcli general logging level DEBUG
+# Enables DEBUG level logging for NetworkManager.
+
+
+Disable NetworkManager Logging
+nmcli general logging level OFF
+# Disables logging for NetworkManager.
+
+
+Add a Bridge Connection
+nmcli connection add type bridge con-name "Bridge-Connection" ifname br0
+# Adds a new bridge connection.
+
+
+Add a Bridge Slave
+nmcli connection add type ethernet con-name "Bridge-Slave" ifname eth0 master br0
+# Adds an ethernet device as a slave to a bridge connection.
+
+
+Show NetworkManager Configuration
+nmcli general show
+# Displays the current NetworkManager configuration.
+
+
+List All Available Commands
+nmcli -h
+# Lists all available NMCLI commands and help options.
+
+
+
+
