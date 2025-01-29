@@ -11,17 +11,30 @@ Order of operations:
 
 
 LinuxFileStructure.txt
+
 ConsoleCommands.txt
+
 grepSearch.txt
+
 vimprofessional.txt
+
 UsersGroups.txt
+
 fileAccess.txt
+
 howtouseGIT.txt
+
 lvm.txt
+
 FTP.txt
+
 samba.txt
+
 apachedoc.txt
+
 Nginx.txt
+
 kvm.txt
+
 quickEmu.txt
 
