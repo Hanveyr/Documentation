@@ -7,7 +7,7 @@ With the intent to pass the LFCS, RHCSA, and RHCE exams.
 
 
 
-Order of operations:
+---Order of operations---
 
 
 
