@@ -1,8 +1,9 @@
 -Certified Linux Administrators-
 
-Here is a hands on comprehensive guides with step by step instructions for learning each file topic name. 
+Here is a hands on comprehensive guide with step by step instructions for learning each file topic name. 
 
 With the intent to pass the LFCS, RHCSA, and RHCE exams.
+
 
 
 
