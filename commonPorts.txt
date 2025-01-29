@@ -1,0 +1,666 @@
+-Introduction-
+
+Network ports are numerical identifiers in TCP/IP networking used to route traffic to the correct application on a server. Ports are divided into three ranges:
+
+    Well-Known Ports (0-1023): Assigned to commonly used services and protocols.
+    Registered Ports (1024-49151): Assigned to user processes or applications.
+    Dynamic or Private Ports (49152-65535): Used for ephemeral purposes and are not assigned to any specific service.
+
+
+
+-Security Notes-
+
+Including brief security considerations can make the document more valuable.
+
+    Port 23: Telnet
+        Security Note: Telnet transmits data in plaintext and is considered insecure; SSH (Port 22) is recommended instead.
+
+    Port 69: TFTP
+        Security Note: Lacks authentication; use with caution.
+
+
+
+
+-Group Similar Services-
+
+Organize ports by service categories to enhance readability.
+
+    Email Services:
+        Ports 25 (SMTP), 110 (POP3), 143 (IMAP), 465 (SMTPS), 587 (SMTP Submission), 993 (IMAPS), 995 (POP3S)
+
+    Web Services:
+        Ports 80 (HTTP), 81 (Alternate HTTP), 443 (HTTPS), 8080 (HTTP Alternate), 8443 (HTTPS Alternate)
+
+    Database Services:
+        Ports 1433 (Microsoft SQL Server), 1521 (Oracle), 3306 (MySQL), 5432 (PostgreSQL), 27017 (MongoDB)
+
+
+
+
+-Dynamic Ports Explanation-
+
+While you've mentioned that dynamic ports are used for ephemeral connections, adding that certain applications may use specific dynamic ports can provide additional clarity.
+
+    Port 49152-65535: Used by operating systems to assign ephemeral ports for outbound connections and by certain applications for specific services.
+
+
+
+
+
+
+
+---Port List---
+
+-Well-Known Ports- (0-1023)
+
+    Port 0: Reserved port, typically used to indicate an invalid or unspecified port. Not used in practice for network communication.
+    Port 1: TCP Port Service Multiplexer (TCPMUX). Rarely used, but can be used as a testing service.
+    Port 2: CompressNET Management Utility. Used for network compression processes.
+    Port 3: CompressNET Compression Process. Another port related to network compression.
+    Port 5: RJE (Remote Job Entry). Used for remote job entry applications.
+    Port 7: Echo. Used for testing and debugging.
+    Port 9: Discard Protocol. Used for testing and debugging; discards any incoming data.
+    Port 11: SYSTAT. Lists connected users (less common today).
+    Port 13: Daytime Protocol. Returns the current date and time.
+    Port 15: NETSTAT. Used to display network statistics (deprecated).
+    Port 17: Quote of the Day (QOTD). Returns a random quote.
+    Port 18: Message Send Protocol. Used for sending messages; not commonly used now.
+    Port 19: Chargen (Character Generator). Used for testing and debugging.
+    Port 20: FTP Data Transfer. Used for transferring data in FTP (File Transfer Protocol).
+    Port 21: FTP Control. Used for controlling FTP sessions.
+    Port 22: SSH (Secure Shell). Used for secure remote login and other secure network services.
+    Port 23: Telnet. Used for unencrypted text communications (deprecated in favor of SSH).
+    Port 25: SMTP (Simple Mail Transfer Protocol). Used for email transmission.
+    Port 37: Time Protocol. Synchronizes time across systems (superseded by NTP).
+    Port 42: WINS (Windows Internet Name Service). Used for name registration and resolution.
+    Port 49: TACACS (Terminal Access Controller Access-Control System). Used for authentication, authorization, and accounting services.
+    Port 53: DNS (Domain Name System). Used for resolving domain names to IP addresses.
+    Port 67: DHCP Server. Used by servers to assign IP addresses to clients.
+    Port 68: DHCP Client. Used by clients to receive IP address assignment from servers.
+    Port 69: TFTP (Trivial File Transfer Protocol). Used for simple, unsecured file transfers.
+    Port 70: Gopher Protocol. An early distributed document search and retrieval network protocol.
+    Port 79: Finger Protocol. Provides information about users on a network.
+    Port 80: HTTP (HyperText Transfer Protocol). Used for web traffic.
+    Port 81: Torpark—Onion Routing. Alternate HTTP port used by Tor.
+    Port 88: Kerberos. Used for network authentication.
+    Port 101: HOSTNAME. Lists the hostname of a network device.
+    Port 102: ISO-TSAP (Transport Service Access Point). Used in ISO protocols.
+    Port 109: POP2 (Post Office Protocol version 2). Used for retrieving emails from a server (obsolete).
+    Port 110: POP3 (Post Office Protocol version 3). Used for retrieving emails from a server.
+    Port 111: RPCbind / Portmapper. Used in Unix systems for RPC (Remote Procedure Call) services.
+    Port 113: Ident Protocol. Used to identify the user of a TCP connection.
+    Port 119: NNTP (Network News Transfer Protocol). Used for reading and posting Usenet articles.
+    Port 123: NTP (Network Time Protocol). Used for clock synchronization between computer systems.
+    Port 135: Microsoft RPC (Remote Procedure Call). Used for service control manager.
+    Port 137: NetBIOS Name Service. Used for name registration and resolution.
+    Port 138: NetBIOS Datagram Service. Used for connectionless communication.
+    Port 139: NetBIOS Session Service. Used for connection-oriented communication.
+    Port 143: IMAP (Internet Message Access Protocol). Used for retrieving and storing emails on a server.
+    Port 161: SNMP (Simple Network Management Protocol). Used for network management.
+    Port 162: SNMPTRAP. Used for traps and alerts.
+    Port 177: XDMCP (X Display Manager Control Protocol). Used for remote desktop sessions.
+    Port 179: BGP (Border Gateway Protocol). Essential for internet routing between autonomous systems.
+    Port 194: IRC (Internet Relay Chat). Used for real-time text communication.
+    Port 389: LDAP (Lightweight Directory Access Protocol). Used for directory services.
+    Port 427: SLP (Service Location Protocol). Used for service discovery.
+    Port 443: HTTPS (HyperText Transfer Protocol Secure). Used for secure web traffic.
+    Port 445: Microsoft-DS (Directory Services). Used for file sharing and other services in Windows networks.
+    Port 465: SMTPS (Simple Mail Transfer Protocol Secure). Used for secure email transmission.
+    Port 500: ISAKMP/IKE (Internet Security Association and Key Management Protocol). Used for VPN tunnels with IPSec.
+    Port 512: exec. Used for remote process execution (unsecured).
+    Port 513: Login. Used for remote login (unsecured; superseded by SSH).
+    Port 514: Syslog and rsh (Remote Shell). Syslog is used for logging; rsh is another remote shell protocol.
+    Port 515: LPR/LPD (Line Printer Remote/Line Printer Daemon). Used for printing services.
+    Port 520: RIP (Routing Information Protocol). Used for interior gateway routing.
+    Port 554: RTSP (Real Time Streaming Protocol). Used for controlling streaming media sessions.
+    Port 587: SMTP (Mail Submission). Used for email message submission.
+    Port 631: CUPS (Common Unix Printing System). Used for printing services.
+    Port 636: LDAPS (Lightweight Directory Access Protocol over SSL). Used for secure directory services.
+    Port 873: Rsync. Used for file synchronization and transfer.
+    Port 989: FTPS (File Transfer Protocol Secure) Data. Used for secure file transfers.
+    Port 990: FTPS Control. Used for secure file transfers.
+    Port 992: Telnet over TLS/SSL. Secure version of Telnet.
+    Port 993: IMAPS (Internet Message Access Protocol Secure). Used for secure email retrieval and storage.
+    Port 995: POP3S (Post Office Protocol 3 Secure). Used for secure email retrieval.
+
+
+-Registered Ports- (1024-49151)
+
+    Port 1080: SOCKS Proxy. Used for proxy services.
+    Port 1194: OpenVPN. Used for secure VPN connections.
+    Port 1433: Microsoft SQL Server. Used for database services.
+    Port 1434: Microsoft SQL Server Monitoring. Used for SQL monitoring.
+    Port 1521: Oracle Database. Used for Oracle database services.
+    Port 1701: L2TP (Layer 2 Tunneling Protocol). Used in VPN implementations.
+    Port 1720: H.323. Used for voice and video communications.
+    Port 1723: PPTP (Point-to-Point Tunneling Protocol). Used for VPNs.
+    Port 1812-1813: RADIUS Protocol. Used for authentication (1812) and accounting (1813).
+    Port 1883: MQTT (Message Queuing Telemetry Transport). Used for lightweight messaging.
+    Port 2049: NFS (Network File System). Used for file sharing over a network.
+    Port 2082: cPanel. Used for cPanel web hosting control panel.
+    Port 2083: cPanel (SSL). Used for secure cPanel web hosting control panel.
+    Port 2483-2484: Oracle Database Ports. For TCP and TCPS.
+    Port 2947: GPSD. Used for GPS devices.
+    Port 3128: Squid Proxy. Used for web proxy services.
+    Port 3260: iSCSI Target. Used in storage area networks.
+    Port 3306: MySQL. Used for MySQL database services.
+    Port 3389: RDP (Remote Desktop Protocol). Used for remote desktop access.
+    Port 3690: Subversion. Used for version control.
+    Port 4000: ICQ. Used for instant messaging.
+    Port 4444: Metasploit. Used for security testing.
+    Port 4500: NAT-T (NAT Traversal for IPSec). Used in VPNs.
+    Port 4569: IAX2 (Inter-Asterisk eXchange protocol). Used for VoIP.
+    Port 5000: Flask / UPnP. Used for Python web development and Universal Plug and Play.
+    Port 5060-5061: SIP (Session Initiation Protocol). 5060 for unsecured; 5061 for TLS-encrypted sessions.
+    Port 5432: PostgreSQL. Used for PostgreSQL database services.
+    Port 5433: Alternate PostgreSQL. Used if 5432 is unavailable.
+    Port 5672: AMQP (Advanced Message Queuing Protocol). Used for message-oriented middleware.
+    Port 5900-5903: VNC. Used for remote desktop access.
+    Port 5984: CouchDB. Used for database services.
+    Port 5985-5986: Windows Remote Management. 5985 for HTTP; 5986 for HTTPS.
+    Port 6000-6063: X11. Used for X Window System.
+    Port 6379: Redis. Used for in-memory data structure store.
+    Port 6660-6669, 7000: IRC. Additional ports used for IRC networks.
+    Port 8000: HTTP Alternate. Used for alternative web traffic.
+    Port 8009: AJP13 (Apache JServ Protocol). Used in Tomcat for communication between web server and application server.
+    Port 8080: HTTP Proxy. Used as an alternative HTTP port.
+    Port 8086: InfluxDB. Used for time-series databases.
+    Port 8088: Asterisk Management Interface. Used for VoIP management.
+    Port 8140: Puppet Master. Used for configuration management.
+    Port 8443: HTTPS Proxy. Used for secure HTTP proxy services.
+    Port 9000: SonarQube / PHP-FPM. Used for code analysis and PHP FastCGI Process Manager.
+    Port 9092: Apache Kafka. Used for message brokering.
+    Port 9200-9201: Elasticsearch.
+    Port 10000: Webmin. Used for web-based management of Unix systems.
+    Port 11211: Memcached.
+    Port 15672: RabbitMQ Management. Used for message queuing.
+    Port 25565: Minecraft Server. Used for hosting Minecraft game servers.
+    Port 27017-27018: MongoDB. Used for database services.
+    Port 37777: Dahua DVR Remote Protocol. Used in some DVR systems.
+
+-Dynamic or Private Ports- (49152-65535)
+
+These ports are assigned dynamically when needed and are not associated with any specific service. They are used for client-side communication and ephemeral connections.
+
+
+
+
+
+
+
+
+
+
+
+
+-Additional Common Ports-
+
+While your list is extensive, adding the following commonly used ports would enhance completeness:
+
+    Port 161/162: SNMP and SNMPTRAP
+        Port 161: Used by SNMP agents for network management.
+        Port 162: Used for receiving SNMP trap messages.
+
+    Port 636: LDAPS (LDAP over SSL)
+        Secure version of LDAP for directory services.
+
+    Port 853: DNS over TLS
+        Used for encrypted DNS queries to enhance privacy and security.
+
+    Port 993: IMAPS
+        Already included; ensure it's accurately described as secure IMAP over SSL/TLS.
+
+    Port 1812/1813: RADIUS Protocol
+        Port 1812: Used for authentication and authorization.
+        Port 1813: Used for accounting purposes.
+
+    Port 3268/3269: Global Catalog Service
+        Port 3268: Global Catalog over LDAP.
+        Port 3269: Global Catalog over LDAPS.
+
+    Port 5353: mDNS (Multicast DNS)
+        Used in local networks for name resolution without a DNS server.
+
+    Port 5938: TeamViewer
+        Used for remote desktop access via TeamViewer.
+
+
+
+
+
+
+-Security-Critical Ports-
+
+    Port 853: DNS over TLS
+        Security Note: Encrypts DNS queries to prevent eavesdropping and manipulation.
+
+    Port 1812/1813: RADIUS Protocol
+        Authentication (1812): Validates user credentials.
+        Accounting (1813): Tracks user session information.
+
+    Port 3268/3269: Global Catalog Service
+        Port 3268: Global Catalog over LDAP.
+        Port 3269: Global Catalog over LDAPS.
+
+
+
+
+
+
+-Emerging and Specialized Ports-
+
+    Port 5353: mDNS (Multicast DNS)
+        Local network name resolution without centralized DNS server.
+
+    Port 5938: TeamViewer
+        Remote desktop access and collaboration platform.
+
+
+
+-Emerging Network Technology Considerations-
+
+    Increasing use of encrypted protocols:
+        Example: QUIC protocol by Google, replacing traditional TCP with built-in encryption.
+        TLS 1.3 becoming standard for secure communication.
+        End-to-end encryption in messaging apps like Signal and WhatsApp.
+
+    Growth of IoT device communication:
+        Smart home devices using specialized IoT protocols like MQTT.
+        Industrial IoT using secure 6LoWPAN networks.
+        Zigbee and Z-Wave protocols for low-power device communication.
+
+    Rising importance of secure, dynamic port allocation:
+        Adaptive firewall technologies.
+        Dynamic port mapping in NAT environments.
+        Cloud-native applications using ephemeral port strategies.
+
+    Potential expansion of port ranges for future technologies:
+        Discussions about extending beyond 65,535 port limit.
+        Software-defined networking (SDN) allowing more flexible port management.
+
+
+
+-Security Trend Indicators-
+
+    Shift from plaintext to encrypted protocols:
+        SSH replacing Telnet.
+        HTTPS becoming default over HTTP.
+        Encrypted DNS (DoT and DoH) replacing traditional DNS.
+
+    Preference for authenticated connection methods:
+        Multi-factor authentication becoming standard.
+        Zero-trust network architectures.
+        Biometric and token-based authentication.
+
+    Growing use of TLS/SSL across services:
+        Let's Encrypt providing free SSL certificates.
+        Mandatory HTTPS for web services.
+        TLS 1.3 reducing connection setup time.
+
+Future Port Allocation Predictions:
+
+    Potential expansion beyond current 65,535 port limit:
+        IPv6 potentially allowing larger port space.
+        Software-defined networking technologies.
+        Quantum computing network architectures.
+
+    Increased allocation for secure, encrypted communication channels:
+        Dedicated ports for quantum-resistant encryption.
+        Specialized ports for blockchain and decentralized technologies.
+        Enhanced privacy-focused communication protocols.
+
+    More ports dedicated to IoT and edge computing technologies:
+        Specialized ports for 5G and future cellular technologies.
+        Low-power network communication protocols.
+        Edge computing service discovery mechanisms.
+
+Emerging Protocol Trends:
+
+    Quantum-resistant encryption protocols:
+        NIST-standardized post-quantum cryptographic algorithms.
+        Lattice-based cryptography.
+        Code-based encryption methods.
+
+    Enhanced privacy-focused communication methods:
+        Decentralized identity protocols.
+        Zero-knowledge proof technologies.
+        Homomorphic encryption techniques.
+
+    Decentralized network communication strategies:
+        Blockchain-based secure communication.
+        Peer-to-peer encryption protocols.
+        Distributed trust mechanisms.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Identification and Testing
+
+netstat -tuln
+# Displays open ports and the services using them.
+
+ss -tuln
+# Shows open ports using the ss command.
+
+lsof -i
+# Lists open files and network connections.
+
+nmap -sT <target>
+# Performs a TCP connect scan.
+
+nmap -sU <target>
+# Performs a UDP scan.
+
+telnet <host> <port>
+# Tests connectivity to a specified port.
+
+nc -zv <host> <port>
+# Uses netcat to scan a specific port.
+
+hping3 -S <host> -p <port>
+# Tests network performance and port scanning.
+
+ncat --exec /bin/bash -l <port>
+# Sets up a simple TCP server.
+
+netcat -l -p <port>
+# Listens on a specific port.
+
+
+
+
+
+
+
+Locating Services and Processes
+ps -aux | grep <process>
+# Finds a specific process.
+
+pidof <service>
+# Gets the process ID of a service.
+
+fuser <port>/tcp
+# Identifies the process using a specific TCP port.
+
+fuser <port>/udp
+# Identifies the process using a specific UDP port.
+
+systemctl list-units --type=service
+# Lists all active services.
+
+netstat -tulnp
+# Shows services listening on ports with process details.
+
+ss -tulnp
+# Displays socket statistics with process details.
+
+sudo lsof -iTCP -sTCP:LISTEN -P
+# Lists listening TCP ports with associated processes.
+
+sudo netstat -plnt
+# Shows listening TCP ports and their owning processes.
+
+ps -ef | grep <service>
+# Finds a service process by name.
+
+
+
+
+Controlling and Managing Ports
+iptables -L
+# Lists current iptables rules.
+
+iptables -A INPUT -p tcp --dport <port> -j ACCEPT
+# Opens a specific port.
+
+iptables -A INPUT -p tcp --dport <port> -j DROP
+# Closes a specific port.
+
+ufw allow <port>/tcp
+# Allows traffic on a specific TCP port using ufw.
+
+ufw deny <port>/tcp
+# Denies traffic on a specific TCP port using ufw.
+
+firewalld-cmd --zone=public --add-port=<port>/tcp
+# Opens a specific port using Firewalld.
+
+firewalld-cmd --zone=public --remove-port=<port>/tcp
+# Closes a specific port using Firewalld.
+
+firewalld-cmd --zone=public --add-service=<service>
+# Allows a specific service using Firewalld.
+
+firewalld-cmd --zone=public --remove-service=<service>
+# Disallows a specific service using Firewalld.
+
+sudo iptables -A INPUT -p tcp --dport <port> -j REJECT
+# Rejects traffic on a specific TCP port.
+
+
+
+Monitoring and Logging
+tcpdump -i <interface> port <port>
+# Captures network traffic on a specific port.
+
+ngrep -d <interface> port <port>
+# Network grep tool for capturing and displaying packets.
+
+tshark -i <interface> port <port>
+# Wireshark CLI tool for capturing traffic.
+
+iftop -i <interface>
+# Displays bandwidth usage on an interface.
+
+vnstat -l -i <interface>
+# Monitors network traffic in real-time.
+
+sudo journalctl -u <service>
+# Views logs for a specific service.
+
+sudo tail -f /var/log/syslog
+# Monitors system logs in real-time.
+
+dmesg | grep <service>
+# Shows kernel logs related to a specific service.
+
+sudo netstat -anp | grep <port>
+# Finds specific port usage and associated processes.
+
+sudo iptables -L -v -n
+# Lists iptables rules with verbose output.
+
+
+
+
+
+
+
+Configuration and Debugging
+sudo systemctl restart <service>
+# Restarts a service.
+
+sudo systemctl stop <service>
+# Stops a service.
+
+sudo systemctl start <service>
+# Starts a service.
+
+sudo systemctl enable <service>
+# Enables a service to start on boot.
+
+sudo systemctl disable <service>
+# Disables a service from starting on boot.
+
+sudo systemctl status <service>
+# Checks the status of a service.
+
+sudo systemctl daemon-reload
+# Reloads systemd manager configuration.
+
+sudo service <service> restart
+# Restarts a service (alternative command).
+
+sudo update-rc.d <service> defaults
+# Manages service symlinks in runlevel directories.
+
+sudo chkconfig <service> on
+# Updates the list into a single text file.
+
+
+
+
+
+
+Additional Commonly Used Commands to Manage Ports on Linux
+ss -plunt
+# Displays all listening ports with the associated process.
+
+nmap -Pn <target>
+# Performs a ping scan to discover live hosts.
+
+sudo ufw status
+# Shows the status of the ufw firewall.
+
+sudo ufw enable
+# Enables the ufw firewall.
+
+sudo ufw disable
+# Disables the ufw firewall.
+
+firewalld-cmd --list-all
+# Lists all active firewalld rules.
+
+firewalld-cmd --reload
+# Reloads firewalld rules.
+
+sudo iptables -F
+# Flushes all iptables rules.
+
+sudo iptables-save
+# Saves the current iptables rules to a file.
+
+sudo iptables-restore
+# Restores iptables rules from a file.
+
+nmap -p- <target>
+# Scans all 65535 ports on the target.
+
+netstat -s
+# Displays network statistics.
+
+ifconfig
+# Configures network interfaces.
+
+ip a
+# Shows all IP addresses on the system.
+
+ip link set <interface> up
+# Brings a network interface up.
+
+ip link set <interface
+
+
+
+
+
+
+
+Additional Commands
+
+firewalld-cmd --zone=public --list-ports
+# Lists all open ports in the public zone.
+
+nmap -A <target>
+# Performs an aggressive scan that includes OS detection, version detection, script scanning, and traceroute.
+
+nc -l <port>
+# Sets up a listening netcat server without specifying the protocol.
+
+sudo ufw status numbered
+# Shows the status of the ufw firewall with rule numbers for easy editing.
+
+sudo ufw delete <rule-number>
+# Deletes a specific ufw rule by its number.
+
+iptables -S
+# Displays all iptables rules in a format that can be easily edited and re-applied.
+
+sudo systemctl reload <service>
+# Reloads a service's configuration without restarting it.
+
+sudo ufw logging on
+# Enables logging for ufw to help diagnose issues.
+
+netstat -an
+# Displays all active connections and listening ports without resolving names.
+
+ip route add <destination> via <gateway>
+# Adds a static route to the routing table.
+
+
+
+
+
+
+# Lists current iptables rules
+iptables -L
+
+# Opens a specific TCP port (e.g., port 8080)
+iptables -A INPUT -p tcp --dport 8080 -j ACCEPT
+
+# Closes a specific TCP port (e.g., port 8080)
+iptables -A INPUT -p tcp --dport 8080 -j DROP
+
+# Allows traffic on a specific TCP port using ufw (e.g., port 8080)
+ufw allow 8080/tcp
+
+# Denies traffic on a specific TCP port using ufw (e.g., port 8080)
+ufw deny 8080/tcp
+
+# Opens a specific TCP port using Firewalld (e.g., port 8080)
+firewalld-cmd --zone=public --add-port=8080/tcp
+
+# Closes a specific TCP port using Firewalld (e.g., port 8080)
+firewalld-cmd --zone=public --remove-port=8080/tcp
+
+# Allows a specific service using Firewalld (e.g., HTTP service)
+firewalld-cmd --zone=public --add-service=http
+
+# Disallows a specific service using Firewalld (e.g., HTTP service)
+firewalld-cmd --zone=public --remove-service=http
+
+# Rejects traffic on a specific TCP port (e.g., port 8080)
+sudo iptables -A INPUT -p tcp --dport 8080 -j REJECT
+
+
+
+
+
+
+
+
+
+
+
+
