@@ -1,0 +1,465 @@
+—-Complete IPv4 Guide: Structure, Addressing, and Subnetting—-
+This document provides comprehensive information about IPv4 addressing, including binary structure, subnetting, special addresses, network calculations, common errors, and troubleshooting tips.
+-Table of Contents-
+
+Basic IPv4 Structure
+Address Classes
+Subnet Masks
+Binary Operations
+Special Addresses
+Network Calculations
+Common Subnets
+Address Planning
+Common Errors and Troubleshooting
+Practical Examples
+Visual Aids
+Basic IPv4 Structure
+
+
+IPv4 Format:
+
+Purpose: 32-bit address divided into four octets
+Structure: x.x.x.x where x is 0-255
+Example: 192.168.1.1
+Binary: 11000000.10101000.00000001.00000001
+
+
+Octet Breakdown:
+
+First Octet (192):
+
+Binary: 11000000
+Range: 0-255
+Position: Network portion
+
+
+Second Octet (168):
+
+Binary: 10101000
+Range: 0-255
+Position: Network portion
+
+
+Third Octet (1):
+
+Binary: 00000001
+Range: 0-255
+Position: Host portion
+
+
+Fourth Octet (1):
+
+Binary: 00000001
+Range: 0-255
+Position: Host portion
+
+
+
+
+Binary Position Values: 128  64  32  16  8  4  2  1
+Examples:
+
+192 = 128 + 64 = 11000000
+168 = 128 + 32 + 8 = 10101000
+1 = 1 = 00000001
+
+
+
+
+Address Classes
+
+
+Class A:
+
+First bit: 0
+Range: 0.0.0.0 to 127.255.255.255
+Default mask: 255.0.0.0 (/8)
+Format: Network.Host.Host.Host
+Example: 10.0.0.1
+
+
+Class B:
+
+First bits: 10
+Range: 128.0.0.0 to 191.255.255.255
+Default mask: 255.255.0.0 (/16)
+Format: Network.Network.Host.Host
+Example: 172.16.0.1
+
+
+Class C:
+
+First bits: 110
+Range: 192.0.0.0 to 223.255.255.255
+Default mask: 255.255.255.0 (/24)
+Format: Network.Network.Network.Host
+Example: 192.168.1.1
+
+
+Class D (Multicast):
+
+First bits: 1110
+Range: 224.0.0.0 to 239.255.255.255
+Purpose: Multicast traffic
+Example: 224.0.0.1 (All hosts multicast)
+
+
+Class E (Reserved):
+
+First bits: 1111
+Range: 240.0.0.0 to 255.255.255.255
+Purpose: Experimental use
+Example: 240.0.0.1
+
+
+Real-world example: A corporate network uses Class A (10.0.0.0/8) for its internal addressing, Class B (172.16.0.0/12) for branch offices, and Class C (192.168.1.0/24) for individual departments.
+
+
+Subnet Masks
+
+
+Purpose: Define network and host portions
+Format: Continuous 1s followed by 0s
+Common Masks:
+
+255.0.0.0 (/8):
+
+Binary: 11111111.00000000.00000000.00000000
+Use: Class A networks
+Hosts: 16,777,214
+
+
+255.255.0.0 (/16):
+
+Binary: 11111111.11111111.00000000.00000000
+Use: Class B networks
+Hosts: 65,534
+
+
+255.255.255.0 (/24):
+
+Binary: 11111111.11111111.11111111.00000000
+Use: Class C networks
+Hosts: 254
+
+
+
+
+CIDR Notation:
+
+/8 = 255.0.0.0
+/16 = 255.255.0.0
+/24 = 255.255.255.0
+/28 = 255.255.255.240
+
+
+
+
+Binary Operations
+
+
+AND Operation:
+
+Purpose: Find network address
+Process: IP AND Mask
+Example:
+
+IP:    192.168.1.1   (11000000.10101000.00000001.00000001)
+Mask:  255.255.255.0 (11111111.11111111.11111111.00000000)
+Net:   192.168.1.0   (11000000.10101000.00000001.00000000)
+
+
+
+
+NOT Operation:
+
+Purpose: Find wildcard mask
+Process: Invert subnet mask
+Example:
+
+Mask:     255.255.255.0 (11111111.11111111.11111111.00000000)
+Wildcard: 0.0.0.255     (00000000.00000000.00000000.11111111)
+
+
+
+
+OR Operation:
+
+Purpose: Find broadcast address
+Process: Network OR Wildcard
+Example:
+
+Net:      192.168.1.0   (11000000.10101000.00000001.00000000)
+Wildcard: 0.0.0.255     (00000000.00000000.00000000.11111111)
+Broad:    192.168.1.255 (11000000.10101000.00000001.11111111)
+
+
+
+
+
+
+Special Addresses
+
+
+Network Address:
+
+Purpose: Identifies network
+Format: First address in subnet
+Example: 192.168.1.0/24
+
+
+Broadcast Address:
+
+Purpose: Sends to all hosts
+Format: Last address in subnet
+Example: 192.168.1.255/24
+
+
+Localhost:
+
+Range: 127.0.0.0/8
+Common: 127.0.0.1
+Purpose: Local communications
+
+
+Private Ranges:
+
+10.0.0.0/8 (Class A):
+
+Range: 10.0.0.0 to 10.255.255.255
+Size: 16,777,214 hosts
+
+
+172.16.0.0/12 (Class B):
+
+Range: 172.16.0.0 to 172.31.255.255
+Size: 1,048,574 hosts
+
+
+192.168.0.0/16 (Class C):
+
+Range: 192.168.0.0 to 192.168.255.255
+Size: 65,534 hosts
+
+
+
+
+
+
+Network Calculations
+
+
+Network Address: IP AND Mask
+
+Example: 192.168.1.1/24 = 192.168.1.0
+
+
+Broadcast Address: Network OR Wildcard
+
+Example: 192.168.1.0/24 = 192.168.1.255
+
+
+Available Hosts: 2^(32-prefix) - 2
+
+Example: /24 = 2^8 - 2 = 254 hosts
+
+
+First Usable: Network address + 1
+
+Example: 192.168.1.0/24 = 192.168.1.1
+
+
+Last Usable: Broadcast address - 1
+
+Example: 192.168.1.255/24 = 192.168.1.254
+
+
+Number of Subnets: 2^(new bits)
+
+Example: /24 to /28 = 2^4 = 16 subnets
+
+
+
+
+Common Subnets
+
+
+/24 Network:
+
+Mask: 255.255.255.0
+Hosts: 254
+
+
+Subnets of /24:
+
+/25: 2 subnets, 126 hosts each
+/26: 4 subnets, 62 hosts each
+/27: 8 subnets, 30 hosts each
+/28: 16 subnets, 14 hosts each
+/29: 32 subnets, 6 hosts each
+/30: 64 subnets, 2 hosts each
+
+
+Subnet Sizes:
+
+/24: 256 addresses
+/25: 128 addresses
+/26: 64 addresses
+/27: 32 addresses
+/28: 16 addresses
+/29: 8 addresses
+/30: 4 addresses
+
+
+
+
+Address Planning
+
+
+Best Practices:
+
+Plan for growth
+Use appropriate size subnets
+Document allocations
+Leave room for expansion
+
+
+Planning Steps:
+
+Count required hosts
+Add 30% growth factor
+Choose appropriate mask
+Document assignments
+
+
+Example Plan:
+
+Department A: 100 hosts
+
+Subnet: /25 (126 hosts)
+Range: 192.168.1.0/25
+
+
+Department B: 50 hosts
+
+Subnet: /26 (62 hosts)
+Range: 192.168.1.128/26
+
+
+
+
+
+
+Common Errors and Troubleshooting
+
+
+Overlapping Subnets:
+
+Problem: Subnets share addresses
+Solution: Check subnet boundaries
+Example: 192.168.1.0/24 overlaps 192.168.1.128/25
+
+
+Mask Mismatch:
+
+Problem: Different masks on same network
+Solution: Standardize subnet masks
+Example: 255.255.255.0 vs 255.255.255.128
+
+
+Address Exhaustion:
+
+Problem: No available addresses
+Solution: Use smaller subnets or consolidate
+Example: Split /24 into /25s
+
+
+Duplicate IP Addresses:
+
+Problem: Two devices using same IP
+Solution: Reassign unique IP to one device
+Example: 192.168.1.10 used by two PCs
+
+
+Incorrect Subnet Mask:
+
+Problem: Wrong mask prevents communication
+Solution: Correct subnet mask on device
+Example: /24 used instead of /26
+
+
+Troubleshooting Tips:
+
+Verify physical connectivity
+Confirm IP address and mask
+Check default gateway
+Test with ping and traceroute
+Review switch/router configurations
+
+
+
+
+Practical Examples
+
+
+Example 1: Subnetting a Class C
+
+Given network: 192.168.1.0/24
+Requirement: 4 subnets with 50 hosts each
+Solution:
+a. 50 hosts require /26 subnet (62 hosts)
+b. Subnets created:
+
+192.168.1.0/26
+192.168.1.64/26
+192.168.1.128/26
+192.168.1.192/26
+
+
+
+
+Example 2: VLSM Network Design
+
+Given:
+
+172.16.0.0/16 network
+4 facilities with 500, 250, 120, 50 users
+
+
+Solution:
+a. Facility 1 (500): 172.16.0.0/23 (510 hosts)
+b. Facility 2 (250): 172.16.2.0/24 (254 hosts)
+c. Facility 3 (120): 172.16.3.0/25 (126 hosts)
+d. Facility 4 (50):  172.16.3.128/26 (62 hosts)
+
+
+
+
+Visual Aids
+
+
+[Diagram 1: IPv4 Address Structure]
+
+w.x.y.z
+
+w: Class bits
+x: Network
+y: Subnet
+z: Host
+
+
+
+
+[Flowchart 1: Subnet Calculations]
+
+IP Address AND Subnet Mask = Network Address
+Invert Mask = Wildcard Mask
+Network Address OR Wildcard Mask = Broadcast Address
+Network + 1 = First Usable
+Broadcast - 1 = Last Usable
+2^(32-prefix) - 2 = Available Hosts
+
+
+[Table 1: Common Subnet Sizes]
+
+PrefixMaskHosts/24255.255.255.0254/25255.255.255.128126/26255.255.255.19262/27255.255.255.22430/28255.255.255.24014/29255.255.255.2486/30255.255.255.2522
