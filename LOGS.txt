@@ -1,0 +1,1925 @@
+------Ultimate Guide to Checking System Logs for LFCS and RHCE Exams------
+
+
+
+
+This comprehensive guide covers everything you need to know about checking system logs for the LFCS and RHCE exams. It includes log locations, command examples, common practices, and troubleshooting tips to help you effectively view and scan logs in Linux.
+Ultimate Self-Assessment Scorecard
+
+
+
+
+
+Table of Contents-
+
+    Introduction
+        Importance of System Logs
+        Overview of Log Management
+    Log Locations
+        System Log Files
+        Application Log Files
+        Security Log Files
+        Comprehensive List of Log Files
+    Viewing and Scanning Logs
+        Basic Log Viewing Commands
+        Advanced Log Viewing Techniques
+        Filtering and Searching Logs
+        Manipulating and Inspecting Logs
+    Common Practices for Log Management
+        Log Rotation
+        Log Archiving
+        Log Monitoring
+    Troubleshooting with Logs
+        Identifying Common Issues
+        Using Logs for Debugging
+        Analyzing Log Patterns
+    Exam-Specific Tips
+        LFCS Exam Tips
+        RHCE Exam Tips
+    Exam Practice Scenarios
+        LFCS Practice Tasks
+        RHCE Practice Tasks
+    Quick Reference Commands
+        Basic Commands
+        Advanced Commands
+
+
+
+
+
+
+
+1. Introduction
+
+Importance of System Logs
+
+System logs are crucial for diagnosing and troubleshooting issues on a Linux system. They provide a record of system events, errors, and other important information that can help administrators maintain system health and security.
+Overview of Log Management
+
+Log management involves collecting, storing, and analyzing log data to ensure system reliability and security. Proper log management practices are essential for effective system administration and compliance with industry standards.
+
+
+
+
+
+2. Log Locations
+
+System Log Files
+
+    /var/log/messages: General system messages and info
+    /var/log/syslog: System and kernel logs (Debian-based systems)
+    /var/log/kern.log: Kernel logs
+    /var/log/boot.log: Boot process logs
+    /var/log/dmesg: Boot and kernel messages
+    /var/log/cron: Cron job logs
+    /var/log/maillog: Mail server logs
+    /var/log/utmp: Login records
+    /var/log/wtmp: Login history
+    /var/log/btmp: Failed login attempts
+    /var/log/yum.log: Yum package manager logs
+
+
+Application Log Files
+
+    /var/log/httpd/access_log: Apache access logs
+    /var/log/httpd/error_log: Apache error logs
+    /var/log/mysql/error.log: MySQL error logs
+    /var/log/postgresql/postgresql.log: PostgreSQL logs
+    /var/log/nginx/access.log: Nginx access logs
+    /var/log/nginx/error.log: Nginx error logs
+    /var/log/samba/log.smbd: Samba logs
+    /var/log/vsftpd.log: vsftpd logs
+    /var/log/redis/redis-server.log: Redis logs
+
+
+Security Log Files
+
+    /var/log/auth.log: Authentication logs (Debian-based systems)
+    /var/log/secure: Authentication logs (Red Hat-based systems)
+    /var/log/faillog: Failed login attempts
+    /var/log/audit/audit.log: Audit logs
+    /var/log/sudo.log: Sudo command logs
+    /var/log/firewalld: Firewall logs
+
+
+Comprehensive List of Log Files
+
+    /var/log/messages
+    /var/log/syslog
+    /var/log/kern.log
+    /var/log/boot.log
+    /var/log/dmesg
+    /var/log/cron
+    /var/log/maillog
+    /var/log/utmp
+    /var/log/wtmp
+    /var/log/btmp
+    /var/log/yum.log
+    /var/log/httpd/access_log
+    /var/log/httpd/error_log
+    /var/log/nginx/access.log
+    /var/log/nginx/error.log
+    /var/log/mysql/error.log
+    /var/log/postgresql/postgresql.log
+    /var/log/samba/log.smbd
+    /var/log/vsftpd.log
+    /var/log/redis/redis-server.log
+    /var/log/auth.log
+    /var/log/secure
+    /var/log/faillog
+    /var/log/audit/audit.log
+    /var/log/sudo.log
+    /var/log/firewalld
+    /var/log/Xorg.0.log: Xorg server logs
+    /var/log/acpid: ACPI event logs
+    /var/log/alternatives.log: Alternatives system logs
+    /var/log/apt/history.log: APT package manager logs
+    /var/log/apt/term.log: APT terminal logs
+    /var/log/boot.log: Boot process logs
+    /var/log/clamav/freshclam.log: ClamAV update logs
+    /var/log/clamav/clamav.log: ClamAV scanner logs
+    /var/log/cups/access_log: CUPS printing system access logs
+    /var/log/cups/error_log: CUPS printing system error logs
+    /var/log/debug: Debugging messages
+    /var/log/ntpstats: NTP statistics logs
+    /var/log/ppp.log: PPP daemon logs
+    /var/log/sa/saXX: System activity logs
+    /var/log/speech-dispatcher: Speech dispatcher logs
+    /var/log/sysstat: System activity data
+    /var/log/teamviewer13: TeamViewer logs
+    /var/log/tomcat9/catalina.out: Apache Tomcat logs
+    /var/log/unattended-upgrades/unattended-upgrades.log: Unattended upgrades logs
+    /var/log/vboxadd-install.log: VirtualBox additions installation logs
+    /var/log/vboxadd-setup.log: VirtualBox additions setup logs
+    /var/log/xrdp.log: XRDP logs
+    /var/log/secure-YYYYMMDD: Archived secure logs
+    /var/log/messages-YYYYMMDD: Archived messages logs
+    /var/log/libvirt/qemu: Virtualization logs for QEMU
+    /var/log/cloud-init.log: Cloud-init initialization logs
+    /var/log/cloud-init-output.log: Cloud-init output logs
+    /var/log/containers: Logs for container runtimes like Docker and Podman
+    /var/log/ceph: Ceph storage cluster logs
+    /var/log/etcd: etcd key-value store logs
+    /var/log/glusterfs: GlusterFS distributed file system logs
+    /var/log/keystone: OpenStack Identity service logs
+    /var/log/nova: OpenStack Compute service logs
+    /var/log/neutron: OpenStack Networking service logs
+    /var/log/swift: OpenStack Object Storage logs
+    /var/log/kubernetes: Kubernetes cluster logs
+    /var/log/containers/containerd: Containerd runtime logs
+    /var/log/pods: Kubernetes pod logs
+    /var/log/journal: Persistent systemd journal logs
+    /var/log/squid/access.log: Squid proxy access logs
+    /var/log/squid/cache.log: Squid proxy cache logs
+
+
+
+
+
+
+3. Viewing and Scanning Logs
+
+Basic Log Viewing Commands
+
+    cat: Display the contents of a file
+cat /var/log/messages
+
+
+less: View file contents with pagination
+less /var/log/syslog
+
+
+tail: View the last few lines of a file
+tail /var/log/secure
+
+
+head: View the first few lines of a file
+head /var/log/dmesg
+
+
+
+
+Advanced Log Viewing Techniques-
+
+    tail -f: Follow log file in real-time
+tail -f /var/log/messages
+
+
+less +F: Follow log file in real-time using less
+less +F /var/log/syslog
+
+
+
+watch: Execute a program periodically and show output
+    watch tail /var/log/messages
+
+
+
+
+Filtering and Searching Logs-
+
+grep: Search for specific patterns in log files
+grep "error" /var/log/messages
+
+awk: Extract and process data from log files
+awk '/error/ {print $1, $2, $3, $4}' /var/log/messages
+
+
+sed: Stream editor for filtering and transforming text
+sed -n '/error/p' /var/log/messages
+
+journalctl: Query and filter systemd journal logs
+journalctl -u sshd
+
+
+
+
+Manipulating and Inspecting Logs-
+
+sort: Sort log entries
+sort /var/log/messages
+
+
+uniq: Filter out repeated lines
+uniq /var/log/messages
+
+
+cut: Extract sections from each line of logs
+cut -d ' ' -f 1-4 /var/log/messages
+
+
+tr: Translate or delete characters
+tr -d '\r' < /var/log/messages
+
+
+
+
+4. Common Practices for Log Management
+
+Log Rotation
+
+logrotate: Manage log file rotation
+cat /etc/logrotate.conf
+
+
+Example configuration for Apache logs:
+conf
+
+    /var/log/httpd/*.log {
+        daily
+        rotate 7
+        compress
+        missingok
+        notifempty
+        create 0640 root adm
+        sharedscripts
+        postrotate
+            /usr/sbin/apachectl graceful > /dev/null
+        endscript
+    }
+
+
+
+Log Archiving
+    tar: Archive log files
+    tar -czvf logs.tar.gz /var/log/*.log
+
+
+Log Monitoring
+logwatch: Monitor and analyze log files
+logwatch --detail High --mailto admin@example.com --service all --range today
+
+
+swatch: Monitor log files and trigger alerts
+    swatch --config-file=/etc/swatch/swatchrc --tail-file=/var/log/syslog
+
+
+
+
+
+5. Troubleshooting with Logs
+
+Identifying Common Issues
+
+    Boot Issues: Check /var/log/boot.log and /var/log/dmesg
+    Kernel Issues: Check /var/log/kern.log
+    Authentication Issues: Check /var/log/auth.log or /var/log/secure
+    Application Issues: Check application-specific logs (e.g., /var/log/httpd/error_log)
+
+
+
+
+Using Logs for Debugging-
+
+
+Debugging Services:
+journalctl -u apache2
+
+
+Debugging Network Issues:
+grep "network" /var/log/messages
+
+
+
+
+
+Analyzing Log Patterns
+
+Frequency Analysis: Identify recurring errors
+grep "error" /var/log/messages | wc -l
+
+Time-Based Analysis: Identify time-based patterns
+grep "Jan 1" /var/log/messages
+
+
+
+
+
+
+
+
+
+
+
+------Exam-Specific Tips-------
+
+
+LFCS Exam Tips
+
+    Practice basic file operations (e.g., cat, tail, grep)
+    Understand log rotation and configuration
+    Be familiar with common log locations
+
+RHCE Exam Tips
+
+    Know how to configure and manage the rsync daemon
+    Understand SELinux contexts and configurations
+    Be proficient in using systemd for service management
+
+
+
+
+
+
+
+7. Exam Practice Scenarios
+
+LFCS Practice Tasks
+
+    View and filter log files using commands like grep, awk, and sed
+    Set up and test log rotation using logrotate
+    Monitor logs using tools like journalctl and logwatch
+
+RHCE Practice Tasks
+
+    Configure rsync daemon with SELinux integration
+    Set up secure remote synchronization
+    Create automated backup system
+    Implement logging and monitoring
+
+
+
+
+
+8. Quick Reference Commands
+Basic Commands
+
+    cat: cat /var/log/messages
+    less: less /var/log/syslog
+    tail: tail /var/log/secure
+    head: head /var/log/dmesg
+
+Advanced Commands
+
+    tail -f: tail -f /var/log/messages
+    less +F: less +F /var/log/syslog
+    watch: watch tail /var/log/messages
+    grep: grep "error" /var/log/messages
+    awk: awk '/error/ {print $1, $2, $3, $4}' /var/log/messages
+    sed: sed -n '/error/p' /var/log/messages
+    journalctl: journalctl -u sshd
+    logrotate: logrotate /etc/logrotate.conf
+    tar: tar -czvf logs.tar.gz /var/log/*.log
+    logwatch: logwatch --detail High --mailto admin@example.com --service all --range today
+    swatch: swatch --config-file=/etc/swatch/swatchrc --tail-file=/var/log/syslog
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------25 Industry Common Ways to Search, Store, and View Log Files----
+
+Real-Time Monitoring with tail -f
+tail -f /var/log/messages
+
+Using less for Interactive Viewing
+less /var/log/syslog
+
+Filtering with grep
+grep "error" /var/log/messages
+
+Extracting Data with awk
+awk '/error/ {print $1, $2, $3, $4}' /var/log/messages
+
+Transforming Text with sed
+sed -n '/error/p' /var/log/messages
+
+Sorting Log Entries with sort
+sort /var/log/messages
+
+Removing Duplicates with uniq
+uniq /var/log/messages
+
+Cutting Fields with cut
+cut -d ' ' -f 1-4 /var/log/messages
+
+Translating Characters with tr
+tr -d '\r' < /var/log/messages
+
+Using journalctl for Systemd Logs
+journalctl -u sshd
+
+Compressing Logs with gzip
+gzip /var/log/messages
+
+Archiving Logs with tar
+tar -czvf logs.tar.gz /var/log/*.log
+
+Rotating Logs with logrotate
+logrotate /etc/logrotate.conf
+
+Monitoring Logs with logwatch
+logwatch --detail High --mailto admin@example.com --service all --range today
+
+Setting Up Alerts with swatch
+swatch --config-file=/etc/swatch/swatchrc --tail-file=/var/log/syslog
+
+Cron Job for Regular Log Check
+crontab -e
+# Add the following line to check logs every hour
+0 * * * * /usr/bin/grep "error" /var/log/messages >> /var/log/error_summary.log
+
+Using rsyslog for Centralized Logging
+vim /etc/rsyslog.conf
+# Add remote server configuration
+*.* @logserver:514
+systemctl restart rsyslog
+
+Sending Logs to Remote Server with logger
+logger -n logserver -P 514 -t TAG "Log message"
+
+Analyzing Log Data with goaccess
+goaccess /var/log/nginx/access.log -o report.html --log-format=COMBINED
+
+Using Kibana for Log Visualization
+
+    Install and configure Elastic Stack (Elasticsearch, Logstash, Kibana)
+    Send logs to Elasticsearch using Logstash
+    Visualize logs in Kibana
+
+Automating Log Analysis with Splunk
+
+    Install Splunk
+    Forward logs to Splunk using Splunk Universal Forwarder
+    Create dashboards and alerts in Splunk
+
+Checking Log File Sizes with du
+du -h /var/log/*
+
+Finding Large Files with find
+find /var/log -type f -size +100M
+
+Using multitail for Multiple Logs
+    multitail /var/log/syslog /var/log/auth.log
+
+    Integrating with Graylog for Centralized Log Management
+        Install Graylog
+        Configure Graylog inputs to receive logs
+        Forward logs using rsyslog or filebeat
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------Advanced Linux Logging: RHCE and LFCS Supplemental Guide---------
+
+
+Missing Components Analysis and Supplements:
+
+    Systemd Journal Advanced Usage
+
+    Journal Storage Configuration
+   # /etc/systemd/journald.conf
+[Journal]
+Storage=persistent
+SystemMaxUse=4G
+SystemKeepFree=1G
+SystemMaxFileSize=100M
+MaxRetentionSec=1month
+
+
+
+Advanced Journal Queries
+# Show logs since last boot
+journalctl -b
+# Show logs from specific process with PID
+journalctl _PID=1234
+# Show logs with specific priority
+journalctl -p err..alert
+# Show kernel messages since 5 minutes ago
+journalctl -k -S "5 minutes ago"
+# Export journal as JSON
+journalctl -o json-pretty
+# Show field values
+journalctl -F _SYSTEMD_UNIT
+
+
+
+
+
+Advanced Log Analysis Tools
+
+Using Lnav (Log Navigator)
+# Install lnav
+yum install lnav # RHEL
+apt install lnav # Debian/Ubuntu
+# Basic usage
+lnav /var/log/syslog
+# Search with patterns
+:filter-in error
+:goto 12/25/2024 # Jump to date
+
+
+Using Fail2ban Analysis
+# View banned IPs
+fail2ban-client status sshd
+# Analyze auth logs for patterns
+fail2ban-regex /var/log/auth.log /etc/fail2ban/filter.d/sshd.conf
+
+
+ELK Stack Integration (Essential for Enterprise)
+
+
+
+Filebeat Configuration
+# /etc/filebeat/filebeat.yml
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - /var/log/*.log
+  fields:
+    log_type: syslog
+output.elasticsearch:
+  hosts: ["localhost:9200"]
+
+
+
+Logstash Pipeline Configuration
+# /etc/logstash/conf.d/syslog.conf
+input {
+  beats {
+    port => 5044
+  }
+}
+
+filter {
+  grok {
+    match => { "message" => "%{SYSLOGTIMESTAMP:timestamp} %{SYSLOGHOST:hostname} %{DATA:program}(?:\[%{POSINT:pid}\])? %{GREEDYDATA:message}" }
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["localhost:9200"]
+    index => "syslog-%{+YYYY.MM.dd}"
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+----Advanced Rsyslog Configuration----
+
+Custom Templates
+# /etc/rsyslog.d/custom.conf
+template(name="CustomFormat" type="string" string="%TIMESTAMP:::date-rfc3339% %HOSTNAME% %syslogtag%%msg%\n")
+# Use template for remote logging
+*.* action(type="omfwd" target="logserver.example.com" port="514" protocol="tcp" template="CustomFormat")
+
+Dynamic File Creation
+# Create log files based on program name
+$template DynamicFile,"/var/log/apps/%programname%.log"
+*.* ?DynamicFile
+
+
+
+
+
+Log Security and Compliance-
+Auditd Configuration
+# /etc/audit/auditd.conf
+log_file = /var/log/audit/audit.log
+max_log_file = 50
+max_log_file_action = ROTATE
+space_left = 75
+space_left_action = EMAIL
+action_mail_acct = root
+admin_space_left = 50
+admin_space_left_action = SUSPEND
+disk_full_action = SUSPEND
+disk_error_action = SUSPEND
+
+
+
+SELinux Logging-
+# Enable SELinux logging
+semodule -DB
+# View SELinux denials
+ausearch -m AVC -ts recent
+# Generate SELinux policy from logs
+audit2allow -a -M mymodule
+
+
+
+
+Performance Monitoring Logs-
+
+SAR (System Activity Reporter)
+# Configure SAR collection
+# /etc/sysconfig/sysstat
+HISTORY=28
+COMPRESSAFTER=3
+SADC_OPTIONS="-S DISK"
+# View CPU statistics
+sar -u 1 5
+# View memory usage
+sar -r 1 5
+# View disk I/O
+sar -b 1 5
+
+
+
+
+
+
+
+
+Container Logging-
+
+Docker Logging
+# Configure Docker logging driver
+# /etc/docker/daemon.json
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}
+# View container logs
+docker logs --tail 100 container_name
+# Follow container logs with timestamp
+docker logs -f --timestamps container_name
+
+
+
+
+
+Advanced Log Rotation Patterns-
+
+Multi-Stage Rotation
+# /etc/logrotate.d/multi-stage
+/var/log/important.log {
+  daily
+  rotate 7
+  missingok
+  compress
+  delaycompress
+  notifempty
+  create 0640 root adm
+  postrotate
+    /usr/bin/systemctl reload application
+  endscript
+  firstaction
+    echo "Starting rotation $(date)" >> /var/log/rotation.log
+  endscript
+
+  lastaction
+    echo "Finished rotation $(date)" >> /var/log/rotation.log
+  endscript
+}
+
+
+
+
+
+
+Real-time Log Analysis Scripts-
+
+Log Monitor Script
+#!/bin/bash
+# monitor_logs.sh
+LOG_FILE="/var/log/syslog"
+ALERT_EMAIL="admin@example.com"
+
+tail -f "$LOG_FILE" | while read line; do
+  case "$line" in
+    *"error"*|*"failure"*|*"failed"*)
+      echo "[ERROR] $line" | mail -s "Log Alert" "$ALERT_EMAIL"
+      ;;
+    *"warning"*)
+      echo "[WARNING] $line" >> /var/log/warnings.log
+      ;;
+  esac
+done
+
+
+
+
+
+
+Network Service Logging-
+
+Apache Virtual Host Logging-
+# /etc/httpd/conf.d/vhost.conf
+<VirtualHost *:80>
+  ServerName example.com
+  CustomLog "|/usr/bin/rotatelogs -l /var/log/httpd/%Y/%m/%d/access.log 86400" combined
+  ErrorLog "|/usr/bin/rotatelogs -l /var/log/httpd/%Y/%m/%d/error.log 86400"
+</VirtualHost>
+
+
+
+
+Nginx Advanced Logging-
+    # /etc/nginx/nginx.conf
+    log_format detailed '$remote_addr - $remote_user [$time_local] '
+                        '"$request" $status $body_bytes_sent '
+                        '"$http_referer" "$http_user_agent" '
+                        '$request_time $upstream_response_time';
+    access_log /var/log/nginx/detailed.log detailed buffer=32k flush=5s;
+
+
+
+
+
+After adding these components, the guide now covers:
+
+    Advanced systemd journal usage
+    Enterprise-level log aggregation
+    Security and compliance logging
+    Container logging strategies
+    Real-time analysis techniques
+    Performance monitoring
+    Network service logging
+    Custom logging scripts
+    Advanced rotation patterns
+    SELinux logging
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------RHCE Exam-Specific Automation--------
+
+    Automated Log Analysis System
+#!/bin/bash
+# /usr/local/sbin/log-analyzer.sh
+
+# Define log sources
+declare -A LOG_SOURCES=(
+  ["auth"]="/var/log/secure"
+  ["system"]="/var/log/messages"
+  ["httpd"]="/var/log/httpd/error_log"
+)
+
+# Define patterns
+declare -A PATTERNS=(
+  ["failed_auth"]="Failed password"
+  ["root_access"]="root login"
+  ["disk_full"]="No space left"
+  ["oom_killer"]="Out of memory"
+)
+
+# Analysis function
+analyze_logs() {
+  local log=$1
+  local pattern=$2
+  local count=$(grep -c "$pattern" "$log")
+  if [ $count -gt 0 ]; then
+    echo "ALERT: Found $count occurrences of '$pattern' in $log"
+  fi
+}
+
+# Main loop
+for source in "${!LOG_SOURCES[@]}"; do
+  if [ -f "${LOG_SOURCES[$source]}" ]; then
+    for pattern in "${!PATTERNS[@]}"; do
+      analyze_logs "${LOG_SOURCES[$source]}" "${PATTERNS[$pattern]}"
+    done
+  fi
+done
+
+Systemd Timer for Automated Analysis
+sh
+
+# /etc/systemd/system/log-analyzer.timer
+[Unit]
+Description=Regular Log Analysis Timer
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+
+# /etc/systemd/system/log-analyzer.service
+[Unit]
+Description=Automated Log Analysis Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/log-analyzer.sh
+StandardOutput=append:/var/log/log-analyzer.log
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+
+
+
+--Advanced SELinux Logging Configurations--
+
+Custom SELinux Policy Module for Logging-
+# Create custom SELinux policy for logging
+cat > logging.te << EOF
+module logging 1.0;
+
+require {
+  type syslogd_t;
+  type var_log_t;
+  type auditd_t;
+  class file { create write append getattr };
+  class dir { add_name write };
+}
+
+#============= syslogd_t ==============
+allow syslogd_t var_log_t:dir { add_name write };
+allow syslogd_t var_log_t:file { create write append getattr };
+EOF
+
+# Compile and load the policy
+checkmodule -M -m -o logging.mod logging.te
+semodule_package -o logging.pp -m logging.mod
+semodule -i logging.pp
+
+
+
+
+
+Enterprise-Grade Log Aggregation-
+
+Fluentd Configuration for Multi-Source Collection
+# /etc/fluent/fluent.conf
+<source>
+  @type tail
+  path /var/log/secure
+  pos_file /var/log/td-agent/secure.pos
+  tag system.secure
+  <parse>
+    @type regexp
+    expression /^(?<time>[^ ]* [^ ]* [^ ]*) (?<host>[^ ]*) (?<message>.*)$/
+  </parse>
+</source>
+
+<match system.**>
+  @type elasticsearch
+  host elasticsearch.local
+  port 9200
+  logstash_format true
+  flush_interval 5s
+</match>
+
+
+
+
+
+High-Availability Logging Setup-
+
+HAProxy Log Forwarding Configuration
+# /etc/rsyslog.d/haproxy.conf
+local0.* /var/log/haproxy.log
+local1.* /var/log/haproxy-error.log
+
+# Load UDP module
+$ModLoad imudp
+$UDPServerRun 514
+
+# Template for remote logs
+template(name="HAProxyLog" type="string" string="%TIMESTAMP% %HOSTNAME% %syslogtag%%msg%\n")
+# Forward to backup server
+*.* action(type="omfwd" target="backup-logserver" port="514" protocol="tcp" template="HAProxyLog")
+
+
+
+
+
+
+Advanced Log Analysis Patterns
+
+Custom Grok Patterns for Complex Log Format-
+# /etc/logstash/patterns/custom
+CUSTOMAUTH (?:%{SYSLOGTIMESTAMP:timestamp})\s+%{WORD:action}\s+user\s+%{USERNAME:user}\s+from\s+%{IP:src_ip}
+CUSTOMHTTP %{IPORHOST:clientip}\s+%{USER:ident}\s+%{USER:auth}\s+\[%{HTTPDATE:timestamp}\]\s+"(?:%{WORD:verb}\s+%{NOTSPACE:request}\s+HTTP/%{NUMBER:httpversion}|%{DATA:rawrequest})"\s+%{NUMBER:response}\s+(?:%{NUMBER:bytes}|-)
+
+# Example usage in Logstash config
+filter {
+  grok {
+    patterns_dir => ["/etc/logstash/patterns"]
+    match => { "message" => "%{CUSTOMAUTH}" }
+  }
+}
+
+
+
+
+
+
+Machine Learning for Log Analysis
+
+Simple Python-based Anomaly Detection-
+Python
+
+#!/usr/bin/env python3
+# /usr/local/sbin/log-anomaly-detector.py
+
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+import numpy as np
+
+def detect_anomalies(log_file):
+    # Read log file
+    df = pd.read_csv(log_file, sep=r'\s+', engine='python')
+    # Convert timestamp to numeric
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['timestamp_num'] = df['timestamp'].astype(np.int64)
+    # Train isolation forest
+    clf = IsolationForest(contamination=0.1, random_state=42)
+    clf.fit(df[['timestamp_num']])
+    # Predict anomalies
+    predictions = clf.predict(df[['timestamp_num']])
+    anomalies = df[predictions == -1]
+    return anomalies
+
+if __name__ == "__main__":
+    anomalies = detect_anomalies('/var/log/auth.log')
+    print("Detected Anomalies:")
+    print(anomalies)
+
+
+
+
+
+
+
+RHCE Specific Tasks
+```sh
+# Create comprehensive logging policy
+cat > /etc/ansible/roles/logging/tasks/main.yml << EOF
+
+    name: Configure rsyslog
+    template:
+    src: rsyslog.conf.j2
+    dest: /etc/rsyslog.conf
+    notify: restart rsyslog
+
+    name: Configure logrotate
+    template:
+    src: logrotate.conf.j2
+    dest: /etc/logrotate.d/custom
+    notify: restart logrotate
+
+    name: Configure auditd
+    template:
+    src: auditd.conf.j2
+    dest: /etc/audit/auditd.conf
+    notify: restart auditd
+
+    name: Configure SELinux logging
+    seboolean:
+    name: logging_syslogd_can_sendmail
+    state: yes
+    persistent: yes
+    EOF
+
+Code
+
+**LFCS Specific Tasks**
+```sh
+# Create log monitoring script
+cat > /usr/local/sbin/monitor-critical-logs.sh << EOF
+#!/bin/bash
+
+# Monitor critical system logs
+CRITICAL_LOGS=(
+  "/var/log/secure"
+  "/var/log/messages"
+  "/var/log/audit/audit.log"
+)
+
+# Critical patterns to watch
+PATTERNS=(
+  "Failed password"
+  "authentication failure"
+  "disk full"
+  "Out of memory"
+  "segmentation fault"
+)
+
+# Monitor each log
+for log in "${CRITICAL_LOGS[@]}"; do
+  echo "Analyzing $log..."
+  for pattern in "${PATTERNS[@]}"; do
+    count=$(grep -c "$pattern" "$log")
+    if [ $count -gt 0 ]; then
+      echo "WARNING: Found $count occurrences of '$pattern' in $log"
+    fi
+  done
+done
+EOF
+
+chmod +x /usr/local/sbin/monitor-critical-logs.sh
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--Log Security Enhancements--
+
+Immutable Logging Configuration-
+# Configure immutable logs
+chattr +a /var/log/secure
+chattr +a /var/log/messages
+chattr +a /var/log/audit/audit.log
+
+# Create secure logging directory
+mkdir -p /var/log/secure_logs
+chmod 0700 /var/log/secure_logs
+chown root:root /var/log/secure_logs
+
+# Configure rsyslog for secure logging
+cat > /etc/rsyslog.d/secure-logs.conf << EOF
+auth,authpriv.* /var/log/secure_logs/auth.log
+EOF
+
+# Set up log encryption
+openssl rand -base64 32 > /etc/rsyslog.d/log_encryption.key
+chmod 400 /etc/rsyslog.d/log_encryption.key
+
+Performance Optimization for Large-Scale Logging
+
+Tuned Profile for Logging Servers
+# /etc/tuned/logging-server/tuned.conf
+[main]
+include=throughput-performance
+
+[sysctl]
+# Increase socket buffer sizes
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+
+# Optimize I/O scheduler for logging
+vm.dirty_ratio = 40
+vm.dirty_background_ratio = 10
+
+[disk]
+# Optimize disk I/O for logging
+readahead => 4096
+
+[script]
+script = /etc/tuned/logging-server/script.sh
+
+
+
+
+
+Integration Testing Framework
+
+Automated Log Testing Suite-
+Python
+
+    #!/usr/bin/env python3
+    # /usr/local/sbin/test-logging.py
+
+    import unittest
+    import subprocess
+    import os
+    import time
+
+    class LoggingTests(unittest.TestCase):
+        def test_rsyslog_running(self):
+            status = subprocess.call(['systemctl', 'is-active', 'rsyslog'])
+            self.assertEqual(status, 0)
+
+        def test_log_rotation(self):
+            with open('/var/log/test.log', 'w') as f:
+                f.write('test log entry\n')
+            subprocess.call(['logrotate', '-f', '/etc/logrotate.conf'])
+            self.assertTrue(os.path.exists('/var/log/test.log.1.gz'))
+
+        def test_audit_logging(self):
+            status = subprocess.call(['auditctl', '-l'])
+            self.assertEqual(status, 0)
+
+    if __name__ == '__main__':
+        unittest.main()
+
+
+
+
+
+
+
+
+    Automated Log Analysis System
+
+#!/bin/bash
+# /usr/local/sbin/log-analyzer.sh
+
+# Define log sources
+declare -A LOG_SOURCES=(
+  ["auth"]="/var/log/secure"
+  ["system"]="/var/log/messages"
+  ["httpd"]="/var/log/httpd/error_log"
+)
+
+# Define patterns
+declare -A PATTERNS=(
+  ["failed_auth"]="Failed password"
+  ["root_access"]="root login"
+  ["disk_full"]="No space left"
+  ["oom_killer"]="Out of memory"
+)
+
+# Analysis function
+analyze_logs() {
+  local log=$1
+  local pattern=$2
+  local count=$(grep -c "$pattern" "$log")
+  if [ $count -gt 0 ]; then
+    echo "ALERT: Found $count occurrences of '$pattern' in $log"
+  fi
+}
+
+# Main loop
+for source in "${!LOG_SOURCES[@]}"; do
+  if [ -f "${LOG_SOURCES[$source]}" ]; then
+    for pattern in "${!PATTERNS[@]}"; do
+      analyze_logs "${LOG_SOURCES[$source]}" "${PATTERNS[$pattern]}"
+    done
+  fi
+done
+
+
+
+
+
+
+Systemd Timer for Automated Analysis-
+
+# /etc/systemd/system/log-analyzer.timer
+[Unit]
+Description=Regular Log Analysis Timer
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+
+# /etc/systemd/system/log-analyzer.service
+[Unit]
+Description=Automated Log Analysis Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/log-analyzer.sh
+StandardOutput=append:/var/log/log-analyzer.log
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+
+Advanced SELinux Logging Configurations
+
+Custom SELinux Policy Module for Logging-
+# Create custom SELinux policy for logging
+cat > logging.te << EOF
+module logging 1.0;
+
+require {
+  type syslogd_t;
+  type var_log_t;
+  type auditd_t;
+  class file { create write append getattr };
+  class dir { add_name write };
+}
+
+#============= syslogd_t ==============
+allow syslogd_t var_log_t:dir { add_name write };
+allow syslogd_t var_log_t:file { create write append getattr };
+EOF
+
+# Compile and load the policy
+checkmodule -M -m -o logging.mod logging.te
+semodule_package -o logging.pp -m logging.mod
+semodule -i logging.pp
+
+
+
+
+
+
+
+Enterprise-Grade Log Aggregation
+
+Fluentd Configuration for Multi-Source Collection-
+# /etc/fluent/fluent.conf
+<source>
+  @type tail
+  path /var/log/secure
+  pos_file /var/log/td-agent/secure.pos
+  tag system.secure
+  <parse>
+    @type regexp
+    expression /^(?<time>[^ ]* [^ ]* [^ ]*) (?<host>[^ ]*) (?<message>.*)$/
+  </parse>
+</source>
+
+<match system.**>
+  @type elasticsearch
+  host elasticsearch.local
+  port 9200
+  logstash_format true
+  flush_interval 5s
+</match>
+
+
+
+
+
+
+
+High-Availability Logging Setup
+
+HAProxy Log Forwarding Configuration-
+# /etc/rsyslog.d/haproxy.conf
+local0.* /var/log/haproxy.log
+local1.* /var/log/haproxy-error.log
+
+# Load UDP module
+$ModLoad imudp
+$UDPServerRun 514
+
+# Template for remote logs
+template(name="HAProxyLog" type="string" string="%TIMESTAMP% %HOSTNAME% %syslogtag%%msg%\n")
+# Forward to backup server
+*.* action(type="omfwd" target="backup-logserver" port="514" protocol="tcp" template="HAProxyLog")
+
+
+
+
+Advanced Log Analysis Patterns
+
+Custom Grok Patterns for Complex Log Formats-
+# /etc/logstash/patterns/custom
+CUSTOMAUTH (?:%{SYSLOGTIMESTAMP:timestamp})\s+%{WORD:action}\s+user\s+%{USERNAME:user}\s+from\s+%{IP:src_ip}
+CUSTOMHTTP %{IPORHOST:clientip}\s+%{USER:ident}\s+%{USER:auth}\s+\[%{HTTPDATE:timestamp}\]\s+"(?:%{WORD:verb}\s+%{NOTSPACE:request}\s+HTTP/%{NUMBER:httpversion}|%{DATA:rawrequest})"\s+%{NUMBER:response}\s+(?:%{NUMBER:bytes}|-)
+
+# Example usage in Logstash config
+filter {
+  grok {
+    patterns_dir => ["/etc/logstash/patterns"]
+    match => { "message" => "%{CUSTOMAUTH}" }
+  }
+}
+
+
+
+
+Machine Learning for Log Analysis
+
+Simple Python-based Anomaly Detection-
+Python
+
+#!/usr/bin/env python3
+# /usr/local/sbin/log-anomaly-detector.py
+
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+import numpy as np
+
+def detect_anomalies(log_file):
+    # Read log file
+    df = pd.read_csv(log_file, sep=r'\s+', engine='python')
+    # Convert timestamp to numeric
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['timestamp_num'] = df['timestamp'].astype(np.int64)
+    # Train isolation forest
+    clf = IsolationForest(contamination=0.1, random_state=42)
+    clf.fit(df[['timestamp_num']])
+    # Predict anomalies
+    predictions = clf.predict(df[['timestamp_num']])
+    anomalies = df[predictions == -1]
+    return anomalies
+
+if __name__ == "__main__":
+    anomalies = detect_anomalies('/var/log/auth.log')
+    print("Detected Anomalies:")
+    print(anomalies)
+
+
+
+
+
+
+Advanced Exam Scenariosm RHCE Specific Tasks
+```bash
+# Create comprehensive logging policy
+cat > /etc/ansible/roles/logging/tasks/main.yml << EOF
+
+    name: Configure rsyslog
+    template:
+    src: rsyslog.conf.j2
+    dest: /etc/rsyslog.conf
+    notify: restart rsyslog
+
+    name: Configure logrotate
+    template:
+    src: logrotate.conf.j2
+    dest: /etc/logrotate.d/custom
+    notify: restart logrotate
+
+    name: Configure auditd
+    template:
+    src: auditd.conf.j2
+    dest: /etc/audit/auditd.conf
+    notify: restart auditd
+
+    name: Configure SELinux logging
+    seboolean:
+    name: logging_syslogd_can_sendmail
+    state: yes
+    persistent: yes
+    EOF
+
+Code
+
+**LFCS Specific Tasks**
+```bash
+# Create log monitoring script
+cat > /usr/local/sbin/monitor-critical-logs.sh << EOF
+#!/bin/bash
+
+# Monitor critical system logs
+CRITICAL_LOGS=(
+  "/var/log/secure"
+  "/var/log/messages"
+  "/var/log/audit/audit.log"
+)
+
+# Critical patterns to watch
+PATTERNS=(
+  "Failed password"
+  "authentication failure"
+  "disk full"
+  "Out of memory"
+  "segmentation fault"
+)
+
+# Monitor each log
+for log in "${CRITICAL_LOGS[@]}"; do
+  echo "Analyzing $log..."
+  for pattern in "${PATTERNS[@]}"; do
+    count=$(grep -c "$pattern" "$log")
+    if [ $count -gt 0 ]; then
+      echo "WARNING: Found $count occurrences of '$pattern' in $log"
+    fi
+  done
+done
+EOF
+
+chmod +x /usr/local/sbin/monitor-critical-logs.sh
+
+
+
+
+
+
+
+
+
+Log Security Enhancements
+
+Immutable Logging Configuration-
+# Configure immutable logs
+chattr +a /var/log/secure
+chattr +a /var/log/messages
+chattr +a /var/log/audit/audit.log
+
+# Create secure logging directory
+mkdir -p /var/log/secure_logs
+chmod 0700 /var/log/secure_logs
+chown root:root /var/log/secure_logs
+
+# Configure rsyslog for secure logging
+cat > /etc/rsyslog.d/secure-logs.conf << EOF
+auth,authpriv.* /var/log/secure_logs/auth.log
+EOF
+
+# Set up log encryption
+openssl rand -base64 32 > /etc/rsyslog.d/log_encryption.key
+chmod 400 /etc/rsyslog.d/log_encryption.key
+
+
+
+
+
+Performance Optimization for Large-Scale Logging-
+
+Tuned Profile for Logging Servers-
+# /etc/tuned/logging-server/tuned.conf
+[main]
+include=throughput-performance
+
+[sysctl]
+# Increase socket buffer sizes
+net.core.rmem_max = 16777216
+net.core.wmem_max = 16777216
+
+# Optimize I/O scheduler for logging
+vm.dirty_ratio = 40
+vm.dirty_background_ratio = 10
+
+[disk]
+# Optimize disk I/O for logging
+readahead => 4096
+
+[script]
+script = /etc/tuned/logging-server/script.sh
+
+
+
+
+Integration Testing Framework
+
+Automated Log Testing Suite-
+Python
+
+    #!/usr/bin/env python3
+    # /usr/local/sbin/test-logging.py
+
+    import unittest
+    import subprocess
+    import os
+    import time
+
+    class LoggingTests(unittest.TestCase):
+        def test_rsyslog_running(self):
+            status = subprocess.call(['systemctl', 'is-active', 'rsyslog'])
+            self.assertEqual(status, 0)
+
+        def test_log_rotation(self):
+            with open('/var/log/test.log', 'w') as f:
+                f.write('test log entry\n')
+            subprocess.call(['logrotate', '-f', '/etc/logrotate.conf'])
+            self.assertTrue(os.path.exists('/var/log/test.log.1.gz'))
+
+        def test_audit_logging(self):
+            status = subprocess.call(['auditctl', '-l'])
+            self.assertEqual(status, 0)
+
+    if __name__ == '__main__':
+        unittest.main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+RHCE Exam-Specific Command Verification
+#!/bin/bash
+# /usr/local/sbin/verify-logging-setup.sh
+
+# Verify systemd journal persistence
+check_journal_persistence() {
+  if [ -d "/var/log/journal" ]; then
+    echo "[✓] Journal persistence configured"
+  else
+    echo "[✗] Journal persistence missing"
+    echo "Fix: mkdir /var/log/journal && systemd-tmpfiles --create --prefix /var/log/journal"
+  fi
+}
+
+# Verify SELinux contexts for logging
+check_selinux_contexts() {
+  contexts_to_check=(
+    "/var/log:system_u:object_r:var_log_t:s0"
+    "/var/log/audit:system_u:object_r:auditd_log_t:s0"
+    "/var/log/httpd:system_u:object_r:httpd_log_t:s0"
+  )
+
+  for context in "${contexts_to_check[@]}"; do
+    path=${context%:*}
+    expected=${context#*:}
+    actual=$(ls -dZ "$path" | cut -d' ' -f1)
+    if [ "$actual" = "$expected" ]; then
+      echo "[✓] Correct context for $path"
+    else
+      echo "[✗] Invalid context for $path"
+      echo "Fix: restorecon -Rv $path"
+    fi
+  done
+}
+
+# Verify rsyslog configuration
+verify_rsyslog_config() {
+  local config_file="/etc/rsyslog.conf"
+  local required_modules=(
+    "imuxsock"
+    "imjournal"
+    "imklog"
+  )
+
+  for module in "${required_modules[@]}"; do
+    if grep -q "module(load=\"${module}\")" "$config_file"; then
+      echo "[✓] Required module $module loaded"
+    else
+      echo "[✗] Missing module $module"
+      echo "Fix: Add 'module(load=\"${module}\")' to $config_file"
+    fi
+  done
+}
+
+
+
+
+
+
+
+
+
+LFCS Debugging Flow Templates
+#!/bin/bash
+# /usr/local/sbin/debug-logging.sh
+
+# Define standard debugging flows
+DEBUG_FLOWS=(
+  "authentication:auth.log,secure:/Failed password/:/Invalid user/"
+  "system:messages,syslog:/error/:/failed/"
+  "applications:daemon.log:/crashed/:/stopped/"
+)
+
+debug_flow() {
+  local flow=$1
+  local name=${flow%%:*}
+  local files=${flow#*:}; files=${files%%:*}
+  local patterns=${flow#*:*:}; primary=${patterns%%:*}
+  local secondary=${patterns#*:}
+
+  echo "=== Starting $name debugging flow ==="
+  IFS=',' read -ra LOGS <<< "$files"
+
+  for log in "${LOGS[@]}"; do
+    if [ -f "/var/log/$log" ]; then
+      echo "Analyzing /var/log/$log..."
+      echo "Primary pattern matches:"
+      grep -n "$primary" "/var/log/$log"
+      echo "Secondary pattern matches:"
+      grep -n "$secondary" "/var/log/$log"
+      echo "Context analysis:"
+      grep -B2 -A2 "$primary" "/var/log/$log"
+    fi
+  done
+}
+
+# Execute all flows
+for flow in "${DEBUG_FLOWS[@]}"; do
+  debug_flow "$flow"
+done
+
+Real-world Performance Issue Resolution
+Python
+
+#!/usr/bin/env python3
+# /usr/local/sbin/log-performance-analyzer.py
+
+import sys
+import datetime
+import re
+from collections import defaultdict
+
+class LogPerformanceAnalyzer:
+    def __init__(self):
+        self.slowest_operations = []
+        self.error_patterns = defaultdict(int)
+        self.resource_usage = defaultdict(list)
+
+    def analyze_performance(self, log_file):
+        with open(log_file, 'r') as f:
+            for line in f:
+                self._analyze_line(line)
+
+    def _analyze_line(self, line):
+        # Extract response times
+        if 'response_time' in line:
+            match = re.search(r'response_time=(\d+\.\d+)', line)
+            if match and float(match.group(1)) > 1.0:
+                self.slowest_operations.append(line)
+
+        # Track resource usage
+        if 'memory_usage' in line:
+            match = re.search(r'memory_usage=(\d+)MB', line)
+            if match:
+                self.resource_usage['memory'].append(int(match.group(1)))
+
+    def generate_report(self):
+        print("=== Performance Analysis Report ===")
+        print("\nTop 5 Slowest Operations:")
+        for op in sorted(self.slowest_operations)[:5]:
+            print(f" {op.strip()}")
+
+        print("\nResource Usage Summary:")
+        for resource, values in self.resource_usage.items():
+            print(f" {resource.title()}:")
+            print(f" Average: {sum(values)/len(values):.2f}")
+            print(f" Peak: {max(values)}")
+            print(f" Min: {min(values)}")
+
+if __name__ == '__main__':
+    analyzer = LogPerformanceAnalyzer()
+    analyzer.analyze_performance(sys.argv[1])
+    analyzer.generate_report()
+
+
+
+
+
+
+Exam Task Automation Framework-
+#!/bin/bash
+# /usr/local/sbin/exam-task-validator.sh
+
+# RHCE/LFCS exam task validation framework
+validate_task() {
+  local task_name=$1
+  local status=0
+
+  echo "Validating task: $task_name"
+  case $task_name in
+    "rsyslog_configuration")
+      # Check rsyslog configuration
+      systemctl is-active rsyslog || status=1
+      grep -q "*.info;mail.none;authpriv.none;cron.none" /etc/rsyslog.conf || status=1
+      ;;
+    "log_rotation")
+      # Verify logrotate configuration
+      test -f /etc/logrotate.d/custom || status=1
+      grep -q "rotate 7" /etc/logrotate.d/custom || status=1
+      ;;
+    "selinux_logging")
+      # Validate SELinux contexts
+      selinuxenabled || status=1
+      sestatus | grep -q "enforcing" || status=1
+      ;;
+    "audit_rules")
+      # Check audit rules
+      auditctl -l | grep -q "watch=/etc/passwd" || status=1
+      ;;
+  esac
+
+  return $status
+}
+
+# Validation reporting
+report_validation() {
+  local task=$1
+  local status=$2
+  if [ $status -eq 0 ]; then
+    echo "[PASS] $task completed successfully"
+  else
+    echo "[FAIL] $task validation failed"
+    case $task in
+      "rsyslog_configuration")
+        echo "Check: systemctl status rsyslog"
+        echo "Check: cat /etc/rsyslog.conf"
+        ;;
+      "log_rotation")
+        echo "Check: ls -l /etc/logrotate.d/"
+        echo "Check: cat /etc/logrotate.d/custom"
+        ;;
+      "selinux_logging")
+        echo "Check: sestatus"
+        echo "Check: getsebool -a | grep logging"
+        ;;
+      "audit_rules")
+        echo "Check: auditctl -l"
+        echo "Check: cat /etc/audit/rules.d/audit.rules"
+        ;;
+    esac
+  fi
+}
+
+
+
+
+
+
+
+
+Real-time System Health Monitoring-
+Python
+
+#!/usr/bin/env python3
+# /usr/local/sbin/system-health-monitor.py
+
+import time
+import psutil
+import logging
+from datetime import datetime
+from pathlib import Path
+
+class SystemHealthMonitor:
+    def __init__(self):
+        self.setup_logging()
+        self.thresholds = {
+            'cpu': 80.0,
+            'memory': 85.0,
+            'disk': 90.0,
+            'load': psutil.cpu_count() * 1.5
+        }
+
+    def setup_logging(self):
+        logging.basicConfig(
+            filename='/var/log/system-health.log',
+            format='%(asctime)s %(levelname)s: %(message)s',
+            level=logging.INFO
+        )
+
+    def check_system_health(self):
+        # CPU Usage
+        cpu_percent = psutil.cpu_percent(interval=1)
+        if cpu_percent > self.thresholds['cpu']:
+            logging.warning(f'High CPU usage: {cpu_percent}%')
+
+        # Memory Usage
+        memory = psutil.virtual_memory()
+        if memory.percent > self.thresholds['memory']:
+            logging.warning(f'High memory usage: {memory.percent}%')
+
+        # Disk Usage
+        for partition in psutil.disk_partitions():
+            usage = psutil.disk_usage(partition.mountpoint)
+            if usage.percent > self.thresholds['disk']:
+                logging.warning(f'High disk usage on {partition.mountpoint}: {usage.percent}%')
+
+        # Load Average
+        load = psutil.getloadavg()[0]
+        if load > self.thresholds['load']:
+            logging.warning(f'High system load: {load}')
+
+if __name__ == '__main__':
+    monitor = SystemHealthMonitor()
+    while True:
+        monitor.check_system_health()
+        time.sleep(60)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
