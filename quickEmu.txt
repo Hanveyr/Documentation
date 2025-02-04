@@ -30,8 +30,6 @@ Hardware-Assisted Virtualization: Leverages CPU virtualization extensions for ne
 
 -Installation and Prerequisites-
 
-Comprehensive Virtualization Platform Deployment
-
 System Preparation:
 sudo apt update
 sudo apt full-upgrade -y
