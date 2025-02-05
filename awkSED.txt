@@ -1,0 +1,3691 @@
+------Complete Guide to Using awk and sed Commands in Linux------
+
+
+This document provides comprehensive information about the awk and sed commands in Linux, including syntax, options, examples, common errors, and troubleshooting tips. This guide is particularly useful for those preparing for the RHCE and LFCS exams.
+
+
+
+-Table of Contents-
+
+    Introduction
+    Basic Syntax and Usage
+    Common Options
+    Advanced Options
+    Real-World Examples
+    Combining awk and sed with Other Commands
+    Common Errors and Troubleshooting
+    Automation
+    Security Concerns
+    Using awk and sed with Different File Types
+    Output Formatting
+    Environmental Variables
+    File Permissions
+    Version Differences
+    Localization
+    FAQs and Tips
+    Technical Depth Enhancements
+        Advanced Technical Content
+        Comprehensive Technical Gaps
+        Code and Implementation Enhancements
+        Research and Academic Perspective
+        Tooling and Ecosystem
+        Monitoring and Diagnostics
+    Practical Exam Preparation Examples
+
+
+
+
+-Introduction-
+
+What are awk and sed?-
+
+    awk: A powerful programming language designed for text processing and typically used as a data extraction and reporting tool.
+    sed: A stream editor used to perform basic text transformations on an input stream (a file or input from a pipeline).
+
+
+
+
+Brief History-
+
+    awk: Developed in the 1970s at Bell Labs, named after its authors Aho, Weinberger, and Kernighan.
+
+    sed: Developed in 1973 by Lee E. McMahon of Bell Labs and has since become a standard tool in Unix-like operating systems.
+
+
+
+
+
+
+
+
+
+-Basic Syntax and Usage-
+awk Basic Usage
+
+    Syntax:
+awk 'pattern { action }' file
+
+Example:
+    awk '{ print $1 }' file.txt  # Print the first field of each line
+
+
+
+
+
+-sed Basic Usage-
+
+    Syntax:
+sed 'script' file
+
+Example:
+    sed 's/old/new/' file.txt  # Replace the first occurrence of "old" with "new" in each line
+
+
+
+
+
+
+
+-awk Common Options-
+
+
+    Field Separator:
+  awk -F',' '{ print $1 }' file.csv  # Use comma as the field separator
+
+
+Print Specific Lines:
+awk 'NR==3' file.txt  # Print the third line of the file
+
+
+Pattern Matching:
+    awk '/pattern/ { print $1 }' file.txt  # Print the first field of lines matching the pattern
+
+
+
+
+
+
+-sed Common Options-
+
+
+    In-Place Editing:
+sed -i 's/old/new/' file.txt  # Replace "old" with "new" in the file and save changes
+
+
+
+Print Only Matching Lines:
+sed -n '/pattern/p' file.txt  # Print only lines containing the pattern
+
+
+
+Delete Lines:
+    sed '/pattern/d' file.txt  # Delete lines containing the pattern
+
+
+
+
+-Advanced Options-
+
+awk Advanced Options
+
+    BEGIN and END Blocks:
+awk 'BEGIN { print "Start" } { print $1 } END { print "End" }' file.txt
+
+
+
+
+Arithmetic Operations:
+awk '{ sum += $1 } END { print sum }' file.txt  # Calculate the sum of the first field
+
+
+
+User-Defined Functions:
+    awk 'function square(x) { return x * x } { print square($1) }' file.txt
+
+
+
+
+s-ed Advanced Options-
+
+    Multiple Commands:
+sed -e 's/old/new/' -e 's/foo/bar/' file.txt  # Perform multiple substitutions
+
+
+
+Insert and Append Text:
+sed '1i\New first line' file.txt  # Insert a line at the beginning of the file
+sed '$a\New last line' file.txt   # Append a line at the end of the file
+
+
+
+Using Hold Space:
+    sed -e '/start/{:a;N;/end/!ba};/start/,/end/!d' file.txt  # Delete everything between "start" and "end" patterns
+
+
+
+
+
+
+
+
+-Real-World Examples-
+
+
+Example 1: Extracting Specific Columns from a CSV File
+
+    Requirement: Extract the first and third columns from a CSV file.
+    awk -F',' '{ print $1, $3 }' data.csv
+
+
+
+
+Example 2: Replacing Text in a Configuration File
+
+    Requirement: Replace "localhost" with "127.0.0.1" in a configuration file.
+    sed -i 's/localhost/127.0.0.1/' config.conf
+
+
+
+
+Example 3: Summing Numbers in a Column
+
+    Requirement: Calculate the sum of numbers in the second column of a text file.
+    awk '{ sum += $2 } END { print sum }' numbers.txt
+
+
+
+Example 4: Deleting Lines Containing a Specific Pattern
+
+    Requirement: Delete all lines containing the word "error" in a log file.
+    sed '/error/d' logfile.log
+
+
+
+
+
+
+Combining awk and sed with Other Commands
+
+The awk and sed commands can be combined with other commands to perform more complex tasks.
+
+    Example: Filtering and Formatting Log Files
+grep "ERROR" logfile.log | awk '{ print $1, $2, $5 }' | sed 's/ERROR/ERR/'
+
+
+
+
+Example: Processing a CSV File and Sorting Results
+    awk -F',' '{ print $2, $3 }' data.csv | sort | uniq
+
+
+
+
+
+
+
+
+
+
+
+
+----Common Errors and Troubleshooting--
+
+
+    Syntax Errors:
+        Problem: Incorrect syntax or missing quotes.
+        Solution: Ensure correct syntax and proper use of quotes.
+       awk '{ print $1 }' file.txt  # Correct
+
+
+
+
+Permission Denied:
+
+    Problem: Insufficient permissions to edit files.
+    Solution: Use sudo to run the command with elevated privileges.
+        sudo sed -i 's/old/new/' file.txt
+
+
+
+
+Automation
+
+Shell scripts can automate text processing tasks using awk and sed.
+
+    Example Script:
+      #!/bin/bash
+    awk -F',' '{ print $1, $3 }' data.csv | sed 's/foo/bar/' > processed_data.txt
+
+
+
+
+
+
+
+
+Security Concerns
+Handling Sensitive Data
+
+    Ensure File Permissions:
+chmod 600 sensitive_file.txt
+
+
+
+
+Use Secure Deletion Methods:
+
+    Use shred for secure file deletion.
+        shred -u sensitive_file.txt
+
+
+
+
+Using awk and sed with Different File Types
+Handling Different Formats
+
+    Process CSV Files:
+   awk -F',' '{ print $1, $2 }' file.csv
+
+
+
+Process JSON Files:
+    grep -o '"key": *"[^"]*"' file.json | sed 's/"key": *"//;s/"$//'
+
+
+
+
+Output Formatting
+Formatting Output for Readability
+
+    Pretty Print with awk:
+awk '{ printf "Name: %s, Age: %d\n", $1, $2 }' file.txt
+
+
+
+Pretty Print with sed:
+    sed 's/^/    /' file.txt  # Indent each line
+
+
+
+
+
+Environmental Variables
+Impact on Behavior
+
+    Set Field Separator in awk:
+    export FS=","
+    awk '{ print $1, $2 }' file.csv
+
+
+
+File Permissions
+Influence on Commands
+
+    Read Permissions:
+chmod 744 file.txt
+
+
+
+Execute Permissions for Scripts:
+    chmod +x script.sh
+
+
+
+Version Differences
+GNU vs. BSD
+
+    GNU awk and sed: Supports more options and features.
+    BSD awk and sed: Simpler and often used on macOS.
+
+
+
+Localization
+Handling Localized Files
+
+    Set Locale:
+    export LANG=en_US.UTF-8
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-----FAQs and Tips-----
+
+
+
+Frequently Asked Questions
+
+    Why do I get "Permission Denied" errors?
+        Ensure you have the necessary file permissions.
+
+
+
+
+    How do I process multiple files with awk or sed?
+        Use a loop to process multiple files.
+       for file in *.txt; do
+      awk '{ print $1 }' "$file"
+    done
+
+
+
+
+Can I use awk and sed together?
+
+    Yes, combine them in a pipeline.
+        awk '{ print $1 }' file.txt | sed 's/foo/bar/'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------Practical Exam Preparation Examples-------
+System Administration Scenarios
+
+
+File and Log Processing
+
+    Extract Unique IP Addresses from Log Files
+    cat /var/log/apache2/access.log | awk '{print $1}' | sort | uniq -c | sort -nr
+
+
+
+Parse System Log for Error Messages
+    sed -n '/\(ERROR\|CRITICAL\)/p' /var/log/syslog | awk '{print $5,$6,$7}'
+
+
+
+
+Monitor User Login History
+    last | awk '{print $1}' | sort | uniq -c
+
+
+
+
+Filter and Process Network Connections
+        netstat -tuln | awk '$6 == "ESTABLISHED" {print $4,$5}'
+
+
+
+System Performance Analysis
+
+    Calculate Disk Usage Percentage
+         df -h | awk 'NR>1 {print $5, $6}' | sort -rn
+
+
+
+
+Memory Usage Breakdown
+    free -m | awk 'NR==2 {printf "Total: %s MB\nUsed: %s MB\nFree: %s MB", $2, $3, $4}'
+
+
+
+
+Process CPU Consumption
+        ps aux | awk '{print $2, $3, $11}' | sort -rn | head -10
+
+
+
+Configuration Management
+
+    Replace Configuration Parameters
+         sed -i 's/^#Port 22/Port 2222/' /etc/ssh/sshd_config
+
+
+
+Validate and Modify Network Configurations
+    ip addr | awk '/inet / {print $2}' | sed 's/\/.*//'
+
+
+
+
+Firewall Rule Processing
+       iptables -L | awk '/ACCEPT/ {print $4,$5}'
+
+
+
+Security Hardening
+
+    Find World-Writable Files
+     find / -type f -perm -002 | awk '{print length, $0}' | sort -rn
+
+
+
+Extract User Accounts
+    awk -F: '$3 >= 1000 && $3 < 60000 {print $1}' /etc/passwd
+
+
+
+
+Check for Unauthorized SUID Binaries
+        find / -perm -4000 | awk '{print length, $0}' | sort -rn
+
+
+
+
+Log Management
+
+    Rotate and Compress Log Files
+     find /var/log -type f -name "*.log" -mtime +30 | xargs -I {} sh -c 'gzip "{}"'
+
+
+
+
+Extract Critical Logs
+        journalctl -p err | awk '{print $1, $2, $3, $5}'
+
+
+
+
+Network Analysis
+
+    Parse Network Traffic
+       tcpdump -n | awk '{print $3}' | cut -d. -f1-4 | sort | uniq -c
+
+
+
+
+Bandwidth Usage Monitoring
+        cat /proc/net/dev | awk '/eth0/ {print "Received:", $2, "Transmitted:", $10}'
+
+
+
+
+
+User Management
+
+    Account Audit Script
+    awk -F: '$3 >= 1000 {print $1, "UID:", $3, "Home:", $6}' /etc/passwd
+
+
+Expire Inactive User Accounts
+        lastlog | awk '$3 != "*Never" && $4 < "30 days ago" {print $1}'
+
+
+
+
+Performance Tuning
+
+    Monitor Process Start Times
+        ps aux | awk '{print $9, $11}'
+
+
+
+
+
+Advanced Text Processing
+
+    CSV Data Processing
+     awk -F',' '{print $2, $3}' data.csv | sort
+
+
+
+JSON Parsing
+        cat data.json | sed -n 's/.*"key": "\([^"]*\)".*/\1/p'
+
+
+
+
+System Backup and Recovery
+
+    Create Incremental Backup List
+         find / -type f -mtime -1 | awk '{print length, $0}' | sort -rn
+
+
+
+
+Package Management
+
+    List Installed Packages
+         rpm -qa | awk '{print length, $0}' | sort -rn
+
+
+
+
+File System Management
+
+    Find Large Files
+            find / -type f -size +100M | awk '{print length, $0}' | sort -rn
+
+
+
+
+Comprehensive Log Analysis
+
+    Multi-Service Log Correlation
+        grep -h "Failed login" /var/log/auth.log /var/log/apache2/access.log | awk '{print $1, $2, $3}'
+
+
+
+
+Security Monitoring
+
+    Intrusion Detection Preprocessing
+        cat /var/log/auth.log | awk '/Failed/ {print $11}' | sort | uniq -c | sort -rn
+
+
+
+Performance Diagnostics
+
+    CPU Load Analysis
+          sar -u | awk '$1 ~ /[0-9.]/ {print $2, $3, $4, $5}'
+
+
+
+Network Security
+
+    Firewall Rule Audit
+       iptables -L | awk '/ACCEPT/ {print length($0)}' | sort -rn
+
+
+
+System Resource Tracking
+
+    Memory Leak Detection
+        ps aux | awk '$4 > 50 {print $2, $11, $4"%"}'
+
+
+
+
+
+
+
+
+
+-----Complex Data Processing-----
+
+    Multi-Character Delimiters in awk
+      awk -F'::' '{print $1, $2}' file.txt
+
+
+Recursive Replacement in sed
+    sed ':a; s/abc/xyz/; ta' file.txt
+
+
+Text Manipulation in awk
+    awk '{gsub(/old/, "new"); print}' file.txt
+
+
+Advanced Field Manipulation
+    awk 'BEGIN {FS=","; OFS="|"} {print $1, $2, $3}' file.csv
+
+
+Use of awk Arrays
+    awk '{arr[$1]++} END {for (i in arr) print i, arr[i]}' file.txt
+
+
+sed Hold Space Operations
+    sed -e '1{h;d;}' -e '$G' file.txt  # Append the first line to the end
+
+
+Dynamic Field Selection in awk
+    awk '{if ($1 > 100) print $3}' file.txt
+
+
+Conditional Deletion in sed
+    sed '/pattern/!d' file.txt
+
+
+awk for Data Summarization
+    awk '{arr[$1] += $2} END {for (i in arr) print i, arr[i]}' file.txt
+
+
+Insert and Append Text with sed
+    sed '3i\New line' file.txt
+
+
+Advanced Text Replacement in awk
+    awk '{gsub(/old/, "new"); print}' file.txt
+
+
+Process Multiple Files with awk
+    awk '{ total += $1 } END { print total }' file1.txt file2.txt
+
+
+Field Manipulation in awk
+    awk 'BEGIN {FS=","; OFS=":"} {print $1, $2}' file.csv
+
+
+awk External Commands Execution
+    awk '{ system("echo " $1) }' file.txt
+
+
+sed Recursive Substitution
+    sed ':a; s/old/new/; ta' file.txt
+
+
+Dynamic awk Field Separator
+    awk -F',' '{ print $1, $2 }' file.csv
+
+
+Using sed and awk for JSON Parsing
+    grep -o '"key": *"[^"]*"' file.json | sed 's/"key": *"//;s/"$//'
+
+
+Advanced File Processing with awk
+    awk 'NR==FNR{a[$1]=$2;next}{print $0, a[$1]}' file1.txt file2.txt
+
+
+Multi-Service Log Analysis
+     grep -h "Failed login" /var/log/auth.log /var/log/apache2/access.log | awk '{print $1, $2, $3}'
+
+
+Security Event Extraction
+          cat /var/log/auth.log | awk '/Failed/ {print $11}' | sort | uniq -c | sort -rn
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Required Additions
+1. Error Handling
+Error handling in awk
+Awk
+
+#!/usr/bin/awk -f
+# error_handling.awk
+
+BEGIN {
+    # Set error handling variables
+    ERROR_LOG = "/var/log/awk_errors.log"
+    WARN_COUNT = 0
+    ERROR_COUNT = 0
+}
+
+{
+    # Try to process line, catch errors
+    if (length($0) > 1000) {
+        printf "WARNING: Line %d too long\n", NR > ERROR_LOG
+        WARN_COUNT++
+        next
+    }
+
+    # Validate field count
+    if (NF != EXPECTED_FIELDS) {
+        printf "ERROR: Line %d has wrong field count\n", NR > ERROR_LOG
+        ERROR_COUNT++
+        next
+    }
+
+    # Process valid lines
+    process_line()
+}
+
+END {
+    # Report error statistics
+    printf "Processing complete: %d warnings, %d errors\n", WARN_COUNT, ERROR_COUNT > ERROR_LOG
+}
+
+Error handling in sed
+bash
+
+sed -e '/^[[:space:]]*$/b' \
+    -e '/^#/b' \
+    -e '/[^[:print:]]/d' \
+    -e '/^ERROR/{w /var/log/sed_errors.log
+d}' \
+    -e 's/[^[:alnum:]]/_/g' \
+    input_file
+
+2. Performance Optimization
+Optimized awk for large files
+Awk
+
+#!/usr/bin/awk -f
+# optimized_awk.awk
+
+BEGIN {
+    # Pre-allocate arrays
+    split("", cache, ":")
+    CHUNK_SIZE = 50000
+}
+
+{
+    # Buffer processing
+    cache[NR % CHUNK_SIZE] = $0
+    if (NR % CHUNK_SIZE == 0) {
+        process_chunk()
+        delete cache
+    }
+}
+
+END {
+    # Process remaining records
+    if (NR % CHUNK_SIZE > 0) {
+        process_chunk()
+    }
+}
+
+Optimized sed for large files
+bash
+
+sed -u \
+    -e 'h;:a;n;H;$!ba;g' \
+    -e 's/pattern/replacement/g' \
+    -e 'p;d' \
+    large_file.txt
+
+3. Modern Computing Integration
+Docker integration
+Dockerfile
+
+FROM alpine:latest
+
+RUN apk add --no-cache gawk sed
+
+COPY process.awk /scripts/
+COPY transform.sed /scripts/
+
+ENTRYPOINT ["awk", "-f", "/scripts/process.awk"]
+
+Kubernetes ConfigMap
+YAML
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: text-processing-scripts
+data:
+    process.awk: |
+        BEGIN { FS = OFS = "," }
+        {
+            gsub(/[^[:alnum:]]/, "_")
+            print
+        }
+    transform.sed: |
+        s/old/new/g
+        s/foo/bar/g
+
+CI/CD Pipeline (GitLab)
+YAML
+
+text-processing:
+    script:
+        - awk -f scripts/validate.awk input.txt
+        - sed -f scripts/transform.sed input.txt > output.txt
+    artifacts:
+        paths:
+            - output.txt
+
+4. Advanced Use Cases
+Log Analysis Pipeline
+Awk
+
+#!/usr/bin/awk -f
+# log_analysis.awk
+
+# Parse complex log format
+function parse_log() {
+    split($0, parts, "|")
+    timestamp = parts[1]
+    level = parts[2]
+    message = parts[3]
+
+    # Store in time-series format
+    if (level == "ERROR") {
+        errors[timestamp]++
+        error_msgs[timestamp, errors[timestamp]] = message
+    }
+}
+
+# Calculate error rates
+function calculate_metrics() {
+    for (t in errors) {
+        rate = errors[t] / total_messages * 100
+        printf "%s: Error Rate %.2f%%\n", t, rate
+    }
+}
+
+# Main processing
+{
+    total_messages++
+    parse_log()
+}
+
+END {
+    calculate_metrics()
+}
+
+Configuration Management
+Awk
+
+#!/usr/bin/awk -f
+# config_management.awk
+
+BEGIN {
+    # Load configuration templates
+    while ((getline < "templates.conf") > 0) {
+        templates[$1] = $2
+    }
+}
+
+{
+    # Apply environment-specific configurations
+    if ($1 in templates) {
+        if (MODE == "prod") {
+            gsub(/%PORT%/, "443")
+            gsub(/%PROTOCOL%/, "https")
+        } else {
+            gsub(/%PORT%/, "8080")
+            gsub(/%PROTOCOL%/, "http")
+        }
+        print
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Testing Framework Implementation
+Unit Testing for Awk Scripts
+bash
+
+#!/bin/bash
+# test_framework.sh
+
+# Test suite configuration
+TEST_DIR="./tests"
+LOG_FILE="test_results.log"
+
+# Test runner function
+run_test() {
+    local test_name="$1"
+    local input="$2"
+    local expected="$3"
+    local script="$4"
+
+    echo "Running test: $test_name"
+    result=$(echo "$input" | awk "$script")
+    if [[ "$result" == "$expected" ]]; then
+        echo "✓ PASS: $test_name" | tee -a "$LOG_FILE"
+        return 0
+    else
+        echo "✗ FAIL: $test_name" | tee -a "$LOG_FILE"
+        echo " Expected: $expected" | tee -a "$LOG_FILE"
+        echo " Got: $result" | tee -a "$LOG_FILE"
+        return 1
+    fi
+}
+
+# Example test cases
+test_field_extraction() {
+    run_test "Extract first field" \
+    "hello world" \
+    "hello" \
+    '{ print $1 }'
+}
+
+test_arithmetic() {
+    run_test "Basic arithmetic" \
+    "1 2 3" \
+    "6" \
+    '{ sum = 0; for(i=1; i<=NF; i++) sum += $i; print sum }'
+}
+
+# Run all tests
+run_tests() {
+    local failed=0
+
+    echo "Running test suite..."
+    test_field_extraction || ((failed++))
+    test_arithmetic || ((failed++))
+
+    echo "Tests completed: $((5-failed))/5 passed"
+    return $failed
+}
+
+# Main execution
+setup
+run_tests
+
+Debugging Framework
+Awk
+
+#!/usr/bin/awk -f
+# debug_framework.awk
+
+BEGIN {
+    DEBUG_LEVELS["ERROR"] = 1
+    DEBUG_LEVELS["WARN"] = 2
+    DEBUG_LEVELS["INFO"] = 3
+    DEBUG_LEVELS["DEBUG"] = 4
+
+    CURRENT_DEBUG_LEVEL = DEBUG_LEVELS["INFO"]
+}
+
+function debug(message, level) {
+    if (level <= CURRENT_DEBUG_LEVEL) {
+        printf "[%s] %s:%d - %s\n",
+        get_level_name(level),
+        FILENAME,
+        NR,
+        message > "/dev/stderr"
+    }
+}
+
+function get_level_name(level) {
+    for (name in DEBUG_LEVELS) {
+        if (DEBUG_LEVELS[name] == level) {
+            return name
+        }
+    }
+    return "UNKNOWN"
+}
+
+Style Guide Implementation
+Code Organization
+Awk
+
+#!/usr/bin/awk -f
+# Standard awk script structure
+
+# 1. Constants and configuration
+BEGIN {
+    FS = ","
+    OFS = "|"
+    MAX_FIELD_LENGTH = 80
+    ERROR_LOG = "/var/log/awk.log"
+}
+
+# 2. Function declarations
+function validate_record(record, result) {
+    result = 1
+    for (i = 1; i <= NF; i++) {
+        if (length($i) > MAX_FIELD_LENGTH) {
+            result = 0
+            break
+        }
+    }
+    return result
+}
+
+function process_record() {
+    if (validate_record($0)) {
+        print_record()
+    } else {
+        log_error("Invalid record length")
+    }
+}
+
+# 3. Main processing
+{
+    process_record()
+}
+
+# 4. Cleanup and reporting
+END {
+    generate_report()
+}
+
+Documentation Standards
+bash
+
+#!/bin/bash
+# Script Name: process_logs.awk
+# Description: Processes system logs to extract critical events
+# Author: [Name]
+# Date: [YYYY-MM-DD]
+# Version: 1.0.0
+#
+# Dependencies:
+# - GNU Awk 4.0+
+# - bash 4.0+
+#
+# Input:
+# - System log files in standard syslog format
+#
+# Output:
+# - Filtered events in CSV format
+# - Error log for invalid entries
+#
+# Usage:
+# ./process_logs.awk /var/log/syslog > filtered_events.csv
+#
+# Configuration:
+# Set environment variables:
+# - AWK_DEBUG_LEVEL: Debug level (1-4)
+# - AWK_OUTPUT_FORMAT: Output format (csv|json)
+#
+# Error Handling:
+# - Invalid log entries are logged to stderr
+# - Processing continues on errors
+#
+# Examples:
+# Basic usage:
+# $ ./process_logs.awk input.log
+#
+# With debug level:
+# $ AWK_DEBUG_LEVEL=3 ./process_logs.awk input.log
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#!/bin/bash
+# Benchmark different awk/sed approaches
+
+# Test file generation
+generate_test_file() {
+    size=$1
+    for ((i=1; i<=size; i++)); do
+        echo "Line $i,Field1,Field2,Field3" >> test.csv
+    done
+}
+
+# Benchmark function
+benchmark() {
+    command=$1
+    iterations=$2
+    total_time=0
+
+    for ((i=1; i<=iterations; i++)); do
+        start_time=$(date +%s%N)
+        eval "$command" >/dev/null
+        end_time=$(date +%s%N)
+        total_time=$((total_time + end_time - start_time))
+    done
+
+    echo "Average time: $(((total_time/iterations)/1000000)) ms"
+}
+
+# Run benchmarks
+generate_test_file 100000
+benchmark 'awk -F"," "{print \$1}" test.csv' 10
+benchmark 'sed "s/,.*//" test.csv' 10
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Kubernetes Job for text processing
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: log-processor
+spec:
+  template:
+    spec:
+      containers:
+      - name: processor
+        image: text-processor:latest
+        volumeMounts:
+        - name: logs
+          mountPath: /logs
+        - name: config
+          mountPath: /config
+        command:
+        - /bin/sh
+        - -c
+        - |
+          awk -f /config/process.awk /logs/*.log |
+          sed -f /config/transform.sed > /logs/processed.txt
+      volumes:
+      - name: logs
+        persistentVolumeClaim:
+          claimName: log-pvc
+      - name: config
+        configMap:
+          name: processing-scripts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1. awk Field Variables:
+   awk '{ print NR, $0 }' file.txt  # Print line number and the line
+
+2. sed Line Ranges:
+   sed '2,4d' file.txt  # Delete lines from 2 to 4
+
+3. awk Conditional Statements:
+   awk '{ if ($1 > 100) print $0 }' file.txt
+
+4. sed Backreferences:
+   sed 's/\(.*\)-\(.*\)/\2-\1/' file.txt
+
+5. awk Array Usage:
+   awk '{ arr[$1]++ } END { for (i in arr) print i, arr[i] }' file.txt
+
+6. sed Pattern Matching and Addresses:
+   sed '/pattern/,/end/d' file.txt
+
+7. awk Output Redirection:
+   awk '{ print $1 > "output.txt" }' file.txt
+
+8. sed Hold and Get Commands:
+   sed -e '1{h;d;}' -e '$G' file.txt  # Append the first line to the end
+
+9. awk External Commands:
+   awk '{ system("echo " $1) }' file.txt
+
+10. sed Regular Expressions:
+    sed -r 's/[0-9]+/NUMBER/' file.txt
+
+11. awk Built-in Functions:
+    awk '{ print length($0) }' file.txt
+
+12. sed Transform Command (y):
+    sed 'y/abc/ABC/' file.txt  # Transform a, b, c to A, B, C
+
+13. awk File Concatenation:
+    awk '{ print $0 }' file1.txt file2.txt
+
+14. sed Execution from File:
+    sed -f script.sed file.txt
+
+15. awk Command-Line Variables:
+    awk -v var=100 '{ print $1 + var }' file.txt
+
+16. sed Multi-Character Delimiters:
+    sed 's/::/:/g' file.txt
+
+17. awk Custom Field Separators:
+    awk 'BEGIN { FS=":" } { print $1 }' file.txt
+
+18. sed Recursive Replacement:
+    sed ':a; s/abc/xyz/; ta' file.txt
+
+19. awk Data Summarization:
+    awk '{ arr[$1] += $2 } END { for (i in arr) print i, arr[i] }' file.txt
+
+20. sed Line Insertion:
+    sed '3i\New line' file.txt
+
+21. awk Counting Occurrences:
+    awk '{ count[$1]++ } END { for (i in count) print i, count[i] }' file.txt
+
+22. sed Print Before/After Match:
+    sed -n '/pattern/{p; n; p;}' file.txt
+
+23. awk Format Specifiers:
+    awk '{ printf "%-10s %s\n", $1, $2 }' file.txt
+
+24. sed Change Line Delimiters:
+    sed ':a; N; $!ba; s/\n/;/g' file.txt
+
+25. awk Field Manipulation:
+    awk 'BEGIN { FS=","; OFS="-" } { print $1, $2 }' file.csv
+
+26. sed Interactive Editing:
+    sed -i '3 s/old/new/' file.txt
+
+27. awk Join Lines:
+    awk '{ printf "%s ", $0 } END { print "" }' file.txt
+
+28. sed Split Lines:
+    sed 's/,/\n/g' file.txt
+
+29. awk Multi-File Processing:
+    awk '{ total += $1 } END { print total }' file1.txt file2.txt
+
+30. sed Insert Newlines:
+    sed 's/;/\n/g' file.txt
+
+31. awk Merge Files:
+    awk 'NR==FNR{a[$1]=$2;next}{print $0, a[$1]}' file1.txt file2.txt
+
+32. sed Exclude Pattern:
+    sed '/pattern/!d' file.txt
+
+33. awk Data Transpose:
+    awk '{ for (i=1; i<=NF; i++) a[NR,i]=$i } END { for (i=1; i<=NF; i++) { for (j=1; j<=NR; j++) printf "%s ", a[j,i]; print "" } }' file.txt
+
+34. sed Group Matching:
+    sed 's/\(old\) \(pattern\)/new \2/' file.txt
+
+35. awk Text Replacement:
+    awk '{ gsub(/old/, "new"); print }' file.txt
+
+36. sed Search and Replace Files:
+    sed -i 's/old/new/g' *.txt
+
+37. awk Pivot Table:
+    awk '{ arr[$1,$2] += $3 } END { for (i in arr) print i, arr[i] }' file.txt
+
+38. sed String Manipulation:
+    sed 's/^\(.\{1,3\}\)/(\1)/' file.txt
+
+39. awk Dynamic Field:
+    awk '{ if ($1 > 100) print $3 }' file.txt
+
+40. sed Conditional Deletion:
+    sed '/pattern/!d' file.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Advanced Awk/Sed Implementation Guide
+Testing Framework Implementation
+Unit Testing System
+bash
+
+#!/bin/bash
+# awk_test_suite.sh
+
+# Configuration
+TEST_DIR="./tests"
+REPORT_DIR="./reports"
+
+# Setup function
+setup() {
+    mkdir -p "$TEST_DIR" "$REPORT_DIR"
+    cat > "$TEST_DIR/test_data.txt" << EOF
+1,John,25
+2,Jane,30
+3,Bob,35
+EOF
+}
+
+# Test cases
+test_field_extraction() {
+    local result=$(awk -F, '{print $2}' "$TEST_DIR/test_data.txt")
+    local expected="John
+Jane
+Bob"
+
+    if [[ "$result" == "$expected" ]]; then
+        echo "✓ Field extraction test passed"
+        return 0
+    else
+        echo "✗ Field extraction test failed"
+        return 1
+    fi
+}
+
+# Run tests
+run_tests() {
+    local failed=0
+
+    echo "Running test suite..."
+    test_field_extraction || ((failed++))
+
+    echo "Tests completed: $((5-failed))/5 passed"
+    return $failed
+}
+
+# Main execution
+setup
+run_tests
+
+Performance Analysis Tools
+Benchmarking System
+bash
+
+#!/bin/bash
+# performance_test.sh
+
+# Configuration
+PERF_DIR="./performance"
+DATA_SIZES=(100 1000 10000 100000)
+
+# Setup
+setup_perf_tests() {
+    mkdir -p "$PERF_DIR"
+    for size in "${DATA_SIZES[@]}"; do
+        generate_test_data $size > "$PERF_DIR/data_${size}.txt"
+    done
+}
+
+# Generate test data
+generate_test_data() {
+    local size=$1
+    for ((i=1; i<=size; i++)); do
+        echo "Line $i,Data $i,Value $i"
+    done
+}
+
+# Benchmark function
+run_benchmark() {
+    local cmd=$1
+    local file=$2
+    local iterations=10
+    local total_time=0
+
+    for ((i=1; i<=iterations; i++)); do
+        start_time=$(date +%s%N)
+        eval "$cmd" "$file" >/dev/null
+        end_time=$(date +%s%N)
+        total_time=$((total_time + end_time - start_time))
+    done
+
+    echo "Average time: $(((total_time/iterations)/1000000)) ms"
+}
+
+# Main execution
+setup_perf_tests
+for size in "${DATA_SIZES[@]}"; do
+    echo "Testing with $size lines:"
+    run_benchmark "awk -F, '{print \$1}'" "$PERF_DIR/data_${size}.txt"
+    run_benchmark "sed 's/Line/Record/'" "$PERF_DIR/data_${size}.txt"
+done
+
+Cross-Platform Compatibility Layer
+Platform Detection and Adaptation
+bash
+
+#!/bin/bash
+# cross_platform_wrapper.sh
+
+# Platform detection
+get_platform() {
+    case "$(uname -s)" in
+        Linux*) echo "linux";;
+        Darwin*) echo "macos";;
+        MINGW*) echo "windows";;
+        *) echo "unknown";;
+    esac
+}
+
+# Platform-specific configuration
+configure_commands() {
+    PLATFORM=$(get_platform)
+    case "$PLATFORM" in
+        linux)
+            SED_CMD="sed"
+            AWK_CMD="gawk"
+            SED_INPLACE="-i"
+            ;;
+        macos)
+            SED_CMD="gsed"
+            AWK_CMD="gawk"
+            SED_INPLACE="-i ''"
+            ;;
+        windows)
+            SED_CMD="sed"
+            AWK_CMD="gawk"
+            SED_INPLACE="-i"
+            export MSYS_NO_PATHCONV=1
+            ;;
+    esac
+}
+
+# Cross-platform safe functions
+safe_sed() {
+    local pattern=$1
+    local file=$2
+
+    case "$PLATFORM" in
+        macos)
+            $SED_CMD $SED_INPLACE "$pattern" "$file"
+            ;;
+        *)
+            $SED_CMD -i "$pattern" "$file"
+            ;;
+    esac
+}
+
+safe_awk() {
+    local script=$1
+    local file=$2
+
+    $AWK_CMD "$script" "$file"
+}
+
+Usage Examples
+Testing Framework Usage
+bash
+
+#!/bin/bash
+# Example usage of testing framework
+
+# Source the test framework
+source awk_test_suite.sh
+
+# Add custom test case
+test_custom_processing() {
+    local input="test,data,123"
+    local result=$(echo "$input" | awk -F, '{print $3}')
+
+    if [[ "$result" == "123" ]]; then
+        echo "✓ Custom processing test passed"
+        return 0
+    else
+        echo "✗ Custom processing test failed"
+        return 1
+    fi
+}
+
+# Run all tests
+run_tests
+
+Performance Testing Usage
+bash
+
+#!/bin/bash
+# Example usage of performance testing
+
+# Source the performance framework
+source performance_test.sh
+
+# Custom benchmark test
+benchmark_custom_processing() {
+    local file=$1
+    echo "Testing custom processing:"
+    run_benchmark "awk -F, '{sum+=\$3} END {print sum}'" "$file"
+}
+
+# Run performance tests
+setup_perf_tests
+benchmark_custom_processing "$PERF_DIR/data_10000.txt"
+
+Cross-Platform Usage
+bash
+
+#!/bin/bash
+# Example usage of cross-platform functions
+
+# Source the cross-platform wrapper
+source cross_platform_wrapper.sh
+
+# Configure for current platform
+configure_commands
+
+# Use safe commands
+safe_sed 's/old/new/' input.txt
+safe_awk '{print $1}' input.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1. Real-Time Processing
+Real-time log monitoring with awk
+bash
+
+tail -f /var/log/syslog | \
+awk '
+BEGIN { last_check = systime() }
+{
+    current_time = systime()
+    if (current_time - last_check >= 60) {
+        printf "Events per minute: %d\n", NR
+        last_check = current_time
+        NR = 0
+    }
+    # Process current line
+    if ($0 ~ /ERROR/) print strftime("%Y-%m-%d %H:%M:%S"), $0
+}
+'
+
+Real-time stream editing with sed
+bash
+
+tail -f input.log | \
+sed --unbuffered \
+-e 's/ERROR/[ERROR]/g' \
+-e 's/WARNING/[WARNING]/g' \
+-e '/DEBUG/d'
+
+2. Binary File Processing
+Process binary files with awk
+Awk
+
+#!/usr/bin/awk -f
+# binary_file_processor.awk
+
+# Process binary files with awk
+od -t x1 binary_file | \
+awk '
+BEGIN {
+    HEADER_SIZE = 512
+    count = 0
+}
+{
+    for (i = 2; i <= NF; i++) {
+        if (count < HEADER_SIZE) {
+            printf "Byte %03d: %s\n", count, $i
+            count++
+        }
+    }
+}
+'
+
+Binary-safe sed processing
+bash
+
+od -t c binary_file | \
+sed -n 's/\\0/[NUL]/g; s/\\n/[LF]/g; p'
+
+3. Unicode and Multi-byte Character Support
+Unicode processing in awk
+Awk
+
+#!/usr/bin/awk -f
+# unicode_processor.awk
+
+awk '
+BEGIN {
+    UNICODE_MAX = 0x10FFFF
+}
+{
+    # Convert Unicode to UTF-8
+    for (i = 1; i <= NF; i++) {
+        if ($i ~ /^U\+/) {
+            code = strtonum(substr($i, 3))
+            if (code <= UNICODE_MAX) {
+                printf "%c", code
+            }
+        }
+    }
+    print ""
+}
+' unicode_data.txt
+
+Multi-byte character processing with sed
+bash
+
+sed -e 's/[[:alpha:]]\{2\}/XX/g' \
+-e 's/[[:digit:]]\{2\}/00/g' \
+-e 's/[[:space:]]\{2\}/ /g' \
+utf8_text.txt
+
+4. Memory-Optimized Processing
+Memory-efficient awk processing
+Awk
+
+#!/usr/bin/awk -f
+# memory_optimized_processor.awk
+
+awk '
+# Use minimal buffer size
+BEGIN {
+    BUFSIZE = 8192
+    buffer = ""
+}
+{
+    # Process line by line, flushing buffer when full
+    buffer = buffer $0 "\n"
+    if (length(buffer) > BUFSIZE) {
+        process_buffer()
+        buffer = ""
+    }
+}
+END {
+    if (buffer != "") process_buffer()
+}
+function process_buffer() {
+    # Process buffered data
+    split(buffer, lines, "\n")
+    for (i in lines) {
+        if (lines[i] != "") {
+            print "Processed:", lines[i]
+        }
+    }
+}
+' large_file.txt
+
+Stream-based sed processing
+bash
+
+sed -u \
+-e 'h; s/.*//; x' \
+-e 's/pattern/replacement/' \
+-e 'H; x; s/\n//' \
+large_file.txt
+
+5. Parallel Processing
+Parallel processing with awk
+bash
+
+#!/bin/bash
+# parallel_processing.sh
+
+# Split file into segments
+split -l 1000 large_file.txt segment_
+
+# Process each segment in parallel
+for segment in segment_*; do
+    awk '
+    {
+        sum += $1
+        count++
+    }
+    END {
+        print sum / count
+    }
+    ' "$segment" > "${segment}.result" &
+done
+wait
+
+# Aggregate results
+awk '
+{
+    total += $1
+    files++
+}
+END {
+    print "Final average:", total / files
+}
+' segment_*.result
+
+Parallel sed processing
+bash
+
+find . -type f -name "*.txt" -print0 | \
+xargs -0 -P 4 -I {} \
+sed -i \
+-e 's/old/new/g' \
+-e 's/foo/bar/g' \
+-e 's/baz/qux/g' \
+{}
+
+Security Framework
+Input Validation Framework
+bash
+
+#!/bin/bash
+# secure_input_processor.sh
+
+# Input validation patterns
+readonly EMAIL_PATTERN='^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+readonly IP_PATTERN='^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+readonly DATE_PATTERN='^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+
+# AWK input validator
+awk -v email_pat="$EMAIL_PATTERN" \
+    -v ip_pat="$IP_PATTERN" \
+    -v date_pat="$DATE_PATTERN" '
+BEGIN {
+    REJECTED_LOG = "/var/log/validation_rejects.log"
+}
+
+function validate_field(value, type) {
+    switch (type) {
+        case "email":
+            return match(value, email_pat)
+        case "ip":
+            return match(value, ip_pat)
+        case "date":
+            return match(value, date_pat)
+        default:
+            return 0
+    }
+}
+
+function log_rejection(line, reason) {
+    printf "%s [REJECTED] %s: %s\n", strftime("%Y-%m-%d %H:%M:%S"), reason, line > REJECTED_LOG
+}
+
+{
+    # Validate each field
+    valid = 1
+    if ($1 && !validate_field($1, "email")) {
+        log_rejection($0, "Invalid email")
+        valid = 0
+    }
+    if ($2 && !validate_field($2, "ip")) {
+        log_rejection($0, "Invalid IP")
+        valid = 0
+    }
+
+    # Only process valid lines
+    if (valid) print
+}'
+
+Data Sanitization
+Awk
+
+#!/usr/bin/awk -f
+# data_sanitizer.awk
+
+# Sanitization rules
+BEGIN {
+    # Define sensitive patterns
+    SENSITIVE_PATTERNS["ssn"] = "[0-9]{3}-[0-9]{2}-[0-9]{4}"
+    SENSITIVE_PATTERNS["credit_card"] = "[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}"
+    SENSITIVE_PATTERNS["api_key"] = "key-[a-zA-Z0-9]{32}"
+
+    # Replacement patterns
+    REPLACEMENTS["ssn"] = "XXX-XX-XXXX"
+    REPLACEMENTS["credit_card"] = "XXXX-XXXX-XXXX-XXXX"
+    REPLACEMENTS["api_key"] = "key-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+}
+
+# Sanitize line
+function sanitize_line(line) {
+    for (pattern in SENSITIVE_PATTERNS) {
+        if (line ~ SENSITIVE_PATTERNS[pattern]) {
+            line = gensub(SENSITIVE_PATTERNS[pattern], REPLACEMENTS[pattern], "g", line)
+        }
+    }
+    return line
+}
+
+# Process each line
+{
+    sanitized = sanitize_line($0)
+    if (sanitized != $0) {
+        printf "SANITIZED: Original length: %d, New length: %d\n", length($0), length(sanitized) > "/dev/stderr"
+    }
+    print sanitized
+}
+
+2 vulnerabilities detected
+
+Audit Logging System
+bash
+
+#!/bin/bash
+# audit_logger.sh
+
+# AWK audit processor
+awk '
+BEGIN {
+    AUDIT_LOG = "/var/log/audit/awk_processing.log"
+
+    # Initialize counters
+    processed = 0
+    modified = 0
+    errors = 0
+}
+
+function log_audit(action, details) {
+    printf "%s [%s] %s - %s\n", strftime("%Y-%m-%d %H:%M:%S"), PROCINFO["uid"], action, details > AUDIT_LOG
+}
+
+{
+    # Track original line
+    original = $0
+    processed++
+
+    # Process line
+    if (process_line()) {
+        modified++
+        log_audit("MODIFY", sprintf("Line %d modified", NR))
+    }
+}
+
+function process_line() {
+    # Return 1 if line was modified
+    modified = 0
+
+    # Data processing logic here
+    if ($0 ~ /pattern/) {
+        gsub(/pattern/, "replacement")
+        modified = 1
+    }
+
+    return modified
+}
+
+END {
+    log_audit("SUMMARY", sprintf("Processed: %d, Modified: %d, Errors: %d", processed, modified, errors))
+}'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+2. Scalability Solutions
+Large File Processor
+Awk
+
+#!/usr/bin/awk -f
+# large_file_processor.awk
+
+# Memory-efficient large file processing
+BEGIN {
+    # Configure chunk size (in bytes)
+    CHUNK_SIZE = 1024 * 1024 # 1MB
+
+    # Initialize buffers
+    delete buffer
+    buffer_size = 0
+
+    # Stats
+    total_processed = 0
+    chunks_processed = 0
+}
+
+# Process each line
+{
+    # Add to buffer
+    buffer[buffer_size++] = $0
+
+    # Process buffer if full
+    if (buffer_size * 100 > CHUNK_SIZE) { # Approximate size
+        process_buffer()
+        delete buffer
+        buffer_size = 0
+        chunks_processed++
+    }
+}
+
+# Process buffer contents
+function process_buffer() {
+    for (i = 0; i < buffer_size; i++) {
+        process_line(buffer[i])
+        total_processed++
+    }
+}
+
+# Line processing logic
+function process_line(line) {
+    # Add your processing logic here
+    if (line ~ /pattern/) {
+        # Process matching lines
+        processed_line = process_pattern(line)
+        print processed_line
+    }
+}
+
+END {
+    # Process remaining buffer
+    if (buffer_size > 0) {
+        process_buffer()
+    }
+    printf "Processed %d lines in %d chunks\n", total_processed, chunks_processed > "/dev/stderr"
+}
+
+Distributed Processing Framework
+bash
+
+#!/bin/bash
+# distributed_processor.sh
+
+# Configuration
+NODES=("node1" "node2" "node3")
+CHUNK_SIZE=1000000 # Lines per chunk
+WORK_DIR="/tmp/processing"
+RESULT_DIR="/tmp/results"
+
+# Split input file
+split_file() {
+    local input=$1
+    local size=$2
+
+    split -l "$size" "$input" "$WORK_DIR/chunk_"
+}
+
+# Distribute work to nodes
+distribute_work() {
+    local node_count=${#NODES[@]}
+    local chunk_count=$(ls "$WORK_DIR"/chunk_* | wc -l)
+    local chunks_per_node=$((chunk_count / node_count))
+
+    local node_idx=0
+    for chunk in "$WORK_DIR"/chunk_*; do
+        node=${NODES[$((node_idx % node_count))]}
+        scp "$chunk" "$node:$WORK_DIR/"
+
+        # Start processing on node
+        ssh "$node" "nohup ./process_chunk.awk '$chunk' > '$RESULT_DIR/$(basename "$chunk").result' 2>/dev/null &"
+
+        node_idx=$((node_idx + 1))
+    }
+}
+
+# Process chunk on worker node
+cat > process_chunk.awk << 'EOF'
+#!/usr/bin/awk -f
+
+BEGIN {
+    processed = 0
+    chunk_start = systime()
+}
+
+{
+    # Process line
+    process_line($0)
+    processed++
+
+    # Progress indicator
+    if (processed % 10000 == 0) {
+        printf "Processed %d lines\n", processed > "/dev/stderr"
+    }
+}
+
+END {
+    chunk_end = systime()
+    printf "SUMMARY: Processed %d lines in %d seconds\n", processed, chunk_end - chunk_start
+}
+EOF
+
+# Main processing
+main() {
+    local input=$1
+
+    # Initialize
+    mkdir -p "$WORK_DIR" "$RESULT_DIR"
+
+    # Split input
+    split_file "$input" "$CHUNK_SIZE"
+
+    # Distribute work
+    distribute_work
+
+    # Wait for completion
+    wait_for_completion
+
+    # Aggregate results
+    aggregate_results
+}
+
+main "$@"
+
+3. Advanced Data Structures
+Tree Processing
+Awk
+
+#!/usr/bin/awk -f
+# tree_processor.awk
+
+# Tree node structure:
+# nodes[id, "value"] = value
+# nodes[id, "left"] = left_child_id
+# nodes[id, "right"] = right_child_id
+
+BEGIN {
+    # Initialize tree
+    node_count = 0
+}
+
+# Create new node
+function create_node(value) {
+    node_id = ++node_count
+    nodes[node_id, "value"] = value
+    return node_id
+}
+
+# Insert node
+function insert(root, value) {
+    if (!root) {
+        return create_node(value)
+    }
+
+    if (value < nodes[root, "value"]) {
+        left = nodes[root, "left"]
+        nodes[root, "left"] = insert(left, value)
+    } else {
+        right = nodes[root, "right"]
+        nodes[root, "right"] = insert(right, value)
+    }
+
+    return root
+}
+
+# Tree traversal
+function inorder(root) {
+    if (!root) return
+
+    inorder(nodes[root, "left"])
+    print nodes[root, "value"]
+    inorder(nodes[root, "right"])
+}
+
+# Process input
+{
+    root = insert(root, $1)
+}
+
+END {
+    print "Tree traversal:"
+    inorder(root)
+}
+
+Graph Processing
+Awk
+
+#!/usr/bin/awk -f
+# graph_processor.awk
+
+# Graph structure:
+# graph[from, to] = weight
+# vertices[vertex] = 1
+
+BEGIN {
+    FS = ","
+    delete graph
+    delete vertices
+}
+
+# Add edge to graph
+function add_edge(from, to, weight) {
+    graph[from, to] = weight
+    vertices[from] = 1
+    vertices[to] = 1
+}
+
+# Dijkstra's shortest path
+function shortest_path(start, end, dist, prev, Q) {
+    # Initialize distances
+    for (v in vertices) {
+        dist[v] = 999999
+        prev[v] = ""
+        Q[v] = 1
+    }
+    dist[start] = 0
+
+    while (length(Q) > 0) {
+        # Find minimum distance
+        min_dist = 999999
+        for (v in Q) {
+            if (dist[v] < min_dist) {
+                min_dist = dist[v]
+                u = v
+            }
+        }
+
+        delete Q[u]
+
+        # Process neighbors
+        for (v in vertices) {
+            if ((u, v) in graph) {
+                alt = dist[u] + graph[u, v]
+                if (alt < dist[v]) {
+                    dist[v] = alt
+                    prev[v] = u
+                }
+            }
+        }
+    }
+
+    return dist[end]
+}
+
+# Process input edges
+{
+    add_edge($1, $2, $3)
+}
+
+END {
+    # Find shortest paths
+    for (v in vertices) {
+        for (w in vertices) {
+            if (v != w) {
+                printf "Shortest path %s -> %s: %d\n", v, w, shortest_path(v, w)
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Advanced Statistical Processing
+Awk
+
+#!/usr/bin/awk -f
+# statistical_processor.awk
+
+# Statistical functions for data analysis
+BEGIN {
+    # Initialize statistical variables
+    count = 0
+    sum = 0
+    sum_squares = 0
+    min = ""
+    max = ""
+}
+
+# Process each numeric value
+function process_number(value) {
+    count++
+    sum += value
+    sum_squares += value * value
+
+    # Update min/max
+    if (min == "" || value < min) min = value
+    if (max == "" || value > max) max = value
+}
+
+# Calculate standard deviation
+function std_dev() {
+    if (count < 2) return 0
+    variance = (sum_squares - (sum * sum / count)) / (count - 1)
+    return sqrt(variance)
+}
+
+# Calculate median
+function median(arr, n, temp) {
+    # Sort array
+    asort(arr, temp)
+
+    if (n % 2) {
+        return temp[int(n/2) + 1]
+    } else {
+        return (temp[n/2] + temp[n/2 + 1]) / 2
+    }
+}
+
+# Process input data
+{
+    for (i = 1; i <= NF; i++) {
+        if ($i ~ /^[0-9]+\.?[0-9]*$/) {
+            values[++total] = $i
+            process_number($i)
+        }
+    }
+}
+
+END {
+    printf "Statistical Analysis:\n"
+    printf "Count: %d\n", count
+    printf "Mean: %.2f\n", sum / count
+    printf "Median: %.2f\n", median(values, total)
+    printf "StdDev: %.2f\n", std_dev()
+    printf "Min: %.2f\n", min
+    printf "Max: %.2f\n", max
+}
+
+2. Advanced Data Validation
+Awk
+
+#!/usr/bin/awk -f
+# data_validator.awk
+
+# Data validation framework with schema support
+BEGIN {
+    # Define schema
+    SCHEMA["name"] = "^[A-Za-z ]{2,50}$"
+    SCHEMA["email"] = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+    SCHEMA["phone"] = "^\\+?[0-9]{10,15}$"
+    SCHEMA["date"] = "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+    SCHEMA["amount"] = "^[0-9]+(\\.[0-9]{2})?$"
+
+    # Load custom rules
+    load_custom_rules()
+
+    # Error counts
+    delete errors
+}
+
+# Load custom validation rules
+function load_custom_rules(line) {
+    while ((getline line < "validation_rules.conf") > 0) {
+        if (line ~ /^[^#]/) {
+            split(line, parts, "=")
+            SCHEMA[trim(parts[1])] = trim(parts[2])
+        }
+    }
+}
+
+# Trim whitespace
+function trim(str) {
+    gsub(/^[ \t]+|[ \t]+$/, "", str)
+    return str
+}
+
+# Validate field against schema
+function validate_field(value, type) {
+    if (!(type in SCHEMA)) {
+        errors[type] = "Unknown field type"
+        return 0
+    }
+
+    if (match(value, SCHEMA[type])) {
+        return 1
+    } else {
+        errors[type]++
+        return 0
+    }
+}
+
+# Validate complex relationships
+function validate_relationships(record, valid) {
+    valid = 1
+
+    # Date validation
+    if ("start_date" in record && "end_date" in record) {
+        if (record["start_date"] >= record["end_date"]) {
+            errors["date_range"]++
+            valid = 0
+        }
+    }
+
+    # Amount validation
+    if ("amount" in record && "total" in record) {
+        if (record["amount"] > record["total"]) {
+            errors["amount_range"]++
+            valid = 0
+        }
+    }
+
+    return valid
+}
+
+# Process each record
+{
+    valid = 1
+    delete record
+
+    # Validate each field
+    for (i = 1; i <= NF; i++) {
+        split($i, field, ":")
+        if (!validate_field(field[2], field[1])) {
+            valid = 0
+        }
+        record[field[1]] = field[2]
+    }
+
+    # Validate relationships
+    if (!validate_relationships(record)) {
+        valid = 0
+    }
+
+    # Output valid records
+    if (valid) print
+}
+
+END {
+    # Print validation summary
+    print "Validation Summary:" > "/dev/stderr"
+    for (type in errors) {
+        printf " %s: %d errors\n", type, errors[type] > "/dev/stderr"
+    }
+}
+
+3. Machine Learning Integration
+Awk
+
+#!/usr/bin/awk -f
+# ml_preprocessor.awk
+
+# Data preprocessing for machine learning
+BEGIN {
+    # Configuration
+    NORMALIZE = 1
+    STANDARDIZE = 0
+    ONE_HOT = 1
+
+    # Statistics for normalization
+    delete min_vals
+    delete max_vals
+    delete sum_vals
+    delete sum_squares
+    delete counts
+    delete categories
+}
+
+# First pass: collect statistics
+function collect_stats() {
+    for (i = 1; i <= NF; i++) {
+        if ($i ~ /^[0-9]+\.?[0-9]*$/) {
+            # Numeric field
+            if (!(i in min_vals) || $i < min_vals[i]) min_vals[i] = $i
+            if (!(i in max_vals) || $i > max_vals[i]) max_vals[i] = $i
+            sum_vals[i] += $i
+            sum_squares[i] += $i * $i
+            counts[i]++
+        } else {
+            # Categorical field
+            if (ONE_HOT) categories[i][$i] = 1
+        }
+    }
+}
+
+# Normalize numeric value
+function normalize(value, field) {
+    if (max_vals[field] == min_vals[field]) return 0
+    return (value - min_vals[field]) / (max_vals[field] - min_vals[field])
+}
+
+# Standardize numeric value
+function standardize(value, field) {
+    mean = sum_vals[field] / counts[field]
+    variance = (sum_squares[field] - (sum_vals[field]^2) / counts[field]) / (counts[field] - 1)
+    return (value - mean) / sqrt(variance)
+}
+
+# First pass
+NR == FNR {
+    collect_stats()
+    next
+}
+
+# Second pass: transform data
+{
+    output = ""
+    for (i = 1; i <= NF; i++) {
+        if ($i ~ /^[0-9]+\.?[0-9]*$/) {
+            # Normalize/standardize numeric fields
+            if (NORMALIZE) {
+                value = normalize($i, i)
+            } else if (STANDARDIZE) {
+                value = standardize($i, i)
+            } else {
+                value = $i
+            }
+            output = output value ","
+        } else if (ONE_HOT) {
+            # One-hot encode categorical fields
+            for (cat in categories[i]) {
+                value = ($i == cat) ? 1 : 0
+                output = output value ","
+            }
+        } else {
+            output = output $i ","
+        }
+    }
+    gsub(/,$/, "", output)
+    print output
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Kernel-Level Interactions
+
+How awk and sed interact with the Linux Kernel:
+
+    File System Interactions:
+        awk and sed read and write files by interacting with the file system through system calls such as open, read, write, and close.
+
+    Memory Usage:
+        awk and sed use memory to store patterns and buffers. Memory management is handled by the kernel, which allocates and deallocates memory as needed.
+
+    System Calls:
+        Both tools utilize system calls to perform operations like file I/O and process management.
+
+Performance Implications on Large Datasets:
+
+    Example 1: Using awk with Large Files:
+    Awk
+
+# large_file_processor.awk
+BEGIN {
+    CHUNK_SIZE = 1024 * 1024  # 1MB
+    delete buffer
+    buffer_size = 0
+    total_processed = 0
+    chunks_processed = 0
+}
+
+{
+    buffer[buffer_size++] = $0
+    if (buffer_size * 100 > CHUNK_SIZE) {
+        process_buffer()
+        delete buffer
+        buffer_size = 0
+        chunks_processed++
+    }
+}
+
+function process_buffer() {
+    for (i = 0; i < buffer_size; i++) {
+        process_line(buffer[i])
+        total_processed++
+    }
+}
+
+function process_line(line) {
+    # Custom processing logic
+    print line
+}
+
+END {
+    if (buffer_size > 0) {
+        process_buffer()
+    }
+    printf "Processed %d lines in %d chunks\n", total_processed, chunks_processed
+}
+
+Example 2: Using sed for Efficient Stream Editing:
+bash
+
+    sed -u \
+    -e 'h;:a;n;H;$!ba;g' \
+    -e 's/pattern/replacement/g' \
+    -e 'p;d' \
+    large_file.txt
+
+2. Performance Optimization
+
+Comparative Benchmarks with Alternative Tools:
+
+    Example 1: Benchmarking awk vs. grep for Pattern Matching:
+    bash
+
+time awk '/pattern/ {print $0}' large_file.txt
+time grep 'pattern' large_file.txt
+
+Example 2: Memory and CPU Usage Analysis:
+bash
+
+    /usr/bin/time -v awk '{sum += $1} END {print sum}' large_file.txt
+    /usr/bin/time -v grep -o '[0-9]*' large_file.txt | awk '{sum += $1} END {print sum}'
+
+Big O Notation for Text Processing Strategies:
+
+    Example 1: Linear Search with awk:
+    Awk
+
+awk '{sum += $1} END {print sum}' large_file.txt
+
+Example 2: Optimized Search with sed:
+bash
+
+    sed -n 's/^.*pattern.*$/&/p' large_file.txt
+
+3. Low-Level Implementation Details
+
+Internal Algorithms of awk and sed:
+
+    Pattern Matching and Substitution:
+        awk uses a state machine to process patterns and actions.
+        sed uses a finite automaton for pattern matching and substitution.
+
+Interaction with File System Caches:
+
+    Example 1: Caching in awk:
+    Awk
+
+awk 'NR==1 {buf=$0; next} {print buf; buf=$0} END {print buf}' large_file.txt
+
+Example 2: Efficient Line Processing with sed:
+bash
+
+    sed -n '1h;1!H;${g;s/\n/, /g;p}' large_file.txt
+
+4. Regex and Extended Pattern Matching
+
+Advanced Regex Usage in awk and sed:
+
+    Example 1: Using Extended Regex in awk:
+    Awk
+
+awk 'BEGIN {FPAT = "([^,]+)|(\"[^\"]+\")"} {print $1, $2}' file.csv
+
+Example 2: Using PCRE in sed:
+bash
+
+    sed -r 's/([0-9]{3})-([0-9]{2})-([0-9]{4})/\1\2\3/' file.txt
+
+Complex Pattern Matching Techniques:
+
+    Example 1: Matching Nested Patterns with awk:
+    Awk
+
+awk '/start/ {flag=1} /end/ {flag=0} flag' file.txt
+
+Example 2: Using Backreferences in sed:
+bash
+
+    sed 's/\(.*\)-\(.*\)/\2-\1/' file.txt
+
+5. Specialized Use Cases
+
+Using awk and sed in Distributed File Systems:
+
+    Example 1: Processing Files in HDFS with awk:
+    bash
+
+hadoop fs -cat /path/to/hdfs/file.txt | awk '{print $1, $2}'
+
+Example 2: Using sed with NFS Mounted Files:
+bash
+
+    sed 's/old/new/' /mnt/nfs/file.txt
+
+Techniques for Cloud Storage and Container Environments:
+
+    Example 1: Using awk in Docker Containers:
+    Dockerfile
+
+FROM alpine:latest
+RUN apk add --no-cache gawk
+COPY script.awk /scripts/
+ENTRYPOINT ["awk", "-f", "/scripts/script.awk"]
+
+Example 2: Using sed with Kubernetes ConfigMap:
+YAML
+
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: text-processing-scripts
+    data:
+      script.sed: |
+        s/old/new/
+        s/foo/bar/
+
+6. Performance Profiling
+
+Detailed Timing Analysis and Memory Profiling Tools:
+
+    Example 1: Profiling awk with time:
+    bash
+
+/usr/bin/time -v awk '{sum += $1} END {print sum}' large_file.txt
+
+Example 2: Memory Profiling for sed:
+bash
+
+    /usr/bin/time -v sed 's/pattern/replacement/' large_file.txt
+
+Comparative Performance with Alternative Commands:
+
+    Example 1: Comparing awk and cut:
+    bash
+
+time awk -F',' '{print $1, $2}' file.csv
+time cut -d',' -f1,2 file.csv
+
+Example 2: Optimizing sed with perl:
+bash
+
+    time sed 's/old/new/g' file.txt
+    time perl -pe 's/old/new/g' file.txt
+
+7. Implementation Variations
+
+C Language Implementation Details of awk and sed:
+
+    Example 1: Custom awk Implementation in C:
+    C
+
+#include <stdio.h>
+#include <string.h>
+
+int main() {
+    char line[1024];
+    while (fgets(line, sizeof(line), stdin)) {
+        // Custom processing logic
+        printf("%s", line);
+    }
+    return 0;
+}
+
+Example 2: Custom sed Implementation in C:
+C
+
+    #include <stdio.h>
+    #include <regex.h>
+
+    int main() {
+        char line[1024];
+        regex_t regex;
+        regcomp(&regex, "pattern", 0);
+        while (fgets(line, sizeof(line), stdin)) {
+            if (regexec(&regex, line, 0, NULL, 0) == 0) {
+                // Custom processing logic
+                printf("%s", line);
+            }
+        }
+        regfree(&regex);
+        return 0;
+    }
+
+Alternative Text Processing Tools:
+
+    Example 1: Using perl for Text Processing:
+    Perl
+
+perl -ne 'print if /pattern/' file.txt
+
+Example 2: Using python for Text Processing:
+Python
+
+    import re
+    with open('file.txt') as f:
+        for line in f:
+            if re.search('pattern', line):
+                print(line, end='')
+
+8. Historical Evolution
+
+Timeline of awk and sed Development:
+
+    Example 1: Brief History of awk:
+    text
+
+1977: `awk` was developed by Alfred Aho, Peter Weinberger, and Brian Kernighan at Bell Labs.
+1985: Introduction of `nawk` (new `awk`).
+1994: GNU `awk` (gawk) was released, adding new features.
+
+Example 2: Brief History of sed:
+text
+
+    1973: `sed` was developed by Lee E. McMahon of Bell Labs.
+    1980s: Various enhancements and portability improvements.
+    1990s: GNU `sed` was released, adding new features.
+
+Academic Papers and Research References:
+
+    Example 1: Reference to awk Paper:
+    text
+
+Aho, A. V., Kernighan, B. W., & Weinberger, P. J. (1987). The AWK Programming Language. Addison-Wesley.
+
+Example 2: Reference to sed Paper:
+text
+
+    McMahon, L. E. (1978). The sed Stream Editor. Bell Labs Technical Report.
+
+9. Theoretical Computer Science
+
+Text Processing as a Computational Problem:
+
+    Example 1: Complexity of Text Search Algorithms:
+    text
+
+The Boyer-Moore algorithm has a best-case time complexity of O(n/m).
+The Knuth-Morris-Pratt (KMP) algorithm has a time complexity of O(n).
+
+Example 2: Efficiency of Different Text Processing Strategies:
+text
+
+    Regular expressions in `sed` and `awk` use finite automata for pattern matching.
+    These algorithms have a linear time complexity of O(n).
+
+Implications in Computational Theory:
+
+    Example 1: Impact on Automata Theory:
+    text
+
+Finite automata used in `sed` and `awk` are foundational in automata theory.
+
+Example 2: Relevance in Algorithm Design:
+text
+
+    Efficient text processing algorithms are crucial in designing scalable software systems.
+
+10. Integration Guides
+
+CI/CD Pipeline Integration with awk and sed:
+
+    Example 1: GitLab CI/CD Pipeline:
+    YAML
+
+text-processing:
+  script:
+    - awk -f scripts/validate.awk input.txt
+    - sed -f scripts/transform.sed input.txt > output.txt
+  artifacts:
+    paths:
+      - output.txt
+
+Example 2: Jenkins Pipeline:
+Groovy
+
+    pipeline {
+        agent any
+        stages {
+            stage('Text Processing') {
+                steps {
+                    sh 'awk -f scripts/validate.awk input.txt'
+                    sh 'sed -f scripts/transform.sed input.txt > output.txt'
+                }
+                post {
+                    success {
+                        archiveArtifacts artifacts: 'output.txt'
+                    }
+                }
+            }
+        }
+    }
+
+DevOps Automation Strategies:
+
+    Example 1: Automating Log Rotation with awk:
+    bash
+
+logrotate_script.sh:
+#!/bin/bash
+awk '/ERROR/ {print $0}' /var/log/syslog > /var/log/errors.log
+
+Example 2: Automating Configuration Updates with sed:
+bash
+
+    config_update.sh:
+    #!/bin/bash
+    sed -i 's/old_value/new_value/' /etc/config.conf
+
+Configuration Management Tool Integration:
+
+    Example 1: Integrating with Ansible:
+    YAML
+
+- name: Process logs with awk
+  shell: awk '/ERROR/ {print $0}' /var/log/syslog > /var/log/errors.log
+
+Example 2: Integrating with Puppet:
+Puppet
+
+    exec { 'process_logs':
+      command => 'awk "/ERROR/ {print $0}" /var/log/syslog > /var/log/errors.log',
+    }
+
+11. Emerging Technology
+
+Containerization and Kubernetes Search Strategies:
+
+    Example 1: Using awk in Docker Containers:
+    Dockerfile
+
+FROM alpine:latest
+RUN apk add --no-cache gawk
+COPY script.awk /scripts/
+ENTRYPOINT ["awk", "-f", "/scripts/script.awk"]
+
+Example 2: Using sed with Kubernetes ConfigMap:
+YAML
+
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: text-processing-scripts
+    data:
+      script.sed: |
+        s/old/new/
+        s/foo/bar/
+
+Cloud-Native Text Processing Techniques:
+
+    Example 1: Using awk in AWS Lambda:
+    bash
+
+aws lambda create-function --function-name processLogs \
+  --runtime provided \
+  --handler processLogs.handler \
+  --zip-file fileb://function.zip
+
+Example 2: Using sed in Google Cloud Functions:
+Python
+
+    from google.cloud import storage
+
+    def process_logs(data, context):
+        client = storage.Client()
+        bucket = client.get_bucket('my-bucket')
+        blob = bucket.blob('logs.txt')
+        content = blob.download_as_string().decode('utf-8')
+        processed_content = content.replace('old', 'new')
+        blob.upload_from_string(processed_content)
+
+Integration with Modern Data Processing Frameworks:
+
+    Example 1: Using awk with Apache Spark:
+    Python
+
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName('TextProcessing').getOrCreate()
+df = spark.read.text('file.txt')
+df.createOrReplaceTempView('logs')
+result = spark.sql("SELECT * FROM logs WHERE value LIKE '%ERROR%'")
+result.show()
+
+Example 2: Using sed with Apache Hadoop:
+bash
+
+    hadoop fs -cat /path/to/hdfs/file.txt | sed 's/old/new/' | hadoop fs -put - /path/to/hdfs/processed_file.txt
+
+12. Monitoring and Diagnostics
+
+Advanced Logging Strategies:
+
+    Example 1: Enhancing awk with Logging:
+    Awk
+
+awk '{
+    if ($0 ~ /ERROR/) {
+        print strftime("%Y-%m-%d %H:%M:%S"), $0 >> "/var/log/awk_errors.log"
+    }
+}' /var/log/syslog
+
+Example 2: Enhancing sed with Logging:
+bash
+
+    sed -e '/ERROR/{w /var/log/sed_errors.log
+
+d}' file.txt
+Code
+
+**Performance Monitoring and Optimization:**
+
+- **Example 1: Monitoring `awk` Performance:**
+```bash
+/usr/bin/time -v awk '{sum += $1} END {print sum}' large_file.txt
+
+    Example 2: Monitoring sed Performance:
+    bash
+
+    /usr/bin/time -v sed 's/old/new/g' large_file.txt
+
+Techniques for Extracting Debug Information:
+
+    Example 1: Debugging awk Scripts:
+    Awk
+
+awk '{
+    print "Processing line:", NR
+    print "Content:", $0
+}' file.txt
+
+Example 2: Debugging sed Scripts:
+bash
+
+    sed -n 'l' file.txt
+
+Diagnostic Tools:
+
+    Example 1: Tracing awk Operations with strace:
+    bash
+
+strace -o strace.log awk '{print $1}' file.txt
+
+Example 2: Profiling sed with perf:
+bash
+
+    perf record -g -- sed 's/old/new/g' file.txt
+
+System Call Analysis and Optimization:
+
+    Example 1: Analyzing System Calls with strace:
+    bash
+
+strace -c -o strace_summary.log awk '{print $1}' file.txt
+
+Example 2: Optimizing sed Performance:
+bash
+
+sed -u 's/old/new/g' file.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Lab 1: Basic awk Usage
+Objectives:
+
+    Understand basic awk syntax and usage.
+    Learn how to print specific fields and perform simple text processing.
+
+Steps:
+
+    Print Specific Fields from a File:
+    bash
+
+echo -e "1,John,25\n2,Jane,30\n3,Bob,35" > data.csv
+awk -F',' '{ print $1, $2 }' data.csv
+
+Perform Arithmetic Operations:
+bash
+
+echo -e "10\n20\n30\n40\n50" > numbers.txt
+awk '{ sum += $1 } END { print "Sum:", sum }' numbers.txt
+
+Use BEGIN and END Blocks:
+bash
+
+    awk 'BEGIN { print "Start of Processing" } { print $1 } END { print "End of Processing" }' data.csv
+
+Lab 2: Basic sed Usage
+Objectives:
+
+    Learn basic sed commands and options.
+    Perform text substitution and deletion.
+
+Steps:
+
+    Substitute Text in a File:
+    bash
+
+echo "Hello World" > file.txt
+sed 's/World/Universe/' file.txt
+
+Delete Specific Lines:
+bash
+
+echo -e "Line 1\nLine 2\nLine 3" > file.txt
+sed '2d' file.txt
+
+Use -i for In-Place Editing:
+bash
+
+    echo "Change this line" > file.txt
+    sed -i 's/Change/Modify/' file.txt
+
+Lab 3: Advanced awk Features
+Objectives:
+
+    Use user-defined functions in awk.
+    Perform complex text processing with arrays and conditionals.
+
+Steps:
+
+    Define and Use Functions:
+    bash
+
+echo -e "3\n5\n7" > numbers.txt
+awk 'function square(x) { return x * x } { print $1, square($1) }' numbers.txt
+
+Work with Arrays:
+bash
+
+echo -e "apple\nbanana\napple\nbanana\ncherry" > fruits.txt
+awk '{ count[$1]++ } END { for (fruit in count) print fruit, count[fruit] }' fruits.txt
+
+Use Conditionals:
+bash
+
+    echo -e "John\nJane\nDoe" > names.txt
+    awk '{ if ($1 == "Jane") print "Hello, Jane!" }' names.txt
+
+Lab 4: Advanced sed Techniques
+Objectives:
+
+    Use backreferences and hold space in sed.
+    Perform multi-line text processing.
+
+Steps:
+
+    Use Backreferences:
+    bash
+
+echo "123-456-7890" > phone.txt
+sed -r 's/([0-9]{3})-([0-9]{3})-([0-9]{4})/\1 \2 \3/' phone.txt
+
+Use Hold Space:
+bash
+
+echo -e "Line 1\nLine 2" > file.txt
+sed -e '1{h;d;}' -e '2{G;}' file.txt
+
+Multi-Line Processing:
+bash
+
+    echo -e "start\nline1\nline2\nend" > file.txt
+    sed -n '/start/,/end/p' file.txt
+
+Lab 5: Real-World awk Examples
+Objectives:
+
+    Apply awk for real-world text processing tasks.
+    Combine awk with other commands.
+
+Steps:
+
+    Extract Specific Columns from a CSV:
+    bash
+
+echo -e "1,John,25\n2,Jane,30\n3,Bob,35" > data.csv
+awk -F',' '{ print $1, $3 }' data.csv
+
+Summarize Log Files:
+bash
+
+echo -e "ERROR Connection failed\nINFO Connection established\nERROR Connection timeout" > log.txt
+awk '/ERROR/ { count++ } END { print "Total Errors:", count }' log.txt
+
+Combine with Other Commands:
+bash
+
+    grep "ERROR" log.txt | awk '{ print $2 }' | sort | uniq -c
+
+Lab 6: Real-World sed Examples
+Objectives:
+
+    Perform advanced text transformations using sed.
+    Use sed in scripts for automation.
+
+Steps:
+
+    Replace Text in a Configuration File:
+    bash
+
+echo "127.0.0.1 localhost" > config.txt
+sed -i 's/127.0.0.1/192.168.1.1/' config.txt
+
+Remove Comments and Empty Lines:
+bash
+
+echo -e "# Comment\n\nLine 1\nLine 2" > file.txt
+sed '/^#/d;/^$/d' file.txt
+
+Use sed in a Shell Script:
+bash
+
+    echo -e "old text\nold text" > file.txt
+    echo 'sed -i "s/old/new/" file.txt' > script.sh
+    chmod +x script.sh
+    ./script.sh
+
+Lab 7: Performance Optimization with awk and sed
+Objectives:
+
+    Optimize awk and sed scripts for large datasets.
+    Analyze performance using profiling tools.
+
+Steps:
+
+    Optimize awk for Large Files:
+    bash
+
+echo -e "1\n2\n3\n4\n5" > large_file.txt
+awk 'NR % 1000 == 0' large_file.txt
+
+Optimize sed for Large Files:
+bash
+
+echo -e "line1\nline2\nline3\nline4" > large_file.txt
+sed -n '1~2p' large_file.txt
+
+Profile Performance:
+bash
+
+    /usr/bin/time -v awk '{ print $1 }' large_file.txt
+    /usr/bin/time -v sed 's/line/LINE/' large_file.txt
+
+Lab 8: Integration with Modern Tools and Environments
+Objectives:
+
+    Integrate awk and sed with Docker and Kubernetes.
+    Use awk and sed in CI/CD pipelines.
+
+Steps:
+
+    Docker Integration with awk:
+    Dockerfile
+
+FROM alpine:latest
+RUN apk add --no-cache gawk
+COPY script.awk /scripts/
+ENTRYPOINT ["awk", "-f", "/scripts/script.awk"]
+
+Kubernetes ConfigMap for sed:
+YAML
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: text-processing-scripts
+data:
+  script.sed: |
+    s/old/new/
+    s/foo/bar/
+
+CI/CD Pipeline with awk and sed (GitLab):
+YAML
+
+    text-processing:
+      script:
+        - awk -f scripts/validate.awk input.txt
+        - sed -f scripts/transform.sed input.txt > output.txt
+      artifacts:
+        paths:
+          - output.txt
+
+
+
+
+
+
+
+
+
+
+Lab 9: Text Processing with awk and sed in a Pipeline
+Objectives:
+
+    Learn how to combine awk and sed in a pipeline for complex text processing.
+
+Steps:
+
+    Filter and Transform Log Entries:
+    bash
+
+echo -e "INFO: User login\nERROR: Failed login\nINFO: User logout" > log.txt
+grep "ERROR" log.txt | awk '{ print $2 }' | sed 's/ERROR:/ALERT:/'
+
+Extract and Format CSV Data:
+bash
+
+echo -e "1,John,25\n2,Jane,30\n3,Bob,35" > data.csv
+awk -F',' '{ print $1, $3 }' data.csv | sed 's/ /, Age: /'
+
+Combine Multiple Commands:
+bash
+
+    echo -e "apple\nbanana\ncherry" > fruits.txt
+    awk '{ print toupper($0) }' fruits.txt | sed 's/A/An /'
+
+Lab 10: Conditional Processing with awk and sed
+Objectives:
+
+    Use conditional statements in awk and sed to process text based on specific conditions.
+
+Steps:
+
+    Conditional Processing in awk:
+    bash
+
+echo -e "10\n20\n30\n40\n50" > numbers.txt
+awk '{ if ($1 > 30) print $1 " is greater than 30"; else print $1 " is less than or equal to 30" }' numbers.txt
+
+Conditional Processing in sed:
+bash
+
+echo -e "apple\nbanana\ncherry" > fruits.txt
+sed -n '/banana/{s/banana/BANANA/; p}' fruits.txt
+
+Combining Conditions:
+bash
+
+    echo -e "apple\nbanana\ncherry" > fruits.txt
+    awk '{ if ($1 ~ /a/) print $1 " contains 'a'"; else print $1 " does not contain 'a'" }' fruits.txt
+
+Lab 11: Handling Multi-Line Records with awk and sed
+Objectives:
+
+    Process multi-line records using awk and sed.
+
+Steps:
+
+    Multi-Line Records in awk:
+    bash
+
+echo -e "Name: John\nAge: 25\n\nName: Jane\nAge: 30" > records.txt
+awk '/Name:/ { name = $2 } /Age:/ { print name, $2 }' records.txt
+
+Multi-Line Records in sed:
+bash
+
+echo -e "Name: John\nAge: 25\n\nName: Jane\nAge: 30" > records.txt
+sed -n '/Name:/ {N; s/\n/ /; p}' records.txt
+
+Combining Multi-Line Processing:
+bash
+
+    echo -e "Name: John\nAge: 25\n\nName: Jane\nAge: 30" > records.txt
+    awk '/Name:/ { name = $2 } /Age:/ { print name, $2 }' records.txt | sed 's/ / is /'
+
+Lab 12: Text Transformation with awk and sed
+Objectives:
+
+    Perform text transformations using awk and sed.
+
+Steps:
+
+    Transform Text with awk:
+    bash
+
+echo -e "apple\nbanana\ncherry" > fruits.txt
+awk '{ print toupper($0) }' fruits.txt
+
+Transform Text with sed:
+bash
+
+echo -e "apple\nbanana\ncherry" > fruits.txt
+sed 's/^./\U&/' fruits.txt
+
+Complex Text Transformation:
+bash
+
+    echo -e "apple\nbanana\ncherry" > fruits.txt
+    awk '{ print toupper($0) }' fruits.txt | sed 's/A/An /'
+
+Lab 13: Data Validation with awk and sed
+Objectives:
+
+    Validate data using awk and sed and generate reports.
+
+Steps:
+
+    Validate Email Addresses with awk:
+    bash
+
+echo -e "john@example.com\ninvalid-email\njane_doe@example.com" > emails.txt
+awk '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ { print $0 " is valid" } !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ { print $0 " is invalid" }' emails.txt
+
+Validate Phone Numbers with sed:
+bash
+
+echo -e "+1234567890\n123-456-7890\ninvalid-phone" > phones.txt
+sed -n '/^\+?[0-9]{10,15}$/p' phones.txt
+
+Generate Validation Report:
+bash
+
+    echo -e "john@example.com\ninvalid-email\njane_doe@example.com" > emails.txt
+    awk '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ { print $0 " is valid" } !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ { print $0 " is invalid" }' emails.txt > validation_report.txt
+
+Lab 14: Data Aggregation with awk and sed
+Objectives:
+
+    Aggregate data using awk and sed.
+
+Steps:
+
+    Aggregate Data with awk:
+    bash
+
+echo -e "apple\nbanana\napple\nbanana\ncherry" > fruits.txt
+awk '{ count[$1]++ } END { for (fruit in count) print fruit, count[fruit] }' fruits.txt
+
+Aggregate Data with sed:
+bash
+
+echo -e "apple\nbanana\napple\nbanana\ncherry" > fruits.txt
+sed 's/^/fruit: /' fruits.txt | sort | uniq -c
+
+Combined Aggregation:
+bash
+
+    echo -e "apple\nbanana\napple\nbanana\ncherry" > fruits.txt
+    awk '{ count[$1]++ } END { for (fruit in count) print fruit, count[fruit] }' fruits.txt | sed 's/^/Count: /'
+
+Lab 15: Advanced Pattern Matching with awk and sed
+Objectives:
+
+    Use advanced pattern matching techniques in awk and sed.
+
+Steps:
+
+    Advanced Pattern Matching in awk:
+    bash
+
+echo -e "apple\nbanana\ncherry" > fruits.txt
+awk '/a/ { print $0 " contains 'a'" } !/a/ { print $0 " does not contain 'a'" }' fruits.txt
+
+Advanced Pattern Matching in sed:
+bash
+
+echo -e "apple\nbanana\ncherry" > fruits.txt
+sed -n '/a/p' fruits.txt
+
+Complex Pattern Matching:
+bash
+
+    echo -e "apple\nbanana\ncherry" > fruits.txt
+    awk '/a/ { print $0 " contains 'a'" }' fruits.txt | sed 's/a/A/g'
+
+Lab 16: Using awk and sed with JSON Data
+Objectives:
+
+    Process JSON data using awk and sed.
+
+Steps:
+
+    Extract JSON Data with awk:
+    bash
+
+echo -e '{"key1": "value1", "key2": "value2"}' > data.json
+jq -r 'to_entries[] | "\(.key) \(.value)"' data.json | awk '{ print $1 ": " $2 }'
+
+Extract JSON Data with sed:
+bash
+
+echo -e '{"key1": "value1", "key2": "value2"}' > data.json
+sed -n 's/.*"key1": "\([^"]*\)".*/\1/p' data.json
+
+Process JSON Arrays:
+bash
+
+    echo -e '[{"name": "John"}, {"name": "Jane"}]' > data.json
+    jq -r '.[] | .name' data.json | awk '{ print "Name: " $0 }'
+
+Lab 17: File Processing Automation with awk and sed
+Objectives:
+
+    Automate file processing tasks using awk and sed.
+
+Steps:
+
+    Batch Process Files with awk:
+    bash
+
+echo -e "file1\nfile2\nfile3" > files.txt
+awk '{ system("echo Processing " $1) }' files.txt
+
+Batch Process Files with sed:
+bash
+
+echo -e "file1\nfile2\nfile3" > files.txt
+while read file; do
+  sed 's/file/processed_file/' $file
+done < files.txt
+
+Automate Log Rotation:
+bash
+
+    echo -e "log1\nlog2\nlog3" > logs.txt
+    awk '{ system("gzip " $1) }' logs.txt
+
+Lab 18: Combining awk and sed for Data Analysis
+Objectives:
+
+    Use awk and sed together for advanced data analysis.
+
+Steps:
+
+    Analyze CSV Data:
+    bash
+
+echo -e "ID,Name,Age\n1,John,25\n2,Jane,30\n3,Bob,35" > data.csv
+awk -F',' '{ if ($3 > 30) print $2 " is older than 30" }' data.csv
+
+Extract and Transform Log Data:
+bash
+
+echo -e "ERROR: Disk full\nINFO: Disk cleaned\nERROR: Disk full again" > log.txt
+grep "ERROR" log.txt | awk '{ print $2, $3 }' | sed 's/full/100%/'
+
+Generate Summary Reports:
+bash
+
+    echo -e "apple\nbanana\napple\nbanana\ncherry" > fruits.txt
+    awk '{ count[$1]++ } END { for (fruit in count) print fruit, count[fruit] }' fruits.txt | sed 's/^/Fruit: /'
+
+These additional labs cover more advanced and specialized use cases of awk and sed,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This guide provides a detailed overview of using the awk and sed commands in Linux for text processing and manipulation. With practical examples, troubleshooting tips, and automation techniques, this document aims to help system administrators effectively manage text-processing tasks.
