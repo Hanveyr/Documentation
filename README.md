@@ -1,11 +1,13 @@
 This comprehensive Linux study guide follows the LFCS and RHCSA exam objectives.
+
 Each guide has command line steps for Linux system administration.  
+
 With the RHCE as our ultimate goal!
 
 
 
 
--Fundamentals-
+-----------------------Fundamentals---------------------------
 
 Linux101.txt              How to use Linux guide
 
@@ -22,7 +24,7 @@ UsersGroups.txt          User/Group Controls
 
 
 
--Core Tools & Operations-
+-------------------Core Tools & Operations---------------------------
 
 vimprofessional.txt       Advanced text editor
 
@@ -38,7 +40,7 @@ LOGS.txt                  Everything Logs
 
 
 
--System Administration-
+-----------------------System Administration----------------------------
 
 systemDServices.txt       Services and SystemD
 
@@ -54,7 +56,8 @@ cronAT.txt                Scheduling Jobs AT Cron
 
 
 
--File Management & Backup-
+
+----------------------File Management & Backup-------------------------
 
 Rsync.txt                 File Syncing
 
@@ -64,14 +67,14 @@ difjoinCompare.txt        Difference Join Compare manual
 
 
 
--Version Control-
+-------------------------------Version Control---------------------------------
 
 howtouseGIT.txt           How to set up Git without issues
 
 
 
 
--Networking Fundamentals-
+--------------------Networking Fundamentals--------------------------
 
 Networking101.txt         Linux Networking Guide
 
@@ -85,7 +88,7 @@ StaticRouting.txt         Everything Static IP
 
 
 
--Network Configuration & Security-
+-------------------Network Configuration & Security-------------------
 
 NETPLAN.txt               Netplan Advanced
 
@@ -97,7 +100,7 @@ ssh.txt                   Secure Shell Guide
 
 
 
--Storage & Virtualization-
+----------------------Storage & Virtualization--------------
 
 RAID.txt                  All things RAID
 
@@ -109,23 +112,25 @@ quickEmu.txt              Quick Emulator
 
 
 
--Security-
+---------------Security-------------------
 
 appArmor.txt              How to use AppArmor
 
 
 
--Containers & Orchestration-
+-----------------Containers & Orchestration----------------------
 
 Docker.txt                Docker/Kubernetes
 
 
 
--Web & File Servers-
+------------------Web & File Servers------------------
 
 apachedoc.txt             Apache HTTP server guide
 
 Nginx.txt                 Nginx web server guide
+
 samba.txt                 Samba file sharing
+
 FTP.txt                   FTP server setup
 
