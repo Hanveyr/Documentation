@@ -17,7 +17,7 @@ manPages.txt              Manual Pages Explained
 
 LinuxFileStructure.txt    Linux File System Guide
 
-fileAccess.txt           File Access % Permissions
+fileAccess.txt           File Access & Permissions
 
 UsersGroups.txt          User/Group Controls
 
