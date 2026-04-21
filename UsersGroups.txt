@@ -584,3 +584,1092 @@ See the Decision Trees for Troubleshooting
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------
+--------------------------------------------------------------
+--------------------------------------------------------------
+--------------------------------------------------------------
+
+
+
+one year later -
+
+
+
+------UsersGroupsMissing.txt------
+
+Everything missing from UsersGroups.txt.
+Read alongside the original. Nothing here repeats what is already there.
+
+
+================================================================
+SECTION 1 - CORRECTIONS TO ERRORS IN THE ORIGINAL
+================================================================
+
+----------------------------------------------------------------
+ERROR 1: Password hash algorithm numbers are reversed
+----------------------------------------------------------------
+
+The original document states:
+    1: SHA-256
+    5: SHA-512
+
+This is WRONG. The numbers are backwards.
+
+Correct mapping (what you actually see in /etc/shadow):
+    $1$   MD5          Old, cryptographically broken, do not use
+    $2a$  Blowfish     Used primarily on BSD systems
+    $2y$  Blowfish     Updated variant
+    $5$   SHA-256      Acceptable, not default on modern systems
+    $6$   SHA-512      Current Linux standard, what you want
+
+How to read a shadow entry:
+    jdoe:$6$rounds=5000$saltsalt$HASHEDPASSWORD...:18950:0:99999:7:::
+          ^^ ^^^^^^^^^ ^^^^^^^^
+          |  optional  random salt (makes same password hash differently)
+          algorithm (6 = SHA-512)
+
+    $6$ at the start means SHA-512. If you see $1$ the account
+    is using MD5 which is decades-old and should be updated.
+
+Check what algorithm your system uses for new passwords:
+    grep ENCRYPT_METHOD /etc/login.defs    # should show SHA512
+    authselect current                     # RHEL 8+ (see ERROR 2 below)
+
+
+----------------------------------------------------------------
+ERROR 2: authconfig is deprecated - use authselect
+----------------------------------------------------------------
+
+The original document shows:
+    authconfig --passalgo md5, sha256, sha512
+
+authconfig was removed in RHEL 8 and is not available on
+Fedora 28+. Using it on a modern system will fail.
+
+Modern replacement on RHEL/Fedora:
+    authselect list                  # list available profiles
+    authselect current               # show current profile
+    authselect select sssd           # use sssd profile
+    authselect select minimal        # use minimal local profile
+
+To change password hashing algorithm on modern RHEL:
+    Edit /etc/login.defs directly:
+    ENCRYPT_METHOD SHA512
+
+On Debian/Ubuntu:
+    Edit /etc/pam.d/common-password and look for the
+    pam_unix.so line, ensure it includes "sha512":
+    password [success=1 default=ignore] pam_unix.so sha512 shadow
+
+
+----------------------------------------------------------------
+ERROR 3: pam_tally2 is deprecated - use pam_faillock
+----------------------------------------------------------------
+
+The original shows:
+    sudo pam_tally2 --user=username --reset
+
+pam_tally2 was removed in RHEL 8 and is not on modern systems.
+The replacement is pam_faillock.
+
+Modern equivalents:
+    faillock --user username           # show failed attempts for user
+    faillock --user username --reset   # unlock/reset failed attempts
+    faillock                           # show all locked accounts
+
+Configuring lockout policy with pam_faillock:
+    # /etc/security/faillock.conf (RHEL 8+ / modern systems)
+    deny = 5              # lock after 5 failures
+    unlock_time = 300     # auto-unlock after 300 seconds (5 min)
+    fail_interval = 900   # count failures within this window
+
+    # On Debian/Ubuntu: edit /etc/pam.d/common-auth
+    # Add: auth required pam_faillock.so preauth
+    #      auth required pam_faillock.so authfail
+
+
+----------------------------------------------------------------
+ERROR 4: usermod -a is not a standalone flag
+----------------------------------------------------------------
+
+The original lists:
+    usermod -a username: Appends groups without removing others.
+
+The -a flag has NO meaning without -G. It cannot be used alone.
+The correct form is always:
+    usermod -aG groupname username     # -a and -G together
+
+    # WRONG (does nothing useful or may error):
+    usermod -a jdoe
+
+    # CORRECT:
+    usermod -aG docker jdoe
+
+
+================================================================
+SECTION 2 - THE CRITICAL WARNING: usermod -G WITHOUT -a
+================================================================
+
+This destroys group memberships and is one of the most common
+accidental lockouts in Linux administration.
+
+    # jdoe currently belongs to: jdoe, sudo, docker, developers
+    id jdoe
+    # uid=1001(jdoe) gid=1001(jdoe) groups=1001(jdoe),27(sudo),999(docker),1005(developers)
+
+    # You want to add jdoe to "backup" group:
+    usermod -G backup jdoe          # WRONG - removes all other groups
+    id jdoe
+    # uid=1001(jdoe) gid=1001(jdoe) groups=1001(jdoe),1006(backup)
+    # jdoe is now OUT of sudo, docker, and developers
+
+    # Correct way:
+    usermod -aG backup jdoe         # -a means APPEND, keeps existing groups
+    id jdoe
+    # uid=1001(jdoe) gid=1001(jdoe) groups=1001(jdoe),27(sudo),999(docker),1005(developers),1006(backup)
+
+Rule: ALWAYS use -aG together, never -G alone, unless you
+deliberately intend to replace all supplementary group memberships.
+
+Recovery if you made this mistake:
+    # Re-add the groups you removed one at a time
+    usermod -aG sudo jdoe
+    usermod -aG docker jdoe
+    usermod -aG developers jdoe
+    # User must log out and back in for changes to take effect
+
+
+================================================================
+SECTION 3 - MISSING useradd FLAGS
+================================================================
+
+The original covers -g, -G, -N, -u but misses these essential flags:
+
+-m    create the home directory (does NOT happen by default on all distros)
+    useradd -m alice            # creates /home/alice
+    useradd -m -d /data/alice alice  # creates home at custom path
+
+    On RHEL/Fedora: home directory IS created by default (CREATE_HOME=yes in login.defs)
+    On Debian/Ubuntu: home NOT created without -m (use adduser instead, see Section 5)
+    Safe habit: always use -m explicitly so scripts work across distros
+
+-M    explicitly do NOT create home directory
+    useradd -M serviceaccount   # no home dir, for system/service accounts
+
+-s    specify the login shell
+    useradd -s /bin/bash alice          # bash shell
+    useradd -s /bin/zsh alice           # zsh shell
+    useradd -s /usr/sbin/nologin svc    # service account, no login
+    useradd -s /bin/false svc           # also blocks login
+
+-c    set the GECOS comment field (full name, info)
+    useradd -c "Alice Smith" alice
+    useradd -c "Alice Smith,Ops,555-1234" alice   # full GECOS format
+
+-e    set account expiry date at creation
+    useradd -e 2025-12-31 contractor    # account disabled after this date
+    useradd -e "" alice                 # no expiry
+
+-f    set inactive days (days after password expires before account locked)
+    useradd -f 30 alice     # account locked 30 days after password expires
+    useradd -f -1 alice     # never lock (default)
+
+-r    create a system account
+    useradd -r -s /usr/sbin/nologin -d /var/lib/myapp myapp
+    # UID assigned from system range (below UID_MIN)
+    # No password aging
+    # Use this for service accounts, daemons
+    # Full form for a proper service account below
+
+-D    view or change useradd defaults
+    useradd -D                     # show current defaults
+    useradd -D -s /bin/bash        # change default shell for new users
+    useradd -D -b /home            # change default base home directory
+
+    Output of useradd -D:
+    GROUP=100
+    HOME=/home
+    INACTIVE=-1
+    EXPIRE=
+    SHELL=/bin/bash
+    SKEL=/etc/skel
+    CREATE_MAIL_SPOOL=yes
+
+Full proper useradd command for a real user:
+    useradd -m -s /bin/bash -c "Alice Smith" -G sudo,developers alice
+    passwd alice
+
+Full proper useradd for a service account:
+    useradd -r -s /usr/sbin/nologin -d /var/lib/myservice \
+            -c "My Service Account" myservice
+    # -r: system account (low UID, no aging)
+    # -s nologin: cannot log in interactively
+    # -d: specify home even if not created (for ownership)
+
+
+================================================================
+SECTION 4 - MISSING usermod FLAGS
+================================================================
+
+-l    rename a user's login name (does NOT rename home directory)
+    usermod -l newname oldname
+    usermod -l jsmith jdoe         # login name changes from jdoe to jsmith
+    # /home/jdoe still exists with old name
+    # To also move home: usermod -l jsmith -d /home/jsmith -m jdoe
+
+-U    unlock a user account (opposite of -L which IS in the original)
+    usermod -U jdoe                # remove the ! from password in /etc/shadow
+
+-e    set account expiry date
+    usermod -e 2025-06-30 contractor   # expire on date
+    usermod -e "" alice                # remove expiry (never expires)
+    usermod -e 1 alice                 # expire immediately (disables account)
+
+-f    set inactive days after password expiry
+    usermod -f 30 alice     # account locked 30 days after password expires
+    usermod -f -1 alice     # disable this (never auto-lock)
+
+Complete user rename workflow:
+    # Rename jdoe to jsmith, move and rename home directory
+    usermod -l jsmith -d /home/jsmith -m jdoe
+    groupmod -n jsmith jdoe         # rename the private group too
+    # Verify:
+    id jsmith
+    ls -la /home/jsmith
+
+
+================================================================
+SECTION 5 - adduser vs useradd (Debian/Ubuntu)
+================================================================
+
+One of the most common points of confusion. The two commands
+look similar but behave completely differently.
+
+useradd (all distros):
+    Low-level POSIX utility. Does exactly what flags say, nothing more.
+    Does NOT create home directory without -m on Debian/Ubuntu.
+    Does NOT prompt for password.
+    Does NOT prompt for full name or other info.
+    Must specify everything explicitly with flags.
+    Ideal for scripts because it is predictable.
+
+    useradd -m -s /bin/bash alice    # must specify everything
+    passwd alice                     # set password separately
+
+adduser (Debian/Ubuntu only, interactive):
+    High-level Perl script that wraps useradd.
+    Automatically creates home directory.
+    Copies /etc/skel/ to home directory.
+    Interactively prompts for: password, full name, room, phone, etc.
+    Automatically creates a private group for the user.
+    Friendlier for interactive use, not for scripts.
+
+    adduser alice                   # interactive, prompts for everything
+    adduser alice sudo              # add alice to the sudo group
+
+addgroup (Debian/Ubuntu only):
+    High-level wrapper around groupadd. Interactive.
+    addgroup developers             # create group interactively
+
+Which to use:
+    Interactive session on Debian/Ubuntu:   adduser / addgroup
+    Shell scripts on any distro:            useradd / groupadd
+    RHEL/Fedora:                            useradd only (adduser not available or is a symlink)
+
+Check which you have:
+    which adduser                  # exists on Debian/Ubuntu
+    file $(which adduser)          # "Perl script" on Debian, "ELF binary" on RHEL
+
+
+================================================================
+SECTION 6 - SYSTEM ACCOUNTS vs REGULAR ACCOUNTS
+================================================================
+
+The distinction is not made in the original document.
+
+Regular user account:
+    UID >= 1000 (as set by UID_MIN in /etc/login.defs)
+    Has a real login shell (/bin/bash, /bin/zsh)
+    Has a real home directory (/home/username)
+    Subject to password aging
+    Intended for a human to log into
+
+System account:
+    UID 1-999 (below UID_MIN)
+    Shell is /usr/sbin/nologin or /bin/false (cannot log in)
+    Home directory is usually in /var/lib/, /run/, or /nonexistent
+    No password aging (INACTIVE=-1, no expiry)
+    Intended for a service or daemon to run as, not a human
+
+Why services need their own accounts:
+    Running a service as root means a compromised service has
+    full system access. Running it as a dedicated system account
+    limits damage. The service can only access files owned by
+    or granted to its account.
+    Example: nginx runs as www-data, mysql runs as mysql.
+
+Creating a proper system account:
+    useradd -r -s /usr/sbin/nologin -d /var/lib/myapp \
+            -c "MyApp Service" myapp
+
+    # -r assigns a UID from the system range and disables aging
+    # Verify it worked:
+    grep myapp /etc/passwd
+    # myapp:x:998:998:MyApp Service:/var/lib/myapp:/usr/sbin/nologin
+
+    # Set ownership of app directories:
+    chown -R myapp:myapp /var/lib/myapp
+
+Common system accounts you will see:
+    nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+    daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+    www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+    mysql:x:112:116:MySQL Server:/nonexistent:/bin/false
+    sshd:x:110:65534::/run/sshd:/usr/sbin/nologin
+
+
+================================================================
+SECTION 7 - nologin AND false SHELLS EXPLAINED
+================================================================
+
+Used as the shell for service accounts to prevent interactive login.
+
+/usr/sbin/nologin:
+    When someone tries to log in as this account:
+    - Prints: "This account is currently not available."
+    - Then exits
+    - Logs the attempt to syslog
+    - The message can be customized: edit /etc/nologin.txt
+
+/bin/false:
+    When someone tries to log in:
+    - Immediately exits with code 1
+    - No message printed
+    - More restrictive than nologin
+
+/usr/sbin/nologin vs /bin/false:
+    Both prevent interactive login equally.
+    nologin gives a helpful message so the user knows why.
+    false gives nothing (more confusing for legitimate blocked logins).
+    nologin is preferred for service accounts.
+
+Verify a shell is valid (must be listed in /etc/shells for some tools):
+    cat /etc/shells                # list of valid login shells
+    # /bin/false and /usr/sbin/nologin may or may not be listed
+
+Check what shell an account has:
+    grep myapp /etc/passwd | cut -d: -f7    # extract shell field
+    getent passwd myapp                     # show full passwd entry
+
+Setting shells:
+    usermod -s /usr/sbin/nologin alice     # block alice from logging in
+    usermod -s /bin/bash alice             # restore bash login
+
+
+================================================================
+SECTION 8 - FOUR STATES THAT BLOCK LOGIN
+================================================================
+
+Four different mechanisms prevent login. They work differently
+and have different use cases. The original treats them as the same.
+
+1. Password locked (usermod -L or passwd -l):
+    Prepends ! to the password hash in /etc/shadow.
+    The account still EXISTS, files and crons remain intact.
+    Use: temporary block, account under review.
+
+    usermod -L alice                # lock
+    usermod -U alice                # unlock
+    passwd -l alice                 # also locks (adds !)
+    passwd -u alice                 # also unlocks
+
+    Check: grep alice /etc/shadow | cut -d: -f2
+    Locked hash starts with: $6$!...  or !!...
+    grep alice /etc/shadow | grep -E "^[^:]+:!" = locked
+
+2. Account expired (chage -E):
+    Sets an expiry date in /etc/shadow.
+    Login is refused after that date.
+    Password is unchanged.
+    Use: contractors with known end dates, temporary accounts.
+
+    chage -E 2025-06-30 alice       # expires June 30
+    chage -E -1 alice               # remove expiry (never expires)
+    chage -E 1 alice                # expire immediately (days since epoch)
+
+3. Password expired (chage -d 0):
+    Forces a password reset at next login.
+    Does NOT block login permanently.
+    User can still log in, must change password immediately.
+    Use: first login setup, security incident password reset.
+
+    chage -d 0 alice                # force change at next login
+    # NOT the same as locking the account
+
+4. nologin/false shell:
+    Shell field in /etc/passwd set to /usr/sbin/nologin or /bin/false.
+    No interactive login possible even with correct password.
+    sudo can still run commands AS this user.
+    Use: service accounts, permanently disabled users.
+
+    usermod -s /usr/sbin/nologin alice
+
+Summary table:
+    Method              Blocks SSH   Blocks console   Files intact   Reversible
+    ---------------     ---------    --------------   ------------   ----------
+    passwd -l           Yes          Yes              Yes            Yes (passwd -u)
+    chage -E (past)     Yes          Yes              Yes            Yes (chage -E -1)
+    chage -d 0          No (forces)  No (forces)      Yes            Yes (chage -d today)
+    shell=nologin       Yes          Yes              Yes            Yes (usermod -s)
+
+Checking an account's status:
+    passwd -S alice
+    # Output: alice PS 2024-01-15 0 99999 7 -1 (Password Set)
+    # Status codes: PS=set, LK=locked, NP=no password
+
+    chage -l alice      # show all aging info
+    grep alice /etc/shadow   # read raw shadow entry
+
+
+================================================================
+SECTION 9 - MISSING USER INFORMATION COMMANDS
+================================================================
+
+w - who is logged in and what they are doing RIGHT NOW
+    w                   # show all logged-in users with their current command
+    w alice             # show only alice
+
+    Output columns:
+    USER    LOGIN@   IDLE   JCPU   PCPU   WHAT
+    alice   10:30    0.00s  0.04s  0.00s  vim /etc/nginx.conf
+    bob     09:15    2:30   0.10s  0.00s  bash
+
+    IDLE = time since last activity
+    JCPU = CPU used by all processes at that TTY
+    PCPU = CPU used by current process
+    WHAT = current command being run
+
+last - show login history
+    last                        # all login/logout history
+    last alice                  # history for alice only
+    last -n 20                  # last 20 entries
+    last -F                     # show full date/time
+    last reboot                 # show system reboot history
+    last -x shutdown            # show shutdown events
+
+    Reads from: /var/log/wtmp (binary, rotated periodically)
+
+lastlog - last login time for EVERY account on the system
+    lastlog                     # show all accounts and their last login
+    lastlog -u alice            # show only alice
+    lastlog -t 7                # accounts that logged in within last 7 days
+    lastlog -b 30               # accounts that have NOT logged in for 30+ days
+
+    Accounts showing "**Never logged in**" are worth auditing.
+    Reads from: /var/log/lastlog
+
+lastb - failed login attempts (requires /var/log/btmp to exist)
+    sudo lastb                  # show all failed login attempts
+    sudo lastb alice            # failed attempts for alice
+    sudo lastb -n 20            # last 20 failed attempts
+
+    If /var/log/btmp does not exist:
+    touch /var/log/btmp && chmod 600 /var/log/btmp
+
+whoami - print effective username
+    whoami                      # prints just your username
+    # Equivalent to: id -un
+
+who - show who is logged in (simpler than w)
+    who                         # logged-in users
+    who -b                      # time of last system boot
+    who -r                      # current runlevel
+    who am i                    # just your own session info
+
+finger - user information lookup (install separately)
+    finger alice                # show alice's info (GECOS, last login, etc.)
+    finger                      # show all logged-in users
+    sudo apt install finger     # Debian/Ubuntu
+    # Note: often disabled for security. finger daemon should NOT be running.
+
+getent - query NSS database (works for local AND LDAP/AD users)
+    getent passwd               # list all users (local + LDAP if configured)
+    getent passwd alice         # show alice's passwd entry
+    getent group                # list all groups
+    getent group sudo           # show sudo group and its members
+    getent shadow alice         # show alice's shadow entry (needs root)
+
+    getent is the correct way to look up users in environments with
+    LDAP, Active Directory, or NIS. grep /etc/passwd misses directory users.
+
+    Verify a user exists (works for both local and LDAP):
+    getent passwd alice && echo "user exists" || echo "no such user"
+
+
+================================================================
+SECTION 10 - SAFE EDITING AND INTEGRITY CHECKING
+================================================================
+
+The original mentions visudo but not the equivalent tools for
+/etc/passwd and /etc/group, or the integrity checkers.
+
+vipw - safely edit /etc/passwd
+    sudo vipw                   # opens /etc/passwd in your $EDITOR
+    # Locks the file while editing so concurrent changes cannot corrupt it
+    # Validates syntax before saving
+
+    sudo vipw -s                # edit /etc/shadow instead
+
+vigr - safely edit /etc/group
+    sudo vigr                   # opens /etc/group
+    sudo vigr -s                # edit /etc/gshadow
+
+    Why use these instead of nano/vim directly:
+    If two admins edit /etc/passwd simultaneously with vi, one
+    will overwrite the other's changes. vipw uses file locking
+    to prevent this. More importantly, it validates the file
+    format and refuses to save if the syntax is broken.
+
+pwck - verify /etc/passwd and /etc/shadow integrity
+    sudo pwck                   # check for inconsistencies
+    sudo pwck -r                # read-only check (just report, no fix)
+    sudo pwck -s                # sort entries by UID
+
+    What pwck checks:
+    - Correct number of fields
+    - Valid UID and GID (GID exists in /etc/group)
+    - Valid home directory (exists on disk)
+    - Valid shell (listed in /etc/shells)
+    - Password field matches between passwd and shadow
+    - Duplicate UIDs or usernames
+
+grpck - verify /etc/group and /etc/gshadow integrity
+    sudo grpck                  # check group files
+    sudo grpck -r               # read-only check
+
+    What grpck checks:
+    - Correct number of fields
+    - Valid GID
+    - Valid members (all listed users exist in /etc/passwd)
+    - Duplicate GIDs or group names
+
+
+================================================================
+SECTION 11 - MISSING GROUP MANAGEMENT COMMANDS
+================================================================
+
+gpasswd - manage group passwords and administrators
+    gpasswd -a alice developers         # add alice to developers
+    gpasswd -d alice developers         # remove alice from developers
+    gpasswd -A alice developers         # make alice a group administrator
+                                        # (can add/remove members without root)
+    gpasswd -M alice,bob developers     # set EXACT membership list
+                                        # (replaces all current members)
+    gpasswd developers                  # set a group password
+                                        # (allows non-members to join with newgrp)
+    gpasswd -r developers               # remove group password
+
+groupmems - list or manage group members
+    groupmems -l -g developers          # list members of developers
+    groupmems -a alice -g developers    # add alice to group
+    groupmems -d alice -g developers    # remove alice from group
+    groupmems -p -g developers          # purge all members
+
+    groupmems -l -g sudo                # quick way to see who has sudo
+
+
+================================================================
+SECTION 12 - /etc/gshadow - THE SHADOW FILE FOR GROUPS
+================================================================
+
+Completely absent from the original. This is the group
+equivalent of /etc/shadow.
+
+Location: /etc/gshadow
+Permissions: -r-------- root:shadow (400)
+
+Format: groupname:password:administrators:members
+    developers:!:alice:alice,bob,carol
+    ^          ^ ^     ^
+    |          | |     comma-separated member list
+    |          | comma-separated group admins
+    |          ! means no password (or * means disabled)
+    group name
+
+Fields:
+    groupname       name of the group
+    password        encrypted group password (! = none, * = disabled)
+                    used with newgrp for non-members to join temporarily
+    administrators  comma-separated list of users who can manage this group
+                    these users can use gpasswd without root
+    members         comma-separated list of group members
+
+Why it exists:
+    /etc/group is world-readable. Storing group passwords there
+    would be insecure. /etc/gshadow is readable only by root
+    and the shadow group, just like /etc/shadow for user passwords.
+
+View it:
+    sudo cat /etc/gshadow
+    sudo getent gshadow developers      # single group entry
+
+
+================================================================
+SECTION 13 - /etc/default/useradd EXPLAINED
+================================================================
+
+Absent from the original. This file controls what useradd does
+when you do not specify certain flags.
+
+Location: /etc/default/useradd
+View it:  cat /etc/default/useradd
+
+Contents and meaning:
+    GROUP=100           default GID if -g not specified and UPG disabled
+    HOME=/home          base directory for home dirs (/home/username)
+    INACTIVE=-1         days after password expiry before lockout (-1=never)
+    EXPIRE=             default account expiry date (empty=never)
+    SHELL=/bin/bash     default login shell if -s not specified
+    SKEL=/etc/skel      skeleton directory copied to new home
+    CREATE_MAIL_SPOOL=yes  create /var/mail/username for new users
+
+Changing defaults with useradd -D:
+    useradd -D -s /bin/bash         # change default shell
+    useradd -D -b /data/home        # change default home base
+    useradd -D -f 30                # change default inactive days
+    useradd -D                      # show current defaults (reads this file)
+
+This file vs /etc/login.defs:
+    /etc/default/useradd    defaults specific to the useradd command
+    /etc/login.defs         system-wide defaults for login, passwd, useradd, userdel
+
+
+================================================================
+SECTION 14 - THE GECOS FIELD
+================================================================
+
+Listed as "comment" in the original with no explanation.
+
+GECOS stands for: General Electric Comprehensive Operating System.
+A legacy name from when data was passed between Unix and a GE machine.
+Now just means "user information" but the name stuck.
+
+Format: fullname,room,workphone,homephone,other
+    john:x:1001:1001:John Doe,Room 203,555-1234,555-5678:/home/john:/bin/bash
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^
+                              GECOS field (comma-separated)
+
+Most installations use just the full name:
+    john:x:1001:1001:John Doe:/home/john:/bin/bash
+
+Commands that use the GECOS field:
+    finger alice            # displays name, office, phone
+    w                       # shows real name in some formats
+    mail                    # uses full name in email headers
+
+Editing GECOS:
+    chfn alice                      # interactive, prompts for each field
+    chfn -f "Alice Smith" alice     # set full name directly
+    chfn -r "Room 404" alice        # set room number
+    chfn -w "555-9999" alice        # set work phone
+    chfn -h "555-8888" alice        # set home phone
+    usermod -c "Alice Smith" alice  # change full name via usermod
+
+Reading GECOS:
+    getent passwd alice | cut -d: -f5          # extract GECOS field
+    getent passwd | awk -F: '{print $1,$5}'    # username + full name for all users
+
+
+================================================================
+SECTION 15 - chsh - CHANGE LOGIN SHELL
+================================================================
+
+Listed in the original only as usermod -s. chsh is the
+dedicated interactive command that belongs here too.
+
+chsh alice                      # interactive, prompts for new shell
+chsh -s /bin/zsh alice          # set shell directly
+chsh -s /usr/sbin/nologin alice # block interactive login
+chsh -l                         # list valid shells (reads /etc/shells)
+
+/etc/shells:
+    The list of shells considered valid for login purposes.
+    chsh only allows shells listed here (unless run as root).
+    cat /etc/shells             # see the list
+
+    /bin/sh
+    /bin/bash
+    /usr/bin/zsh
+    /usr/bin/fish
+    /bin/false and /usr/sbin/nologin may or may not be listed
+    depending on the distro
+
+Adding a new shell to /etc/shells:
+    which zsh                           # find zsh path
+    echo "$(which zsh)" >> /etc/shells  # add it
+
+
+================================================================
+SECTION 16 - SUDOERS FILE SYNTAX FULLY DECODED
+================================================================
+
+The original shows one example with no explanation of what
+the four fields mean.
+
+The format:
+    WHO  WHERE=(AS_WHOM:AS_GROUP)  WHAT
+
+    jdoe ALL=(ALL:ALL) ALL
+
+    jdoe        who this rule applies to
+    ALL         from any host/machine (hostname or ALL)
+    (ALL:ALL)   can run as any user : any group
+    ALL         can run any command
+
+Field by field:
+
+WHO - who gets the privilege:
+    jdoe                    a specific user
+    %developers             a group (% prefix means group)
+    #1001                   a user by UID
+    %#1005                  a group by GID
+
+WHERE - from which host:
+    ALL                     from any host (almost always use ALL)
+    webserver               only when on the machine named "webserver"
+
+AS_WHOM - which user/group to run as:
+    (ALL)                   can become any user
+    (root)                  can only become root
+    (www-data)              can only become www-data
+    (ALL:ALL)               any user, any group
+    (root:wheel)            become root user, wheel group
+
+WHAT - which commands are allowed:
+    ALL                     any command
+    /usr/bin/systemctl      only this specific command
+    /usr/bin/systemctl restart nginx    only this specific command + args
+    !/usr/bin/su            NOT this command (exclude)
+
+Common real-world examples:
+    # Full sudo for a user (same as being in sudo/wheel group):
+    jdoe ALL=(ALL:ALL) ALL
+
+    # No password required for all commands:
+    jdoe ALL=(ALL) NOPASSWD: ALL
+
+    # Only restart nginx, no password required:
+    deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx
+
+    # Group can manage services:
+    %operations ALL=(root) /usr/bin/systemctl
+
+    # Allow running specific script as www-data:
+    capistrano ALL=(www-data) NOPASSWD: /var/www/deploy.sh
+
+Aliases for cleaner sudoers:
+    # Define once, reuse many times
+    User_Alias  WEBADMINS = alice, bob, carol
+    Host_Alias  WEBSERVERS = web1, web2, web3
+    Cmnd_Alias  WEBOPS = /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx
+    Runas_Alias WEBUSER = www-data
+
+    WEBADMINS WEBSERVERS=(WEBUSER) NOPASSWD: WEBOPS
+
+/etc/sudoers.d/ drop-in directory:
+    Instead of editing /etc/sudoers directly, drop files here.
+    Each file is included automatically.
+    Safer: a broken file here only breaks that file, not all sudo.
+
+    visudo -f /etc/sudoers.d/alice       # create/edit alice's sudo rules
+    # File must have permissions 0440 or sudo will refuse it:
+    chmod 0440 /etc/sudoers.d/alice
+
+    Example drop-in for a deploy user:
+    echo "deploy ALL=(www-data) NOPASSWD: /var/www/scripts/deploy.sh" \
+         > /etc/sudoers.d/deploy
+    chmod 0440 /etc/sudoers.d/deploy
+
+    visudo -c                            # check ALL sudoers files for syntax errors
+    visudo -c -f /etc/sudoers.d/alice   # check a specific file
+
+sudo command reference:
+    sudo command                    # run command as root
+    sudo -u alice command          # run command as alice (not root)
+    sudo -u alice -g developers ls # run as alice with developers group
+    sudo -l                        # list what YOU can run with sudo
+    sudo -l -U alice               # list what alice can run with sudo
+    sudo -i                        # full root login shell (reads /root/.bashrc etc.)
+    sudo -s                        # root shell using current environment
+    sudo !!                        # re-run last command with sudo
+    sudo -v                        # refresh sudo credential (extend timeout)
+    sudo -k                        # invalidate sudo credential immediately
+
+
+================================================================
+SECTION 17 - WHAT userdel LEAVES BEHIND
+================================================================
+
+The original shows userdel -r but never covers what gets
+LEFT BEHIND even with -r, which causes confusion and security issues.
+
+What userdel -r removes:
+    The user entry from /etc/passwd
+    The user entry from /etc/shadow
+    The user's primary group from /etc/group (if no other members)
+    The home directory and all its contents
+    The user's mail spool (/var/mail/username)
+
+What userdel -r does NOT remove:
+    Crontabs:    /var/spool/cron/username        <- must delete manually
+    at jobs:     /var/spool/at/ (any owned by user)
+    Files outside home dir owned by the deleted user's UID
+    Running processes owned by that user (must kill first)
+    Entries in /etc/sudoers or /etc/sudoers.d/ referencing the user
+    ACL entries on files referencing the user
+    SSH known_hosts or authorized_keys on other machines
+
+Finding orphaned files after deletion:
+    find / -uid 1001 2>/dev/null        # by the old UID number
+    # (the username no longer maps but the UID number stays on files)
+    find / -nouser 2>/dev/null          # files with no valid owner
+
+Full safe user deletion workflow:
+    # 1. Find all their files before deleting
+    find / -user alice 2>/dev/null > /tmp/alice_files.txt
+
+    # 2. Kill any running processes
+    pkill -u alice
+    # or:
+    kill $(ps -u alice -o pid=)
+
+    # 3. Lock first, give time to check nothing breaks
+    usermod -L alice
+
+    # 4. Remove crontab
+    crontab -r -u alice
+
+    # 5. Remove sudoers entries
+    rm -f /etc/sudoers.d/alice
+    visudo  # check for inline entries mentioning alice
+
+    # 6. Delete the user
+    userdel -r alice
+
+    # 7. Find any remaining orphaned files
+    find / -nouser 2>/dev/null
+
+
+================================================================
+SECTION 18 - THE USER PRIVATE GROUP (UPG) SCHEME
+================================================================
+
+Default on RHEL/Fedora. Not explained in the original.
+
+When you create a user with useradd alice, TWO things are created:
+    1. User alice  (UID 1001)
+    2. Group alice (GID 1001) -- same name, same number
+
+alice's entry in /etc/passwd:   alice:x:1001:1001:...
+alice's entry in /etc/group:    alice:x:1001:
+
+This group named "alice" is alice's private group.
+No one else is in it by default.
+
+Why this matters for umask:
+    Traditional Unix: all users share a common group (users, GID 100).
+    Files created by any user are group-owned by "users".
+    You must use umask 022 to prevent other users from writing your files.
+
+    With UPG: alice's files are owned by group "alice".
+    Only alice is in group "alice".
+    So umask 002 (group-writable) is safe because the group is private.
+    New files get permissions 664 for files and 775 for directories.
+    This makes collaboration easier -- you can SGID a shared directory
+    and everyone's new files inherit the project group.
+
+How useradd handles UPG:
+    useradd alice       # creates user alice + group alice
+    useradd -N alice    # creates user alice WITHOUT creating group alice
+                        # uses the default group from /etc/login.defs instead
+
+Check if UPG is enabled:
+    grep USERGROUPS_ENAB /etc/login.defs    # yes = UPG enabled
+    grep ^alice /etc/group                   # group named alice exists
+
+
+================================================================
+SECTION 19 - nsswitch.conf: WHERE USER LOOKUP HAPPENS
+================================================================
+
+Mentioned in the original as "a file to edit" with no explanation.
+
+Name Service Switch. Controls the order the system searches
+for users, groups, passwords, hostnames, and more.
+
+Location: /etc/nsswitch.conf
+View it:  cat /etc/nsswitch.conf
+
+The passwd line controls user lookup order:
+    passwd:   files systemd sss
+    group:    files systemd sss
+    shadow:   files sss
+
+    files     look in /etc/passwd first (local accounts)
+    systemd   check systemd for dynamic users
+    sss       check SSSD (LDAP/Active Directory if configured)
+    ldap      check LDAP directly
+    nis       check NIS
+    winbind   check Winbind (Samba/Active Directory)
+
+How lookup works:
+    The system tries each source in order, left to right.
+    For user "alice": check /etc/passwd first. If found, stop.
+    If not found in files, check sss (LDAP).
+    This is why local accounts always override LDAP accounts
+    with the same name (files is first).
+
+Why this matters operationally:
+    getent passwd    # honors nsswitch.conf, shows ALL users
+    cat /etc/passwd  # only shows LOCAL users
+    # In an LDAP environment, grep /etc/passwd misses directory users.
+    # Always use getent in mixed environments.
+
+Common configuration:
+    # Local only:
+    passwd: files
+
+    # Local + LDAP (SSSD):
+    passwd: files sss
+
+    # Local + LDAP (direct):
+    passwd: files ldap
+
+After changing nsswitch.conf:
+    getent passwd        # verify it shows the right users
+    systemctl restart nscd 2>/dev/null   # restart name cache daemon if running
+
+
+================================================================
+SECTION 20 - QUOTA MANAGEMENT
+================================================================
+
+Listed in one line in the original. Full coverage:
+
+User quotas limit how much disk space a user or group can use.
+
+Enable quotas on a filesystem:
+    # 1. Add quota options to /etc/fstab:
+    /dev/sda1  /home  ext4  defaults,usrquota,grpquota  0 2
+
+    # 2. Remount:
+    mount -o remount /home
+
+    # 3. Create quota database files:
+    quotacheck -cugm /home
+
+    # 4. Enable quotas:
+    quotaon /home
+
+Set quota for a user:
+    edquota -u alice          # opens quota editor for alice
+    edquota -g developers     # opens quota editor for group
+
+    # Quota editor shows:
+    # Disk quotas for user alice (uid 1001):
+    # Filesystem  blocks  soft  hard  inodes  soft  hard
+    # /dev/sda1    1024    0     0      100     0     0
+    #
+    # Set soft/hard limits:
+    # soft = warning threshold
+    # hard = absolute limit (cannot be exceeded)
+    # blocks = 1KB units
+    # inodes = number of files
+
+Set quota directly without interactive editor:
+    setquota -u alice 1000000 1200000 0 0 /home
+    # soft=1GB hard=1.2GB inodes unlimited
+
+View quotas:
+    quota -u alice            # alice's quota usage
+    quota -g developers       # group quota
+    repquota /home            # full report for all users on /home
+    repquota -a               # all filesystems with quotas
+
+Grace period:
+    edquota -t                # set grace period for soft limit
+    # Default is 7 days: user gets 7 days to reduce below soft limit
+    # After grace period, soft limit becomes hard limit
+
+
+================================================================
+SECTION 21 - COMPLETE ACCOUNT AUDIT COMMANDS
+================================================================
+
+Practical commands for auditing user accounts on a system.
+None of these are in the original.
+
+List all human users (UID >= 1000):
+    awk -F: '$3 >= 1000 && $3 < 65534 {print $1, $3, $6, $7}' /etc/passwd
+
+List all system accounts:
+    awk -F: '$3 < 1000 {print $1, $3, $7}' /etc/passwd
+
+List all users with BASH as shell (can log in interactively):
+    grep -E "bash|zsh|fish|sh$" /etc/passwd | cut -d: -f1
+
+List all accounts with no password (! or * or empty):
+    sudo awk -F: '$2 == "" || $2 == "*" || $2 ~ /^!/ {print $1, "NO/LOCKED PASSWORD"}' /etc/shadow
+
+List accounts that have NEVER logged in:
+    lastlog | grep "Never logged in"
+
+List accounts that haven't logged in for 90+ days:
+    lastlog -b 90
+
+Find users with UID 0 (root-equivalent - should be only root):
+    awk -F: '$3 == 0 {print $1}' /etc/passwd
+
+Find accounts with duplicate UIDs:
+    cut -d: -f3 /etc/passwd | sort | uniq -d
+
+Find accounts with duplicate usernames:
+    cut -d: -f1 /etc/passwd | sort | uniq -d
+
+List all groups a user belongs to:
+    id alice
+    groups alice
+    grep alice /etc/group
+
+List all members of a group:
+    getent group sudo
+    groupmems -l -g sudo
+
+Find all sudo users:
+    grep -E "^[^#].*ALL" /etc/sudoers
+    ls /etc/sudoers.d/
+    getent group sudo wheel 2>/dev/null
+
+
+================================================================
+END OF USERSGROUPSMISSING.TXT
+================================================================
+
+
+
+
+
