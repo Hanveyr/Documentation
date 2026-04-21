@@ -303,3 +303,882 @@ Count Operations:
 5j - Move down 5 lines
 3yy - Yank 3 lines
 10@a - Execute macro 'a' 10 times
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------------
+------------------------------------------------------------------
+------------------------------------------------------------------
+------------------------------------------------------------------
+One year later -
+
+
+
+
+
+
+================================================================
+----CORRECTIONS TO ERRORS IN THE ABOVE----
+================================================================
+
+-Navigation corrections-
+The original document contains these errors in the Command Mode navigation list:
+
+    L - right               WRONG  (L = move to BOTTOM of screen)
+    J - down                WRONG  (J = JOIN lines, already listed in Insert Mode)
+
+Correct lowercase navigation:
+    l - right
+    j - down
+    L - move to bottom of screen (correct meaning - also listed in Advanced)
+    J - join current line with line below (command mode)
+
+C in command mode:
+    C - beginning of sentence   WRONG
+    C - change to end of line (enter insert mode)  CORRECT
+    ( - beginning of sentence   CORRECT
+    ) - end of sentence         CORRECT
+
+Search/replace flag correction:
+    :%s/\<cat\>/dog/gi
+    The document says this is "case sensitive" - WRONG
+    g = global (all occurrences on each line)
+    i = case INSENSITIVE
+    Use c flag for case sensitive: :%s/cat/dog/gc asks confirmation
+
+Ctrl+a and Ctrl+x correction (Insert Mode):
+    Ctrl+a - insert LAST INSERTED TEXT again (not increment)
+    Ctrl+x - enter completion submode (not decrement)
+    Increment/decrement only work in COMMAND MODE:
+        Ctrl+a - increment number under cursor (command mode)
+        Ctrl+x - decrement number under cursor (command mode)
+
+Ctrl+d in Insert Mode correction:
+    Ctrl+d - remove one level of INDENTATION (not delete line)
+
+Ctrl+p and Ctrl+n correction (listed as jump list navigation - WRONG):
+    Ctrl+p - autocomplete previous match (command mode)
+    Ctrl+n - autocomplete next match (command mode)
+    Jump list navigation is Ctrl+o (back) and Ctrl+i (forward)
+    already correctly listed above them
+
+ciw in Replace Mode section:
+    ciw -   (description was cut off)
+    ciw - Change inner word (delete word, enter insert mode)
+
+
+================================================================
+----THE DOT COMMAND - most important command not in the doc----
+================================================================
+
+. - Repeat the last change
+
+The dot command repeats whatever the last change was.
+A change is any command that modified text: cw, dd, x, >>, etc.
+
+    ciw newword<Esc>    # change word to "newword"
+    w                   # move to next word
+    .                   # repeat: change that word to "newword" too
+
+    dd                  # delete a line
+    j                   # move down
+    .                   # delete that line too
+
+    >>                  # indent a line
+    .                   # indent again (adds another level)
+    3.                  # repeat 3 times
+
+Most efficient vim workflow:
+    Make a change once. Navigate. Press . to repeat it.
+    Combine with n (next search result) for powerful find-and-change:
+
+    /oldword            # search for word
+    cgnreplacement<Esc> # change next match (gn selects match as motion)
+    n.                  # find next, repeat change
+    n.                  # find next, repeat change
+
+
+================================================================
+----OPERATOR + MOTION SYSTEM - how vim actually works----
+================================================================
+
+Vim commands are composable. Knowing this turns a list of
+individual commands into an infinite system.
+
+Format:  [count] operator motion
+         [count] operator text-object
+
+Operators:
+    d   delete (and save to register)
+    c   change (delete and enter insert mode)
+    y   yank (copy)
+    >   shift right (indent)
+    <   shift left (dedent)
+    =   auto-indent
+    ~   toggle case
+    g~  toggle case (motion form)
+    gu  convert to lowercase
+    gU  convert to uppercase
+
+Motions (work after any operator):
+    w   to start of next word
+    b   to start of previous word
+    e   to end of word
+    $   to end of line
+    ^   to first non-blank character
+    0   to start of line
+    G   to end of file
+    gg  to start of file
+    }   to end of paragraph
+    {   to start of paragraph
+    /pattern   to next pattern match
+    ?pattern   to previous pattern match
+    t<char>    to just before character
+    f<char>    to character (inclusive)
+    %   to matching bracket
+
+Examples (these all work by composition):
+    dw      delete to next word
+    d$      delete to end of line (same as D)
+    d/foo   delete from cursor to next match of "foo"
+    dG      delete from cursor to end of file
+    yG      yank from cursor to end of file
+    y}      yank to end of paragraph
+    >G      indent everything from cursor to end of file
+    =G      auto-indent from cursor to end of file
+    gU$     uppercase everything to end of line
+    gu}     lowercase entire paragraph
+
+With counts:
+    3dw     delete 3 words
+    2>j     indent 2 lines
+    4yy     yank 4 lines
+    d3j     delete 3 lines down
+
+Any operator + any motion = a valid command.
+This is the grammar of vim.
+
+
+================================================================
+----REGISTERS - the full system----
+================================================================
+
+A register is a named storage slot. Every yank, delete, and
+change goes into a register. Paste retrieves from a register.
+
+Access a register:    " followed by register name, then command
+
+Named registers (a-z):
+    "ayy    yank current line into register a
+    "ap     paste from register a
+    "aY     APPEND to register a (capital letter appends)
+    "bdd    delete line into register b
+
+Special registers:
+    ""      unnamed register - where all yanks/deletes go by default
+    "0      yank register - ONLY updated by yank (y), NOT by delete
+    "1-"9   numbered history - last 9 deletes (1 is most recent)
+    "_      black hole register - delete without saving anything
+    "+      system clipboard (X11/Wayland primary clipboard)
+    "*      system clipboard (alternate, X11 selection)
+    ".      last inserted text (read-only)
+    "%      current filename (read-only)
+    ":      last command-line command (read-only)
+    "/      last search pattern (read-only)
+
+The most important practical register:
+    The unnamed register "" is overwritten by BOTH yank AND delete.
+    This is the #1 vim frustration:
+
+    yiw         # yank a word (goes to "" and "0)
+    dd          # delete a line (OVERWRITES "" with deleted line)
+    p           # pastes the DELETED LINE, not your yanked word
+
+    Fix: use "0p to paste from yank register specifically:
+    yiw         # yank word
+    dd          # delete line
+    "0p         # paste the YANKED word (not affected by delete)
+
+Viewing all registers:
+    :registers  or  :reg
+
+Using registers in command mode:
+    Ctrl+r followed by register name pastes register into command line:
+    :s/<Ctrl+r">/replacement/   # paste unnamed register into substitute
+
+
+================================================================
+----PASTE MODE - critical for sysadmins----
+================================================================
+
+Without paste mode, pasting multi-line code from an external
+clipboard into vim causes cascading indentation corruption.
+Each line gets extra indentation because auto-indent fires
+on each pasted newline.
+
+:set paste      # disable auto-indent, auto-complete, key mappings
+                # safe to paste from external clipboard now
+                # paste your text (Ctrl+Shift+v or middle click)
+:set nopaste    # re-enable after pasting (important - do not leave it on)
+
+Shortcut if you set it in .vimrc (see below):
+    :set pastetoggle=<F2>
+    # Now F2 toggles paste mode on/off
+
+Modern vim (8.0+) and neovim handle this better with bracketed
+paste - the terminal automatically tells vim when a paste occurs.
+If this works for you, you may not need :set paste.
+
+
+================================================================
+----WRITING FILES WITHOUT SUDO ACCESS----
+================================================================
+
+Most common sysadmin frustration: you open a system file,
+make changes, then discover you have no write permission.
+
+:w !sudo tee %
+
+How it works:
+    :w          write (pipe to following command)
+    !sudo tee   run "sudo tee" as a shell command
+    %           current filename (tee writes it to disk as root)
+
+The file is saved as root without needing to quit and reopen.
+You will be prompted for your sudo password.
+
+Alternative: always open files that need root with:
+    sudo vim /etc/nginx/nginx.conf
+
+
+================================================================
+----:read - INSERT FILE OR COMMAND OUTPUT AT CURSOR----
+================================================================
+
+:r filename         # insert entire file below cursor
+:r !command         # insert command output below cursor
+
+Examples:
+    :r /etc/hosts           # insert /etc/hosts into current file
+    :r !date                # insert current date/time
+    :r !ls /etc             # insert directory listing
+    :r !cat /etc/passwd     # insert passwd file
+    :0r template.txt        # insert file at line 0 (top of file)
+    :$r footer.txt          # insert at end of file
+
+
+================================================================
+----FOLDING----
+================================================================
+
+-Creating and managing folds-
+zf{motion}  - Create a fold manually
+    zf3j        fold current line + 3 below
+    zfap        fold a paragraph
+    zf%         fold to matching bracket
+
+zo          - Open fold under cursor (one level)
+zO          - Open all folds under cursor recursively
+zc          - Close fold under cursor
+zC          - Close all folds under cursor recursively
+za          - Toggle fold open/closed
+zA          - Toggle fold recursively
+zR          - Open ALL folds in file
+zM          - Close ALL folds in file
+zr          - Reduce fold level by one (open one level globally)
+zm          - Increase fold level by one (close one level globally)
+zd          - Delete fold under cursor
+zD          - Delete all folds under cursor
+zj          - Move to next fold
+zk          - Move to previous fold
+[z          - Move to start of current open fold
+]z          - Move to end of current open fold
+
+-Fold methods (set in .vimrc or with :set)-
+:set foldmethod=manual      # create folds manually with zf (default)
+:set foldmethod=indent      # fold by indentation level (great for Python)
+:set foldmethod=syntax      # fold by language syntax (great for C, Java)
+:set foldmethod=marker      # fold between {{{ and }}} markers
+:set foldmethod=expr        # fold by custom expression
+:set foldmethod=diff        # fold unchanged lines (used by vimdiff)
+
+Fold markers (foldmethod=marker):
+    Put {{{ to start a fold and }}} to end one in comments:
+    # Configuration {{{
+    setting1 = value
+    setting2 = value
+    # }}}
+
+:set foldlevel=1        # show top-level folds only
+:set foldlevel=99       # open all folds (effectively)
+:set foldenable         # enable folding
+:set nofoldenable       # disable folding (show all text)
+
+
+================================================================
+----SPELL CHECKING----
+================================================================
+
+:set spell              # enable spell checking
+:set nospell            # disable
+:set spelllang=en_us    # set language (en_us, en_gb, de, fr, etc.)
+:set spelllang=en_us,de # check multiple languages
+
+-Navigation-
+]s          - Jump to next misspelling
+[s          - Jump to previous misspelling
+]S          - Jump to next misspelling (only bad words, not rare)
+[S          - Jump to previous misspelling (only bad words)
+
+-Fixing-
+z=          - Show suggestions for word under cursor (pick by number)
+1z=         - Accept first suggestion without showing list
+zg          - Add word under cursor to personal dictionary (good word)
+zG          - Add word to session dictionary (not saved)
+zw          - Mark word as wrong (add to bad word list)
+zW          - Mark word as wrong for session only
+zug         - Undo zg (remove from dictionary)
+zuw         - Undo zw
+
+Personal dictionary location: ~/.vim/spell/en.utf-8.add
+
+Put in .vimrc for automatic spell check in certain files:
+    autocmd FileType markdown,text,gitcommit setlocal spell
+
+
+================================================================
+----vimdiff - COMPARING FILES----
+================================================================
+
+Open two files for comparison from the terminal:
+    vimdiff file1.conf file2.conf
+    vim -d file1.conf file2.conf     # same thing
+
+Open diff from inside vim:
+    :diffsplit file2.conf           # split and diff with current file
+    :vertical diffsplit file2.conf  # vertical split
+
+-Navigation-
+]c          - Jump to next difference
+[c          - Jump to previous difference
+
+-Resolving differences-
+do          - DiffObtain: pull change FROM other window into current
+dp          - DiffPut: push change FROM current window to other
+:diffget    - same as do (can specify buffer: :diffget 2)
+:diffput    - same as dp
+
+:diffupdate - refresh diff highlighting after manual edits
+:set diffopt+=iwhite    # ignore whitespace differences
+
+-Merging three files (conflict resolution)-
+    vimdiff mine.conf base.conf theirs.conf
+    # Left=yours, Middle=base, Right=theirs
+    # Use do/dp to resolve each conflict
+
+
+================================================================
+---:sort - SORTING LINES----
+================================================================
+
+:sort           # sort all lines alphabetically
+:sort!          # sort in reverse order
+:sort u         # sort and remove duplicate lines
+:sort n         # sort numerically (by number at start of line)
+:sort i         # sort case-insensitive
+:sort r /regex/ # sort by the part of line matching regex
+
+-Sort a visual selection-
+Select lines with V then:
+    :sort           # sorts selected lines only
+    :'<,'>sort      # same (vim auto-fills the range)
+
+-Common uses-
+    :sort u         # deduplicate a list
+    :sort n         # sort numbered list correctly (10 after 9, not after 1)
+    :sort i         # case-insensitive alphabetical
+
+-Sort a range-
+    :1,50 sort      # sort lines 1-50 only
+    :/start/,/end/ sort     # sort between pattern markers
+
+
+================================================================
+----gv - RESELECT LAST VISUAL SELECTION----
+================================================================
+
+gv      - Reselect the last visual selection and re-enter visual mode
+
+Useful when you accidentally leave visual mode and need to get
+back to the exact same selection without re-selecting manually.
+
+    V           # select 3 lines
+    jj
+    <Esc>       # oops, left visual mode
+    gv          # back to exactly those 3 lines selected
+
+
+================================================================
+----.vimrc - MAKING SETTINGS PERMANENT----
+================================================================
+
+Every :set command in vim is session-only. Close vim and the
+setting is gone. The .vimrc file is read every time vim starts.
+
+Location: ~/.vimrc
+Create/edit: vim ~/.vimrc  or  :e ~/.vimrc from inside vim
+
+-Essential .vimrc settings-
+" Lines starting with " are comments in vimscript
+
+" Line numbers
+set number                  " show line numbers
+set relativenumber          " show relative numbers (good for count+motion)
+
+" Indentation
+set tabstop=4               " tab character = 4 spaces wide
+set shiftwidth=4            " indent operations use 4 spaces
+set expandtab               " insert spaces instead of tab characters
+set autoindent              " new line inherits indent of previous line
+set smartindent             " smarter auto-indent for code
+
+" Search
+set hlsearch                " highlight all search matches
+set incsearch               " highlight as you type search
+set ignorecase              " case insensitive search
+set smartcase               " case sensitive if uppercase used in pattern
+
+" Display
+set wrap                    " wrap long lines (use nowrap to disable)
+set showcmd                 " show partial command in bottom bar
+set showmatch               " briefly jump to matching bracket
+set scrolloff=5             " keep 5 lines visible above/below cursor
+set sidescrolloff=5         " keep 5 columns visible left/right
+
+" Usability
+set pastetoggle=<F2>        " F2 toggles paste mode
+set backspace=indent,eol,start  " backspace works over everything in insert
+set history=1000            " remember 1000 commands
+set wildmenu                " tab completion for commands shows menu
+set wildmode=list:longest   " complete longest common, list options
+set confirm                 " ask to save instead of failing on :q
+
+" Persistent undo (changes survive closing and reopening files)
+set undofile
+set undodir=~/.vim/undo
+" create that directory first: mkdir -p ~/.vim/undo
+
+" Syntax and colors
+syntax on                   " enable syntax highlighting
+set background=dark         " hint for color schemes (dark or light)
+filetype plugin indent on   " enable filetype detection and smart indent
+
+" Status line
+set laststatus=2            " always show status line
+set ruler                   " show cursor position in status line
+
+-Useful .vimrc mappings-
+" Map leader key (commonly used as prefix for custom shortcuts)
+let mapleader = ","         " use comma as leader (default is backslash)
+
+" Clear search highlighting with <leader> + space
+nnoremap <leader><space> :nohlsearch<CR>
+
+" Faster save and quit
+nnoremap <leader>w :w<CR>
+nnoremap <leader>q :q<CR>
+nnoremap <leader>x :x<CR>
+
+" Navigate splits with Ctrl+direction
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+" Toggle relative numbers
+nnoremap <leader>n :set relativenumber!<CR>
+
+" Reload .vimrc without restarting
+nnoremap <leader>r :source ~/.vimrc<CR>
+
+Applying changes without restarting:
+    :source ~/.vimrc    # reload your vimrc in the current session
+
+
+================================================================
+---:set OPTIONS REFERENCE----
+================================================================
+
+Run any of these interactively. Prefix with no to disable.
+    :set number         enable
+    :set nonumber       disable
+    :set number?        check current value
+    :set               show all changed settings
+    :set all           show all settings and values
+
+-Numbers-
+:set number / nu        absolute line numbers
+:set nonumber           hide numbers
+:set relativenumber     relative numbers (distance from cursor)
+:set norelativenumber   disable relative
+:set numberwidth=5      width of number column
+
+-Search-
+:set hlsearch / hls     highlight all matches
+:set nohlsearch         turn off highlighting
+:noh                    clear highlights until next search (temporary)
+:set incsearch          incremental search highlight
+:set ignorecase / ic    case insensitive
+:set smartcase / scs    case sensitive only if uppercase in pattern
+:set wrapscan           wrap search around end of file (default on)
+
+-Indentation-
+:set tabstop=4 / ts=4   how wide a tab character displays
+:set shiftwidth=4 / sw=4  how far >> and << indent
+:set expandtab / et     use spaces instead of tabs
+:set autoindent / ai    copy indent from current line to new line
+:set smartindent / si   C-style smart auto-indent
+:set cindent            strict C indentation rules
+
+-Display-
+:set wrap               wrap long lines visually
+:set nowrap             do not wrap (scroll horizontally)
+:set linebreak          wrap at word boundaries (not mid-word)
+:set list               show invisible characters
+:set listchars=tab:>-,trail:·   customize invisible chars display
+:set cursorline         highlight current line
+:set cursorcolumn       highlight current column
+:set colorcolumn=80     highlight column 80 (line length guide)
+:set scrolloff=5 / so=5  lines to keep above/below cursor
+:set sidescrolloff=5    columns to keep left/right of cursor
+
+-Files-
+:set autoread           reload file if changed outside vim
+:set backup             keep backup files (~)
+:set nobackup           no backup files
+:set swapfile           keep .swp swap files (default on)
+:set noswapfile         no swap files (use carefully)
+:set undofile           persistent undo across sessions
+:set encoding=utf-8     character encoding
+
+-Completion-
+:set wildmenu           show completion menu for commands
+:set wildignore=*.o,*.pyc  ignore these in completion
+
+-Other-
+:set paste              paste mode (disable auto-indent for pasting)
+:set nopaste            re-enable after pasting
+:set mouse=a            enable mouse in all modes
+:set mouse=             disable mouse
+:set clipboard=unnamed  use system clipboard for all yanks/pastes
+:set spell              spell checking
+:set splitright         new vertical splits open on the right
+:set splitbelow         new horizontal splits open below
+:set hidden             allow switching buffers without saving
+:set lazyredraw         do not redraw during macros (faster)
+:set ttyfast            faster terminal connection
+:set ttimeoutlen=50     reduce key code timeout (faster Esc response)
+
+
+================================================================
+----SESSION MANAGEMENT----
+================================================================
+
+Save and restore your entire editing state: open files, splits,
+cursor positions, folds, registers.
+
+-Saving a session-
+:mksession              # save to Session.vim in current directory
+:mksession ~/mysess.vim # save to specific file
+:mksession!             # overwrite existing session file
+
+-Restoring a session-
+vim -S Session.vim      # restore from terminal
+:source Session.vim     # restore from inside vim
+:source ~/mysess.vim    # restore named session
+
+-What sessions save-
+    Open files (buffers)
+    Window splits and sizes
+    Current directory
+    Folds
+    Cursor position in each file
+    (Does NOT save register contents by default)
+
+Add to .vimrc to auto-save session on exit:
+    autocmd VimLeave * mksession! ~/.vim/last_session.vim
+
+Add to .vimrc to restore last session on open with no args:
+    if argc() == 0
+        autocmd VimEnter * source ~/.vim/last_session.vim
+    endif
+
+
+================================================================
+----PERSISTENT UNDO----
+================================================================
+
+By default, closing a file clears undo history. With undofile
+set, you can undo changes made in previous sessions.
+
+:set undofile           # enable (put this in .vimrc)
+:set undodir=~/.vim/undo    # set where undo files are stored
+
+Setup:
+    mkdir -p ~/.vim/undo    # create directory first
+    # Add to .vimrc:
+    set undofile
+    set undodir=~/.vim/undo
+
+How it works:
+    vim file.txt        # make changes, save, quit
+    vim file.txt        # reopen
+    u                   # can still undo changes from previous session
+
+:undolist               # show the undo tree
+:earlier 1h             # go back to how file looked 1 hour ago
+:earlier 3f             # go back 3 file writes ago
+:later 30m              # go forward 30 minutes in undo history
+
+
+================================================================
+----MACROS IN DEPTH----
+================================================================
+
+The original mentions q{register} and @{register} briefly.
+Full coverage:
+
+-Recording-
+q{a-z}      # start recording macro into register letter
+            # perform your actions
+q           # stop recording
+
+Example: record a macro to wrap a word in quotes
+    qa          # start recording into register a
+    bi"<Esc>    # go back, insert opening quote
+    ea"<Esc>    # go to end of word, insert closing quote
+    q           # stop recording
+    @a          # replay on next word
+    @@          # replay last macro again
+    10@@        # replay 10 times
+
+-Replaying-
+@{a-z}      # replay macro in that register
+@@          # replay last used macro
+5@a         # replay macro a 5 times
+100@a       # replay 100 times (stops on error)
+
+-Editing a macro-
+    # To fix a macro without re-recording it:
+    "ap         # paste register a as text onto a line
+    # edit the text
+    "ayy        # yank it back into register a
+
+-Running macro on all matching lines-
+    :g/pattern/normal @a    # run macro a on every line matching pattern
+
+-Running macro on a range-
+    :5,20 normal @a         # run macro a on lines 5-20
+
+-The norm command for bulk changes-
+    :%normal A;             # append ; to end of every line in file
+    :5,20 normal I//        # prepend // to lines 5-20 (comment them out)
+    :'<,'>normal @a         # run macro on visual selection
+
+
+================================================================
+----COMMAND LINE WINDOW----
+================================================================
+
+q:      # open command history as an editable buffer
+q/      # open search history as an editable buffer
+q?      # open backward search history as an editable buffer
+
+Inside the command line window:
+    Normal vim navigation (hjkl, /, etc.)
+    Edit any previous command like normal text
+    Enter to execute the current line
+    Ctrl+c or :q to close without executing
+
+Use case: you ran a long :s command and want to run it again
+with a small change. q: lets you edit it like normal text
+instead of pressing up-arrow and trying to navigate in-line.
+
+
+================================================================
+----AUTOCOMMANDS - AUTOMATING VIM BEHAVIOR----
+================================================================
+
+Autocommands run vim commands automatically when events happen.
+These go in your .vimrc.
+
+Format:  autocmd Event FilePattern command
+
+Common events:
+    BufRead / BufReadPost   after reading a file
+    BufWrite / BufWritePre  before writing a file
+    BufEnter               entering a buffer
+    FileType               after filetype is detected
+    VimEnter               after vim finishes starting
+    VimLeave               before vim exits
+    InsertLeave            when leaving insert mode
+    CursorHold             cursor idle for updatetime milliseconds
+
+Useful autocommands:
+    " Return to last cursor position when reopening a file
+    autocmd BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$")
+        \ | exe "normal! g'\""  | endif
+
+    " Remove trailing whitespace on save
+    autocmd BufWritePre * :%s/\s\+$//e
+
+    " Enable spell check for text and markdown files
+    autocmd FileType markdown,text setlocal spell spelllang=en_us
+
+    " Python: 4 space indent
+    autocmd FileType python setlocal ts=4 sw=4 et
+
+    " Run file on save (e.g., Python scripts)
+    autocmd BufWritePost *.py silent !python3 %
+
+
+================================================================
+----PLUGINS - EXTENDING VIM----
+================================================================
+
+Not covered anywhere in the original. Brief overview.
+
+Plugin manager (most common: vim-plug):
+    Installation:
+    curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+    ~/.vimrc plugin block:
+    call plug#begin('~/.vim/plugged')
+    Plug 'tpope/vim-surround'       " surround text objects with brackets/quotes
+    Plug 'tpope/vim-commentary'     " gc to comment out lines
+    Plug 'preservim/nerdtree'       " file tree sidebar
+    Plug 'ctrlpvim/ctrlp.vim'       " fuzzy file finder
+    Plug 'vim-airline/vim-airline'  " better status line
+    call plug#end()
+
+Plugin commands:
+    :PlugInstall    # install plugins listed in .vimrc
+    :PlugUpdate     # update installed plugins
+    :PlugClean      # remove unlisted plugins
+
+Most useful plugins for sysadmins:
+    vim-surround    cs'" changes surrounding ' to "
+                    ds"  delete surrounding "
+                    ysiw" surround word with "
+
+    vim-commentary  gcc  comment/uncomment current line
+                    gc{motion}  comment a range
+                    gcap  comment a paragraph
+
+    NERDTree        :NERDTree  open file browser sidebar
+                    ?  show help inside NERDTree
+
+
+================================================================
+----NEOVIM vs VIM----
+================================================================
+
+Not covered in original. Brief practical differences.
+
+neovim (nvim):
+    Drop-in replacement for vim with the same keybindings.
+    Better defaults out of the box (many :set options enabled by default).
+    Built-in LSP (Language Server Protocol) for IDE-like features.
+    Config file is ~/.config/nvim/init.vim (or init.lua).
+    All vim keybindings work identically.
+
+    sudo apt install neovim       # Debian/Ubuntu
+    sudo dnf install neovim       # RHEL/Fedora
+
+    nvim file.txt                 # open with neovim
+
+For this study guide (LFCS/RHCSA):
+    Both vim and nvim use the same commands.
+    The exam will have vim available, not necessarily nvim.
+    Learn the vim commands and they work in both.
+
+
+================================================================
+----QUICK REFERENCE: ESSENTIAL WORKFLOWS----
+================================================================
+
+-Find and replace across multiple files-
+    :args *.conf                # load all .conf files as arg list
+    :argdo %s/old/new/ge | w   # replace in each, save each
+    # g=global, e=ignore error if not found
+
+-Delete all blank lines-
+    :g/^$/d
+
+-Delete all comment lines (starting with #)-
+    :g/^#/d
+    :g/^\s*#/d     # also matches indented comments
+
+-Duplicate a line-
+    yyp            # yank line, paste below
+
+-Move a line up or down-
+    ddkP           # delete line, move up, paste above
+    ddp            # delete line, paste below (move down)
+
+-Open URL or file under cursor-
+    gx             # open URL in browser (requires netrw)
+    gf             # open file path under cursor in vim
+
+-Indent a block of code-
+    Select with V, then > to indent, < to dedent
+    Use . to repeat the indent
+
+-Convert spaces to tabs or vice versa-
+    :retab         # convert based on current expandtab setting
+
+-Insert current filename-
+    :r !echo %     # insert filename below cursor
+    Ctrl+r %       # insert filename while in insert mode
+
+-Insert current date-
+    :r !date
+
+-Count occurrences of a word-
+    :%s/word//gn   # g=count all, n=no actual replacement, shows count
+
+-Show current file info-
+    Ctrl+g         # shows filename, line count, position percentage
+    1 Ctrl+g       # also shows full path
+
+-Execute current line as shell command-
+    !!sh           # replace current line with output of running it as shell
+    :. !bash       # same
+
+-Format JSON (requires python)-
+    :%!python3 -m json.tool
+
+-Remove trailing whitespace-
+    :%s/\s\+$//    # \s matches whitespace, \+ one or more, $ end of line
+    :%s/\s\+$//e   # e flag: no error if no match found
+
+================================================================
