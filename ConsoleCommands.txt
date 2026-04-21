@@ -303,3 +303,768 @@ telegraf - Metrics collection agent
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+
+
+One year later-
+
+
+
+
+
+
+
+------ConsoleTerminalTipsAndTricks.txt------
+
+Tips, tricks, and shortcuts for working faster in the terminal.
+None of this is covered in any other file in this repo.
+No commands - just things that make you faster and less frustrated.
+
+
+----------------------------------------------------------------
+SECTION 1 - FULL READLINE KEYBOARD SHORTCUTS
+----------------------------------------------------------------
+
+These work in bash and any program that uses readline (most do).
+This is the complete reference. ConsoleCommands.txt only has a few.
+
+CURSOR MOVEMENT:
+    ctrl+a          - jump to beginning of line
+    ctrl+e          - jump to end of line
+    ctrl+f          - move forward one character (same as right arrow)
+    ctrl+b          - move backward one character (same as left arrow)
+    alt+f           - move forward one word
+    alt+b           - move backward one word
+    ctrl+xx         - toggle between current position and start of line
+
+EDITING THE LINE:
+    ctrl+u          - delete from cursor to beginning of line
+    ctrl+k          - delete from cursor to end of line
+    ctrl+w          - delete the word before the cursor
+    alt+d           - delete the word after the cursor
+    ctrl+y          - paste (yank) the last thing you deleted with ctrl+u/k/w
+    ctrl+_          - undo last edit (can press repeatedly)
+    alt+u           - uppercase the word from cursor forward
+    alt+l           - lowercase the word from cursor forward
+    alt+c           - capitalize the word from cursor forward
+    ctrl+t          - swap the character before cursor with the one under it
+    alt+t           - swap the word before cursor with the word after it
+
+HISTORY NAVIGATION:
+    ctrl+r          - reverse search (type to search past commands)
+    ctrl+s          - forward search (after ctrl+r, search forward)
+                      NOTE: ctrl+s may freeze terminal - see SECTION 2
+    ctrl+p          - previous command (same as up arrow)
+    ctrl+n          - next command (same as down arrow)
+    alt+.           - insert the last argument of the previous command
+                      (same as !$ but interactive - press repeatedly to cycle)
+    ctrl+r then ctrl+r  - keep pressing ctrl+r to cycle to older matches
+
+CONTROL:
+    ctrl+c          - interrupt / kill current process
+    ctrl+d          - end of input / logout if line is empty
+    ctrl+z          - suspend current process (use fg or bg to resume)
+    ctrl+l          - clear screen (keeps current line, unlike clear command)
+    ctrl+s          - pause output (terminal appears frozen)
+    ctrl+q          - resume output (unfreeze after ctrl+s)
+
+
+----------------------------------------------------------------
+SECTION 2 - THE ctrl+s FREEZE TRAP
+----------------------------------------------------------------
+
+ctrl+s is one of the most common ways beginners think their
+terminal has crashed. It has not crashed. It is frozen on purpose.
+
+What happened: ctrl+s is the XOFF signal. It tells the terminal
+to stop sending output to the screen. The program is still running.
+It just looks frozen.
+
+The fix: press ctrl+q (XON) to unfreeze it immediately.
+
+To disable this behavior permanently so ctrl+s never freezes you:
+    stty -ixon
+
+Add that to your ~/.bashrc to make it permanent:
+    echo 'stty -ixon' >> ~/.bashrc
+    source ~/.bashrc
+
+After this, ctrl+s will be usable for forward history search
+(the pair to ctrl+r) instead of freezing your terminal.
+
+
+----------------------------------------------------------------
+SECTION 3 - WORKING FASTER WITH THE MOUSE IN THE TERMINAL
+----------------------------------------------------------------
+
+Middle mouse button (or scroll wheel click):
+    Pastes whatever text is currently highlighted anywhere on screen.
+    You do not need to copy it first. Just highlight and middle click.
+    This is X11 primary selection, separate from your clipboard.
+
+Right click behavior varies by terminal emulator:
+    Most terminals: right click opens a context menu with copy/paste
+    Some terminals: right click pastes directly
+
+Selecting text tricks:
+    Double click      - selects a whole word
+    Triple click      - selects a whole line (in most terminals)
+    Click and drag    - selects a region
+    Shift+click       - extends a selection from cursor to where you clicked
+
+Terminal copy/paste without mouse:
+    Most terminals support ctrl+shift+c and ctrl+shift+v
+    (regular ctrl+c sends interrupt - it does NOT copy in the terminal)
+
+    Terminal       Copy              Paste
+    -----------------------------------------------
+    Most Linux     ctrl+shift+c      ctrl+shift+v
+    tmux           ctrl+b [          (enter copy mode, then q to exit)
+    vim            y (yank)          p (put)
+
+
+----------------------------------------------------------------
+SECTION 4 - TERMINAL MULTIPLEXER QUICK START (tmux)
+----------------------------------------------------------------
+
+tmux is listed in ConsoleCommands.txt but never explained.
+It lets you have multiple terminals in one window and keeps
+sessions alive when you disconnect from SSH.
+
+Starting out:
+    tmux                    # start a new session
+    tmux new -s mysession   # start a named session
+    tmux attach             # reattach to last session
+    tmux attach -t mysession  # reattach to named session
+    tmux ls                 # list all sessions
+
+Every tmux command starts with the prefix: ctrl+b
+
+Panes (split your terminal window):
+    ctrl+b %        - split vertically (side by side)
+    ctrl+b "        - split horizontally (top and bottom)
+    ctrl+b arrow    - move to the pane in that direction
+    ctrl+b x        - close current pane
+    ctrl+b z        - zoom current pane to full screen (press again to unzoom)
+
+Windows (tabs inside tmux):
+    ctrl+b c        - create a new window
+    ctrl+b n        - next window
+    ctrl+b p        - previous window
+    ctrl+b 0-9      - switch to window by number
+    ctrl+b ,        - rename current window
+    ctrl+b w        - show window list to pick from
+
+Sessions:
+    ctrl+b d        - detach from session (session keeps running)
+    ctrl+b s        - show session list
+    ctrl+b $        - rename current session
+
+Why this matters:
+    If you are SSH'd into a server and your connection drops,
+    anything running in a plain terminal dies.
+    With tmux, you detach before disconnecting and reattach later.
+    The session and everything running in it survives.
+
+
+----------------------------------------------------------------
+SECTION 5 - GLOBBING AND BRACE EXPANSION
+----------------------------------------------------------------
+
+Not in redirectionPipingTBash.txt or any other repo file.
+These are shell expansions, not regex - they work with any command.
+
+Wildcards (glob patterns):
+    *       matches any number of any characters
+    ?       matches exactly one character
+    [abc]   matches one character that is a, b, or c
+    [a-z]   matches one character in the range a to z
+    [!abc]  matches one character that is NOT a, b, or c
+
+    ls *.txt            # list all .txt files
+    ls file?.txt        # matches file1.txt, fileA.txt but not file10.txt
+    ls [A-Z]*.conf      # files starting with uppercase, ending in .conf
+    rm log[0-9].txt     # remove log0.txt through log9.txt
+    ls /etc/*.d         # list all .d directories in /etc
+
+Brace expansion - generate multiple strings at once:
+    touch file{1,2,3}.txt        # creates file1.txt file2.txt file3.txt
+    mkdir -p project/{src,bin,docs,tests}   # create 4 directories at once
+    cp file.txt file.txt{,.bak}  # copy file.txt to file.txt.bak (quick backup)
+    echo {a,b,c}{1,2,3}          # a1 a2 a3 b1 b2 b3 c1 c2 c3
+
+    # Range with brace expansion
+    echo {1..10}          # 1 2 3 4 5 6 7 8 9 10
+    touch log_{001..010}  # creates log_001 through log_010
+    echo {a..z}           # a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+    # Quick backup before editing a file (use this constantly)
+    cp /etc/nginx/nginx.conf{,.bak}
+    # Creates nginx.conf.bak as a backup. To restore: cp nginx.conf{.bak,}
+
+
+----------------------------------------------------------------
+SECTION 6 - COMMAND SUBSTITUTION
+----------------------------------------------------------------
+
+Run a command and use its output as part of another command.
+Two syntaxes exist - $() is the modern one, always use it.
+
+    echo "Today is $(date)"
+    echo "You are $(whoami) on $(hostname)"
+
+    # Use output as an argument
+    cat $(which bash)            # cat the bash binary file path
+    ls -la $(which python3)      # stat the python binary
+
+    # Store output in a variable
+    current_date=$(date +%Y-%m-%d)
+    echo "Date is: $current_date"
+
+    logfile="backup_$(date +%Y%m%d).tar.gz"   # build a dated filename
+
+    # Backtick syntax (old, avoid it - nesting is painful)
+    echo "Today is `date`"       # works but don't use this
+
+
+----------------------------------------------------------------
+SECTION 7 - COMMON BEGINNER TRAPS AND HOW TO AVOID THEM
+----------------------------------------------------------------
+
+Trap 1: Spaces in filenames break commands
+    # This fails:
+    cd My Documents     # cd sees "My" as one argument, "Documents" as another
+
+    # Fix: quote it or escape the space
+    cd "My Documents"
+    cd My\ Documents
+
+    # Tip: avoid spaces in filenames on Linux. Use underscores or hyphens.
+    # my_documents or my-documents instead of My Documents
+
+Trap 2: rm has no undo
+    rm file.txt         # permanently gone, no trash/recycle bin
+    rm -rf directory/   # silently deletes everything inside, no confirmation
+
+    # Safer habits:
+    # 1. Use rm -i for interactive confirmation
+    alias rm='rm -i'    # add to .bashrc
+
+    # 2. Move to /tmp instead of deleting when unsure
+    mv file.txt /tmp/
+
+    # 3. Always double check rm -rf commands before pressing enter
+    # 4. Never run: rm -rf / or rm -rf /*
+
+Trap 3: Using ctrl+c when you want to copy
+    In the terminal, ctrl+c sends an interrupt signal to the running program.
+    It does NOT copy text.
+    Use ctrl+shift+c to copy in most terminal emulators.
+
+Trap 4: Editing a file while it is in use
+    Always make a backup before editing config files:
+    cp /etc/ssh/sshd_config{,.bak}   # quick backup with brace expansion
+    nano /etc/ssh/sshd_config
+
+    If you break something: cp /etc/ssh/sshd_config{.bak,}
+
+Trap 5: Running a script that was created on Windows
+    Windows uses CRLF line endings (\r\n). Linux uses LF (\n).
+    A Windows-created script will have invisible \r characters
+    that cause bizarre errors.
+
+    Symptoms: "command not found" on things that clearly exist,
+    or errors mentioning $'\r'
+
+    Fix:
+    dos2unix script.sh     # convert line endings
+    sed -i 's/\r//' script.sh  # manual fix with sed
+
+Trap 6: Forgetting sudo and then retyping a long command
+    sudo !!              # re-run last command with sudo
+    # This is one of the most used shell tricks on the planet.
+
+Trap 7: Arrow up to edit a long command but accidentally run it
+    # Use ctrl+u to clear the line without running it
+    # Or ctrl+c to cancel
+
+Trap 8: Terminal appears frozen
+    # Most common causes and fixes:
+    ctrl+q              # unfreeze from ctrl+s (XOFF)
+    ctrl+c              # kill a running program
+    ctrl+z              # suspend a running program to get the prompt back
+    q                   # quit a pager like less or man
+
+
+----------------------------------------------------------------
+SECTION 8 - READING COMMAND OUTPUT THAT SCROLLS TOO FAST
+----------------------------------------------------------------
+
+When output is too long and flies off screen:
+
+    command | less       # pipe into less, scroll with arrows, q to quit
+    command | more       # older pager, spacebar to go forward
+    command | head -20   # only show first 20 lines
+    command | tail -20   # only show last 20 lines
+    command | tail -f    # follow output in real time (great for logs)
+
+    # Watch command repeat every 2 seconds
+    watch -n 2 df -h     # update disk space display every 2 seconds
+    watch -n 1 free -h   # watch memory usage live
+
+
+----------------------------------------------------------------
+SECTION 9 - WORKING WITH LONG COMMANDS
+----------------------------------------------------------------
+
+Splitting a long command across multiple lines:
+    Use backslash at the end of each line to continue on the next
+
+    find /var/log \
+         -name "*.log" \
+         -mtime +30 \
+         -size +1M \
+         -delete
+
+    # The shell sees this as one command. Clean and readable.
+
+Running multiple commands:
+    ; runs commands sequentially regardless of success or failure
+        cd /tmp; ls; pwd
+
+    && runs the next command ONLY if the previous one succeeded
+        mkdir newdir && cd newdir
+
+    || runs the next command ONLY if the previous one FAILED
+        ping -c1 google.com || echo "No internet connection"
+
+    These are in redirectionPipingTBash.txt for deeper coverage.
+
+Editing a command in your full text editor:
+    ctrl+x ctrl+e    # opens current command line in $EDITOR
+    fc               # opens last command in $EDITOR, runs it on save
+
+Running a command without saving it to history:
+    # Add a space before the command (requires HISTCONTROL=ignorespace)
+     secret-command --password=hunter2
+
+    # Or add to .bashrc:
+    export HISTCONTROL=ignorespace:ignoredups
+
+
+----------------------------------------------------------------
+SECTION 10 - USEFUL ONE-LINERS FOR EVERYDAY USE
+----------------------------------------------------------------
+
+These do not fit neatly into any other category but you will
+use them constantly.
+
+    # How long did that take?
+    time command
+
+    # Repeat a command until it succeeds (useful for waiting on network)
+    until ping -c1 google.com; do sleep 5; done
+
+    # Run something every N seconds without watch
+    while true; do date; sleep 5; done
+
+    # Clear the terminal but keep scroll history (unlike clear)
+    printf '\033[2J'
+
+    # Print a file with line numbers
+    cat -n file.txt
+    nl file.txt
+
+    # Show a file without comments and blank lines
+    grep -v '^#\|^$' /etc/ssh/sshd_config
+
+    # How big is this directory?
+    du -sh /var/log
+
+    # What is using port 8080?
+    lsof -i :8080
+    ss -tlnp | grep 8080
+
+    # Quick web server in current directory (Python must be installed)
+    python3 -m http.server 8080
+
+    # Show the last 10 lines of a log and follow new lines live
+    tail -f /var/log/syslog
+
+    # Find all files modified in the last 24 hours
+    find . -mtime -1 -type f
+
+    # Count how many files are in a directory
+    ls /etc | wc -l
+
+    # See what a command is going to do before running it (echo trick)
+    echo rm -rf /tmp/test*    # prints the command without running it
+
+
+----------------------------------------------------------------
+SECTION 11 - TERMINAL APPEARANCE AND PROMPT
+----------------------------------------------------------------
+
+Not covered anywhere in the repo.
+
+Changing your prompt (PS1):
+    The prompt is controlled by the PS1 variable in ~/.bashrc.
+    Default is usually something like: user@hostname:~$
+
+    # Example custom prompt: shows user, host, and current directory in color
+    PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+    # Simpler - just show current directory name
+    PS1='\W\$ '
+
+    # Add git branch to prompt (useful once you start using git)
+    # Add to .bashrc:
+    parse_git_branch() {
+        git branch 2>/dev/null | grep '*' | sed 's/* //'
+    }
+    PS1='\u@\h:\w $(parse_git_branch)\$ '
+
+Terminal colors with tput:
+    tput bold           # make text bold
+    tput sgr0           # reset all attributes
+    tput setaf 1        # set text color red (1=red 2=green 3=yellow 4=blue)
+    tput setab 4        # set background color blue
+
+    # Use in scripts to make output readable
+    echo "$(tput setaf 1)ERROR:$(tput sgr0) something went wrong"
+    echo "$(tput setaf 2)OK:$(tput sgr0) everything is fine"
+
+
+----------------------------------------------------------------
+END OF CONSOLETERMINALANDTRICKS.TXT
+----------------------------------------------------------------
+
+
+
+
+
+
+
+------ConsoleMissing.txt------
+Things missing from ConsoleCommands.txt that are not covered
+in any other file in this repo.
+
+Read this as a patch alongside ConsoleCommands.txt.
+
+
+----------------------------------------------------------------
+CORRECTION 1 - nl is mislabeled
+----------------------------------------------------------------
+
+ConsoleCommands.txt says:
+    nl - number of lines in a file   <-- WRONG
+
+nl actually adds line numbers to the output of a file.
+    nl file.txt          # prints file with line numbers prepended
+
+To count lines, use:
+    wc -l file.txt       # prints the number of lines
+    wc -w file.txt       # prints the number of words
+    wc -c file.txt       # prints the number of bytes
+    wc file.txt          # prints lines, words, and bytes together
+
+
+----------------------------------------------------------------
+CORRECTION 2 - Keyboard shortcuts are missing ctrl+
+----------------------------------------------------------------
+
+ConsoleCommands.txt lists:
+    h - backspace
+    d - delete
+    j - enter
+    L - clear screen
+    s - suspend
+    q - unsuspend
+    u - clear line
+
+These are all ctrl key combinations. As written, a beginner
+will type the letter h and wonder why nothing happened.
+
+Corrected list:
+    ctrl+h - backspace (same as backspace key)
+    ctrl+d - delete / end of input (also logs you out if line is empty)
+    ctrl+j - enter (same as return key)
+    ctrl+l - clear screen (same as the clear command)
+    ctrl+s - suspend / freeze output to terminal
+    ctrl+q - unsuspend / unfreeze terminal
+    ctrl+u - clear everything to the left of the cursor on the line
+
+
+----------------------------------------------------------------
+SECTION 1 - MISSING COMMANDS
+----------------------------------------------------------------
+
+less - read long output one page at a time
+    less file.txt        # open a file in the pager
+    ls -la /etc | less   # pipe any long output into less
+    # Inside less: arrow keys to scroll, / to search, q to quit
+    # This comes up constantly before you would know to open manPages.txt
+
+more - older pager, less is better but you will see it referenced
+    more file.txt        # spacebar to go forward, q to quit
+
+which - shows the full path to a command
+    which python3        # output: /usr/bin/python3
+    which ls             # output: /usr/bin/ls
+    # Essential when you hit "command not found" or have multiple versions
+
+type - tells you what a command actually is
+    type ls              # "ls is aliased to 'ls --color=auto'"
+    type cd              # "cd is a shell builtin"
+    type python3         # "python3 is /usr/bin/python3"
+    # Better than which because it shows aliases and builtins too
+
+wc - word/line/byte count
+    wc -l file.txt       # count lines
+    wc -w file.txt       # count words
+    wc -c file.txt       # count bytes
+    ls /etc | wc -l      # count how many files are in /etc
+
+echo - print text to the terminal
+    echo "hello world"          # prints: hello world
+    echo $USER                  # prints your username
+    echo $HOME                  # prints your home directory path
+    echo $PATH                  # prints your PATH variable
+    echo $?                     # prints the exit code of the last command
+
+alias - create a shortcut for a command
+    alias ll='ls -la'            # now typing ll runs ls -la
+    alias ..='cd ..'             # type .. to go up one directory
+    alias update='sudo apt update && sudo apt upgrade'
+    alias          # list all current aliases
+    unalias ll     # remove an alias
+    # Aliases set in the terminal only last for the session.
+    # Add them to ~/.bashrc to make them permanent.
+
+source - run a file in the current shell (does not spawn a new shell)
+    source ~/.bashrc     # reload your bashrc after editing it
+    . ~/.bashrc          # identical, the dot is shorthand for source
+    # This is how you apply changes to .bashrc without logging out.
+
+xargs - take output from one command and pass it as arguments to another
+    find /tmp -name "*.log" | xargs rm          # delete all .log files found
+    echo "file1 file2 file3" | xargs touch      # create all three files
+    cat list.txt | xargs -I {} echo "Item: {}"  # {} is the placeholder
+
+
+----------------------------------------------------------------
+SECTION 2 - SHELL VARIABLES EVERY BEGINNER NEEDS TO KNOW
+----------------------------------------------------------------
+
+These are not covered in any other file in the repo.
+
+$?  - exit code of the last command
+    0 means success. Anything else means something went wrong.
+    ls /tmp     # runs fine
+    echo $?     # prints 0
+    ls /fake    # fails
+    echo $?     # prints 2 (or some non-zero number)
+
+$PATH - the list of directories the shell searches for commands
+    echo $PATH
+    # Output looks like: /usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+    # When you type a command, the shell looks in each of these
+    # directories in order until it finds the program.
+    # "command not found" usually means the program is not in any
+    # of these directories.
+
+    # Add a directory to PATH (temporary, current session only)
+    export PATH=$PATH:/home/user/scripts
+
+    # Add permanently by putting that line in ~/.bashrc
+
+$HOME - your home directory
+    echo $HOME       # /home/youruser
+    cd $HOME         # same as cd ~
+
+$USER - your current username
+    echo $USER
+
+$SHELL - the shell you are running
+    echo $SHELL      # /bin/bash
+
+$EDITOR - default text editor used by programs that open an editor
+    export EDITOR=nano    # set nano as default
+    export EDITOR=vim     # set vim as default
+
+
+----------------------------------------------------------------
+SECTION 3 - JOB CONTROL
+----------------------------------------------------------------
+
+Not in redirectionPipingTBash.txt or any other repo file.
+
+& - run a command in the background
+    sleep 60 &          # starts sleep but gives you the terminal back
+    firefox &           # launch a program without blocking the terminal
+
+jobs - list background and stopped jobs
+    jobs                # shows job number, status, and command
+
+fg - bring a background or stopped job to the foreground
+    fg                  # brings the most recent job forward
+    fg %2               # brings job number 2 forward
+
+bg - resume a stopped job in the background
+    # First stop a running foreground job with ctrl+z
+    bg                  # resumes it in the background
+    bg %2               # resume specific job number 2
+
+ctrl+z - suspend (pause) the currently running foreground job
+    # The job is stopped but not killed. Use fg or bg to resume it.
+
+disown - detach a job from the terminal so it keeps running if you close it
+    sleep 1000 &
+    disown %1           # job keeps running even if you close the terminal
+
+nohup - run a command immune to hangup signals (survives terminal close)
+    nohup ./script.sh &           # output goes to nohup.out by default
+    nohup ./script.sh > out.txt & # redirect output to a specific file
+    # Use this when running long jobs over SSH that you need to survive disconnect
+
+
+----------------------------------------------------------------
+SECTION 4 - COMMAND HISTORY TRICKS
+----------------------------------------------------------------
+
+The main file lists `history` but nothing about how to actually
+use it. None of this is in any other repo file.
+
+history - show numbered list of past commands
+    history             # full list
+    history 20          # last 20 commands
+    history | grep ssh  # search history for ssh commands
+
+!! - repeat the last command
+    sudo !!             # re-run last command with sudo (very common)
+
+!n - run command number n from history
+    history             # find the number next to the command you want
+    !42                 # runs command number 42
+
+!string - run the most recent command that started with that string
+    !ssh                # re-runs the last ssh command you ran
+
+!$ - the last argument of the previous command
+    mkdir /tmp/newdir
+    cd !$               # cd /tmp/newdir  (reuses the path you just typed)
+
+!^ - the first argument of the previous command
+    cp file1.txt /tmp/dest/
+    ls !^               # ls file1.txt
+
+ctrl+r - reverse search through history (most useful history feature)
+    # Press ctrl+r, start typing any part of a previous command
+    # Terminal shows the most recent match as you type
+    # Press ctrl+r again to cycle to older matches
+    # Press enter to run it or right arrow to edit it first
+    # Press ctrl+c to cancel
+
+fc - open the last command in your text editor to fix and run it
+    fc                  # opens last command in $EDITOR, saves and runs on exit
+
+HISTSIZE and HISTFILESIZE - control how much history is saved
+    echo $HISTSIZE      # how many commands kept in memory (default 1000)
+    echo $HISTFILESIZE  # how many commands saved to ~/.bash_history
+
+
+----------------------------------------------------------------
+SECTION 5 - TAB COMPLETION
+----------------------------------------------------------------
+
+Not mentioned anywhere in the repo. The most important habit
+for a beginner to build immediately.
+
+Basic tab completion:
+    # Press Tab once to complete a command, filename, or path
+    # If there are multiple matches, press Tab twice to list them
+
+    ls /et<Tab>         # completes to ls /etc/
+    sys<Tab>            # completes to systemctl (if it is the only match)
+    cd /home/user/Doc<Tab>  # completes the Documents directory name
+
+Command completion:
+    # Tab works on commands too, not just files
+    git <Tab><Tab>      # shows all git subcommands
+    systemctl <Tab><Tab>  # shows all systemctl options
+
+Variable completion:
+    echo $HO<Tab>       # completes to $HOME
+
+Hostname completion:
+    ssh user@<Tab>      # completes hostnames from known_hosts
+
+Tilde expansion:
+    cd ~<Tab>           # completes to your home directory
+    cd ~other<Tab>      # completes to another user's home if you have access
+
+If tab completion is not working:
+    # Install bash-completion package
+    sudo apt install bash-completion      # Debian/Ubuntu
+    sudo dnf install bash-completion      # RHEL/Fedora
+
+
+----------------------------------------------------------------
+SECTION 6 - .bashrc AND .bash_profile
+----------------------------------------------------------------
+
+Not covered in any other repo file.
+
+~/.bashrc - runs every time you open a new interactive terminal
+    # This is where you put:
+    #   aliases you want to keep permanently
+    #   PATH additions
+    #   custom functions
+    #   environment variable exports
+    #   prompt (PS1) customization
+
+    nano ~/.bashrc      # edit it
+    source ~/.bashrc    # apply changes without logging out
+
+~/.bash_profile (or ~/.profile) - runs only at login
+    # On most systems .bashrc is sourced from .bash_profile
+    # Login shells (SSH sessions) read .bash_profile
+    # Interactive shells read .bashrc
+    # When in doubt, put things in .bashrc
+
+Common things to add to .bashrc:
+    export PATH=$PATH:~/scripts          # add your scripts folder to PATH
+    export EDITOR=vim                    # set default editor
+    alias ll='ls -la --color=auto'       # long listing alias
+    alias ..='cd ..'
+    alias grep='grep --color=auto'
+
+    # After editing .bashrc always run:
+    source ~/.bashrc
+
+
+----------------------------------------------------------------
+END OF CONSOLEMISSING.TXT
+----------------------------------------------------------------
+
+
+
