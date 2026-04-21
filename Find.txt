@@ -596,3 +596,1019 @@ Cloud Permissions
 aws s3 find s3://my-bucket/logs/ --name '*.log' --timestamp 2023-01-01T07:00:00Z..<current> | parallel -j50 aws s3api put-object-acl --acl bucket-owner-full-control {-}
 
 AWS S3 find –timestamp sets ACL only on recent objects, parallelize with GNU parallel
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+one year later-
+
+
+------FindMissing.txt------
+
+Everything missing from Find.txt.
+Read alongside the original. Nothing here repeats what is already there.
+
+
+================================================================
+SECTION 1 - CORRECTIONS TO ERRORS IN THE ORIGINAL
+================================================================
+
+----------------------------------------------------------------
+ERROR 1: aws s3 find does not exist
+----------------------------------------------------------------
+
+The original document shows:
+    aws s3 find s3://my-bucket/logs/ --name '*.log' --timestamp ...
+
+This command does not exist. The AWS CLI has no "find" subcommand.
+Running it fails: "Invalid choice: 'find'"
+
+Correct approaches for finding objects in S3:
+    aws s3 ls s3://my-bucket/prefix/ --recursive | grep "\.log$"
+    aws s3api list-objects-v2 --bucket my-bucket --prefix logs/ \
+        --query 'Contents[?ends_with(Key, `.log`)].[Key]' --output text
+
+
+----------------------------------------------------------------
+ERROR 2: BusyBox -maxdepth note is wrong
+----------------------------------------------------------------
+
+The original states: "no -maxdepth. Use -depth N instead."
+This is wrong on two counts.
+
+1. BusyBox find DOES support -maxdepth.
+
+2. -depth is a completely different flag. It means "process
+   directory contents BEFORE the directory itself" (depth-first
+   processing order). It has nothing to do with depth limiting.
+   Confusing these two flags will produce very wrong behavior.
+
+Correct BusyBox depth limiting:
+    find /path -maxdepth 2 -name "*.conf"   # works on BusyBox too
+
+
+----------------------------------------------------------------
+ERROR 3: -exec {} \; vs -exec {} + explanation is wrong
+----------------------------------------------------------------
+
+The original says "use -exec {} + to handle large numbers of files"
+as if it is only needed to avoid argument list errors. The real
+distinction is critical for performance and is never explained.
+
+-exec {} \;   runs the command ONCE PER FILE (slow)
+              spawns a new subprocess for every single matched file
+
+-exec {} +    batches ALL matched files into ONE command invocation
+              passes them all as arguments like: rm file1 file2 file3...
+              dramatically faster when many files match
+
+    # 10,000 .tmp files found:
+    find /tmp -name "*.tmp" -exec rm {} \;    # spawns 10,000 rm processes
+    find /tmp -name "*.tmp" -exec rm {} +     # spawns 1 rm process
+
+    # The + version also handles argument list limits automatically
+    # For single-file operations where you need {} in the middle:
+    find . -name "*.txt" -exec cp {} {}.bak \;   # must use \; here
+
+
+================================================================
+SECTION 2 - LOGICAL OPERATORS (MISSING FROM ORIGINAL)
+================================================================
+
+The original lists flags one by one but never explains that
+find expressions can be combined with AND, OR, and NOT.
+This is how you build complex queries.
+
+----------------------------------------------------------------
+2a. AND (default behavior)
+----------------------------------------------------------------
+
+When two expressions are next to each other, AND is implied.
+You can also write it explicitly.
+
+    find /etc -type f -name "*.conf"
+    # means: type IS file AND name matches *.conf
+
+    find /etc -type f -a -name "*.conf"   # explicit -a (same result)
+
+    find / -type f -size +100M -mtime -7
+    # files larger than 100MB AND modified in last 7 days
+
+
+----------------------------------------------------------------
+2b. OR operator
+----------------------------------------------------------------
+
+    find /path -name "*.jpg" -o -name "*.png"
+    # files matching *.jpg OR *.png
+
+    find /path -name "*.jpg" -o -name "*.png" -o -name "*.gif"
+    # three alternatives
+
+    # WARNING: -o has lower precedence than the implicit AND
+    # This does NOT do what you might expect:
+    find / -type f -name "*.conf" -o -name "*.cfg"
+    # reads as: (type f AND name *.conf) OR (name *.cfg)
+    # *.cfg matches ANY type including directories
+
+    # Fix: use parentheses (see Section 2d):
+    find / -type f \( -name "*.conf" -o -name "*.cfg" \)
+
+
+----------------------------------------------------------------
+2c. NOT operator
+----------------------------------------------------------------
+
+    find /etc -not -name "*.conf"       # GNU form (preferred)
+    find /etc ! -name "*.conf"          # POSIX form (works everywhere)
+
+    find / -not -type d                 # everything that is NOT a directory
+    find /home -not -user alice         # files NOT owned by alice
+    find / -not -path "*/proc/*"        # exclude /proc from results
+
+    # Combining NOT with other operators:
+    find / -type f -not -name "*.log"   # files that are NOT .log files
+    find /var -size +1M -not -name "*.gz"  # large files that are not compressed
+
+
+----------------------------------------------------------------
+2d. Parentheses for grouping
+----------------------------------------------------------------
+
+Parentheses must be escaped with backslash (or quoted)
+because the shell would otherwise interpret them.
+
+    find /path \( expr1 -o expr2 \) -and expr3
+
+    # Find .jpg or .png files that are larger than 1MB:
+    find /home \( -name "*.jpg" -o -name "*.png" \) -size +1M
+
+    # Find files owned by alice OR bob:
+    find /home \( -user alice -o -user bob \) -type f
+
+    # Find config files that are NOT owned by root:
+    find /etc -type f \( -name "*.conf" -o -name "*.cfg" \) ! -user root
+
+    # The canonical exclude-and-search pattern (see -prune in Section 5):
+    find /home \( -name ".git" -o -name "node_modules" \) -prune \
+         -o -name "*.py" -print
+
+
+================================================================
+SECTION 3 - MISSING SEARCH CRITERIA FLAGS
+================================================================
+
+----------------------------------------------------------------
+-user and -group (absent from original)
+----------------------------------------------------------------
+
+    find / -user alice              # files owned by user alice
+    find / -user 1001               # files owned by UID 1001
+    find / -group developers        # files owned by group developers
+    find / -group 1005              # files owned by GID 1005
+
+    # Combine with other criteria:
+    find /home -user alice -type f -name "*.py"
+    find /var/www -not -group www-data -type f    # files not owned by www-data
+
+    # Real-world use: find everything alice owns across the whole system
+    find / -user alice 2>/dev/null > /tmp/alice_files.txt
+
+
+----------------------------------------------------------------
+-nouser and -nogroup (absent from original)
+----------------------------------------------------------------
+
+Files whose owner or group no longer exists in /etc/passwd
+or /etc/group. Appear after a user is deleted without cleanup.
+
+    find / -nouser 2>/dev/null      # files with no valid owner
+    find / -nogroup 2>/dev/null     # files with no valid group
+    find / \( -nouser -o -nogroup \) 2>/dev/null   # either condition
+
+    # Security audit: orphaned files should not exist
+    find / -nouser -ls 2>/dev/null      # show with details
+
+
+----------------------------------------------------------------
+-iname (absent from original)
+----------------------------------------------------------------
+
+Case-insensitive version of -name.
+
+    find /home -iname "readme.txt"   # matches README.txt, readme.TXT, Readme.txt
+    find / -iname "*.jpg"            # matches .jpg AND .JPG AND .Jpg
+
+
+----------------------------------------------------------------
+-ipath / -wholename / -iwholename (absent from original)
+----------------------------------------------------------------
+
+-path or -wholename matches the full path, not just the filename.
+-ipath is the case-insensitive version.
+
+    find / -path "*/nginx/*.conf"       # .conf files inside any nginx directory
+    find / -path "*/log/*.log"          # .log files inside any log directory
+    find . -path "*/test*"              # anything with "test" in the path
+
+    # Using -path to exclude directories (without -prune):
+    find / -not -path "*/proc/*" -not -path "*/sys/*" -name "*.conf"
+
+    # -wholename is an alias for -path on GNU find:
+    find / -wholename "*/nginx/nginx.conf"
+
+
+----------------------------------------------------------------
+-empty (absent from original)
+----------------------------------------------------------------
+
+Find empty files or empty directories.
+
+    find /tmp -empty                    # empty files AND empty directories
+    find /tmp -type f -empty            # only empty files
+    find /var -type d -empty            # only empty directories
+
+    # Clean up empty files:
+    find /tmp -type f -empty -delete
+
+    # Find empty directories for cleanup:
+    find /home -type d -empty
+    find /var -type d -empty -not -path "*/\.*"   # exclude hidden dirs
+
+
+----------------------------------------------------------------
+-ctime (absent from original)
+----------------------------------------------------------------
+
+-ctime is change time: when the INODE was last changed.
+This includes permission changes, ownership changes, hard link
+count changes, and content modifications.
+It does NOT necessarily mean content was modified.
+
+    find /etc -ctime -1     # inode changed in last 24 hours
+    find /etc -ctime +30    # inode unchanged for more than 30 days
+
+    The three time flags compared:
+    -mtime    modification time: file CONTENT was changed
+    -atime    access time: file was READ (often disabled with noatime)
+    -ctime    change time: inode was changed (perms, owner, content, links)
+
+    # For LFCS: know that ctime updates when you chmod or chown a file
+    # even if the content does not change:
+    chmod 644 /etc/hosts
+    find /etc -name "hosts" -ctime 0    # finds it (ctime just updated)
+    find /etc -name "hosts" -mtime 0    # may not find it (content unchanged)
+
+
+----------------------------------------------------------------
+-newer, -newermt and the full newerXY family
+----------------------------------------------------------------
+
+The original briefly shows -newermt without explanation.
+Full coverage:
+
+-newer file     find files modified more recently than a reference file
+    find /etc -newer /etc/passwd        # files changed more recently than passwd
+    find / -newer /var/log/syslog       # files newer than syslog
+
+-newerXY "timestamp"  compare time X of found file against time Y of reference
+    X and Y are each one of: a (access), m (modify), c (change), B (birth)
+    The reference can be a file or a timestamp string.
+
+    find /etc -newermt "2024-01-01"              # modified after Jan 1 2024
+    find /etc -newermt "2024-01-01 00:00:00"     # with time
+    find /etc -newerct "2024-06-01"              # ctime after June 1
+    find /etc -newerat "2024-01-01"              # accessed after Jan 1
+
+    # Find files modified in a specific date range:
+    find /var/log -newermt "2024-01-01" ! -newermt "2024-02-01"
+    # modified in January 2024
+
+    # Files modified more recently than a reference file but before a date:
+    find /etc -newer /etc/passwd ! -newermt "2025-01-01"
+
+
+----------------------------------------------------------------
+-links (absent from original)
+----------------------------------------------------------------
+
+Find files by hard link count.
+
+    find / -links 1 -type f         # files with only ONE hard link (no duplicates)
+    find / -links +1 -type f        # files with MORE than 1 hard link
+    find / -links 2 -type d         # directories with exactly 2 links (empty dirs)
+
+    # Why directories have specific link counts:
+    # An empty directory has 2 links: its own name + the . entry inside it
+    # Each subdirectory adds 1 more link (via the .. entry pointing back up)
+    find / -type d -links 2         # empty directories (no subdirectories)
+
+
+----------------------------------------------------------------
+-samefile (absent from original)
+----------------------------------------------------------------
+
+Find all hard links to the same inode as a reference file.
+
+    find / -samefile /etc/passwd 2>/dev/null
+    # Find all filenames that point to the same inode as /etc/passwd
+
+    find / -samefile /bin/sh 2>/dev/null
+    # Find all hard links to the shell binary
+
+    # Combine with -not to find OTHER names for the same file:
+    find / -samefile /etc/hosts -not -path /etc/hosts 2>/dev/null
+
+
+----------------------------------------------------------------
+-readable, -writable, -executable (absent from original)
+----------------------------------------------------------------
+
+Find files the CURRENT USER (running find) can access.
+These check effective permissions, not just permission bits.
+
+    find /etc -readable -type f         # files current user can read
+    find /usr/bin -executable -type f   # executables current user can run
+    find /var -writable -type d         # directories current user can write to
+
+    # These are different from -perm -u+r which checks the bit only
+    # -readable checks actual access considering ownership and groups
+
+
+----------------------------------------------------------------
+-fstype (absent from original)
+----------------------------------------------------------------
+
+Filter results by the type of filesystem the file lives on.
+
+    find / -fstype ext4 -name "*.log"
+    find / -fstype xfs -type f -size +100M
+    find / -not -fstype tmpfs           # exclude tmpfs filesystems
+    find / -not -fstype proc -not -fstype sysfs   # exclude virtual filesystems
+
+    # Show available filesystem types on your system:
+    cat /proc/filesystems
+
+
+================================================================
+SECTION 4 - THE -perm FLAG FULLY EXPLAINED
+================================================================
+
+The original shows -perm 644 and -perm -u+x but never explains
+the three completely different behaviors. This is LFCS exam material.
+
+-perm MODE    EXACT match - ALL permission bits must match exactly
+-perm -MODE   ALL listed bits must be set (minimum permissions)
+-perm /MODE   ANY of the listed bits must be set (OR logic)
+
+----------------------------------------------------------------
+EXACT match (-perm 644)
+----------------------------------------------------------------
+
+    find /etc -perm 644         # files with EXACTLY 644 (rw-r--r--)
+    find /etc -perm 0644        # same with leading zero
+    find /etc -perm 755         # files with EXACTLY 755
+
+    In practice, exact match is rarely what you want because any
+    variation (like 744 instead of 644) will not match.
+    Usually you want -perm -644 (minimum permissions) instead.
+
+
+----------------------------------------------------------------
+Minimum permissions (-perm -MODE, all bits must be set)
+----------------------------------------------------------------
+
+    find / -perm -644           # files where owner has rw, group has r, others have r
+                                # files with 755 ALSO match because they have at least these bits
+    find / -perm -u+x           # files where owner execute bit is set
+    find / -perm -u+s           # files with SUID bit set (same as -perm -4000)
+    find / -perm -g+s           # files with SGID bit set (same as -perm -2000)
+    find / -perm -1000          # files with sticky bit set
+
+    # The most important security audit commands:
+    find / -perm -4000 -type f 2>/dev/null   # all SUID files
+    find / -perm -2000 -type f 2>/dev/null   # all SGID files
+    find / -perm -0002 -type f 2>/dev/null   # world-writable files (security risk)
+
+
+----------------------------------------------------------------
+Any of these bits (-perm /MODE, OR logic)
+----------------------------------------------------------------
+
+    find / -perm /6000 -type f 2>/dev/null   # SUID OR SGID (either or both)
+    find / -perm /111                        # executable by owner OR group OR others
+    find / -perm /4000 -type f              # same as -perm -4000 for single bit
+
+    # Old syntax (deprecated but seen in documentation):
+    find / -perm +6000   # same as /6000 on older systems
+
+    # Practical: find files world-readable OR world-writable:
+    find /etc -perm /006 -type f    # others have read OR write access
+
+
+----------------------------------------------------------------
+Combining perm with other criteria
+----------------------------------------------------------------
+
+    # Files with SUID set that are NOT owned by root (suspicious):
+    find / -perm -4000 -type f -not -user root 2>/dev/null
+
+    # World-writable files outside /tmp (dangerous):
+    find / -perm -0002 -type f \
+           -not -path "/proc/*" \
+           -not -path "/sys/*" \
+           -not -path "/tmp/*" 2>/dev/null
+
+    # Config files with insecure permissions (world-readable):
+    find /etc -perm /004 -name "*.conf" -type f
+
+
+================================================================
+SECTION 5 - -prune: EXCLUDING DIRECTORIES
+================================================================
+
+Completely absent from the original. Critical for real use.
+
+-prune tells find to not descend into a matched directory.
+Without it, searches from / are slow and include /proc, /sys,
+/dev, and network mounts.
+
+Basic -prune syntax:
+    find STARTPATH -path EXCLUDE_PATH -prune -o REST_OF_SEARCH -print
+
+    # The -o means OR: either prune this, OR search the rest
+    # -print at the end is REQUIRED or find will print pruned dirs too
+
+Excluding /proc and /sys (run any search from / efficiently):
+    find / -path /proc -prune -o -path /sys -prune \
+           -o -name "*.conf" -print
+    # Much faster than find / -name "*.conf" 2>/dev/null
+
+Excluding a named directory anywhere in the tree:
+    find /home -name ".git" -prune -o -type f -name "*.py" -print
+    # Find Python files but skip all .git directories
+
+    find /var -name "*.log.gz" -prune -o -name "*.log" -print
+    # Find .log files but not inside compressed archives
+
+Excluding multiple directories:
+    find / \( -path /proc -o -path /sys -o -path /dev \) -prune \
+           -o -type f -name "*.log" -print
+
+    # Also exclude network mounts:
+    find / \( -path /proc -o -path /sys -o -path /mnt -o -path /media \) \
+           -prune -o -name "*.conf" -print
+
+Exclude by name pattern anywhere in path:
+    find /home \( -name ".git" -o -name "node_modules" -o -name ".cache" \) \
+         -prune -o -type f -name "*.js" -print
+
+    find /opt \( -name "vendor" -o -name "*.egg-info" \) \
+         -prune -o -name "*.py" -print
+
+-prune vs -not -path:
+    find / -not -path "*/proc/*" -name "*.conf"   # simpler but still descends into /proc
+    find / -path /proc -prune -o -name "*.conf" -print  # never enters /proc (faster)
+    # For excluding many files, -prune is faster
+    # For occasional exclusions, -not -path is cleaner to read
+
+
+================================================================
+SECTION 6 - -xdev AND -mount: STAYING ON ONE FILESYSTEM
+================================================================
+
+Absent from the original. Critical for searches that must not
+cross into mounted filesystems, network shares, or /proc.
+
+-xdev   (or -mount, they are equivalent)
+    Do not descend into directories on different filesystems.
+    Stays on the filesystem where the search starts.
+
+    find / -xdev -name "*.conf"
+    # Searches only the root filesystem, ignores:
+    # /proc (procfs), /sys (sysfs), /dev (devtmpfs)
+    # any NFS or CIFS network mounts
+    # any additional partitions mounted under /
+
+    find /home -xdev -type f -size +100M
+    # Large files on the /home filesystem only
+    # Does not cross into other mounted partitions
+
+    # Real-world: disk usage audit without crossing mounts:
+    find / -xdev -type f -printf "%s\n" | awk '{t+=$1} END {print t}'
+    # Total bytes on root filesystem only
+
+    # Combined with -prune for maximum control:
+    find / -xdev -path /proc -prune -o -name "*.log" -print
+
+
+================================================================
+SECTION 7 - SYMLINK HANDLING FLAGS
+================================================================
+
+Absent from the original. Determines how find treats symlinks.
+
+-P    Never follow symlinks (DEFAULT behavior)
+      find follows the link for the filename but stats the link itself.
+      find / -P -name "*.conf"    # default, symlinks not followed
+
+-L    Follow all symlinks
+      find dereferences symlinks and treats the target as the found item.
+      find / -L -name "*.conf"    # follows every symlink encountered
+      find / -L -type d           # includes symlinked directories
+
+-H    Follow symlinks only on the COMMAND LINE (arguments to find)
+      Symlinks in the tree itself are not followed.
+      find -H /usr/bin -type f    # follows /usr/bin if it is a symlink
+
+Finding broken symlinks:
+    find /usr -xtype l 2>/dev/null
+    # -xtype l with -L follow means: find entries that are still
+    # symlinks AFTER dereferencing (i.e., the target does not exist)
+
+    find /usr -L -type l 2>/dev/null   # alternative: find symlinks when -L active
+
+    # Broken symlinks anywhere on the system:
+    find / -L -type l 2>/dev/null
+
+
+================================================================
+SECTION 8 - OUTPUT FLAGS
+================================================================
+
+The original only shows -exec ls -lh {} \; for formatted output.
+These native output options are cleaner and faster.
+
+----------------------------------------------------------------
+-ls (absent from original)
+----------------------------------------------------------------
+
+Produces ls -dils style output inline without running ls.
+
+    find /etc -name "*.conf" -ls
+    # Output: inode permissions links owner group size date time path
+    # 131073 4 -rw-r--r-- 1 root root 3942 Jan 15 10:30 /etc/ssh/sshd_config
+
+    find / -perm -4000 -ls 2>/dev/null   # SUID files with full details
+
+
+----------------------------------------------------------------
+-print0 (should be documented as main option, not just code)
+----------------------------------------------------------------
+
+Outputs filenames separated by null bytes instead of newlines.
+Handles filenames with spaces, newlines, or special characters.
+ALWAYS pair with xargs -0 when piping to other commands.
+
+    find /home -name "*.tmp" -print0 | xargs -0 rm
+    find / -name "*.conf" -print0 | xargs -0 grep "password"
+    find . -type f -print0 | xargs -0 wc -l   # line count, safe with spaces
+
+    # Why it matters:
+    find /home -name "my file.txt" -exec rm {} \;    # works (single file)
+    find /home -type f | xargs rm                     # BREAKS on spaces in names
+    find /home -type f -print0 | xargs -0 rm          # safe
+
+
+----------------------------------------------------------------
+-printf (absent from original)
+----------------------------------------------------------------
+
+Custom formatted output. Much more powerful than -exec ls.
+Does not add a newline automatically (use \n explicitly).
+
+Format specifiers:
+    %f      filename only (no path)
+    %p      full path
+    %P      path relative to start point
+    %s      file size in bytes
+    %k      file size in kilobytes (rounded up)
+    %m      permissions in octal (like 644)
+    %M      permissions in symbolic form (like -rw-r--r--)
+    %u      username of owner
+    %U      UID of owner
+    %g      group name of owner
+    %G      GID of owner
+    %i      inode number
+    %n      number of hard links
+    %l      symlink target (empty if not a symlink)
+    %d      depth in directory tree
+    %T+     modification time in sortable format (2024-01-15+10:30:00)
+    %A+     access time
+    %C+     change time
+    %h      directory part of path (parent)
+
+Examples:
+    # Size and path (for large file hunting):
+    find /var -type f -printf "%s\t%p\n" | sort -rn | head -20
+
+    # Permissions and owner for security audit:
+    find /etc -type f -printf "%m\t%u\t%p\n"
+
+    # Files sorted by modification time:
+    find /etc -type f -printf "%T+\t%p\n" | sort | tail -20
+    # Shows 20 most recently modified files
+
+    # Find large files with human-readable format:
+    find / -type f -size +100M -printf "%s\t%p\n" 2>/dev/null | \
+        awk '{printf "%.1f MB\t%s\n", $1/1048576, $2}' | sort -rn
+
+    # All SUID binaries with owner and permissions:
+    find / -perm -4000 -type f -printf "%M\t%u\t%p\n" 2>/dev/null
+
+
+----------------------------------------------------------------
+-fprint filename (absent from original)
+----------------------------------------------------------------
+
+Write output directly to a file instead of stdout.
+
+    find /var/log -name "*.log" -fprint /tmp/logfiles.txt
+    find /home -type f -fprint /tmp/home_files.txt
+    find / -perm -4000 -fprint /tmp/suid_audit.txt 2>/dev/null
+
+    -fprint0    null-terminated version for filenames with spaces:
+    find /home -type f -fprint0 /tmp/home_files.null
+
+
+================================================================
+SECTION 9 - COMPLETE -type FLAG REFERENCE
+================================================================
+
+The original only shows -type f and -type d.
+
+    f    regular file
+    d    directory
+    l    symbolic link
+    b    block device (hard drives, SSDs: /dev/sda, /dev/nvme0n1)
+    c    character device (terminals, /dev/tty, /dev/null)
+    p    named pipe (FIFO)
+    s    socket file
+
+    find /dev -type b               # all block devices
+    find /dev -type c               # all character devices
+    find /tmp -type p               # named pipes in /tmp
+    find /run -type s               # socket files (database, docker sockets)
+    find / -type l -name "*.so"     # symbolic links to shared libraries
+
+    # Finding all socket files (useful for seeing what services are running):
+    find /run /tmp /var/run -type s 2>/dev/null
+
+    # Finding pipes:
+    find /proc -maxdepth 3 -type p 2>/dev/null
+
+
+================================================================
+SECTION 10 - COMPLETE -size FLAG REFERENCE
+================================================================
+
+The original shows +100M and -10M but never documents all units
+or explains the rounding behavior.
+
+Size units:
+    c    bytes (characters)
+    w    2-byte words
+    b    512-byte blocks (DEFAULT if no unit specified)
+    k    kilobytes (1024 bytes)
+    M    megabytes (1024^2 bytes)
+    G    gigabytes (1024^3 bytes)
+
+    find / -size +1G        # files larger than 1 GB (1024^3 bytes)
+    find / -size +100k      # files larger than 100 KB
+    find / -size +1024c     # files larger than 1024 bytes
+    find / -size 0          # files that are exactly 0 blocks (see empty note)
+    find / -size 0c         # files that are exactly 0 bytes (truly empty)
+
+Size rounding behavior:
+    Without explicit units, size is in 512-byte blocks and is rounded up.
+    -size +1M means strictly greater than 1 MB after block rounding.
+    -size 1M matches files that occupy exactly 1 MB when rounded up to blocks.
+    For exact byte matching, always use the c unit: -size 1024c
+
+Finding large files for disk cleanup:
+    find / -type f -size +500M 2>/dev/null
+    find /var -type f -size +50M -printf "%s\t%p\n" | \
+        sort -rn | awk '{printf "%.0f MB\t%s\n", $1/1048576, $2}'
+
+Finding small files that may be stubs or placeholders:
+    find /etc -type f -size -100c   # files smaller than 100 bytes
+    find /var -type f -size 0c      # completely empty files
+
+
+================================================================
+SECTION 11 - -execdir AND -okdir: SAFER EXEC
+================================================================
+
+Absent from the original.
+
+-execdir    like -exec but runs the command FROM the directory
+            containing the found file, not from the starting directory.
+
+Why it matters for security:
+    With -exec, if a found file is named ../../../etc/passwd,
+    the command might operate on an unintended path.
+    With -execdir, the command runs with the directory as CWD,
+    so relative paths cannot escape the search tree.
+
+    find /home -name "*.py" -execdir python3 -m py_compile {} \;
+    # Compiles each .py file from its own directory
+
+    find /uploads -name "*.jpg" -execdir convert {} thumbnail_{} \;
+    # Creates thumbnails in same directory as each image
+
+    find /home -name ".env" -execdir cat {} \;
+    # Reads each .env file from its directory
+
+-ok and -okdir:
+    Interactive versions that prompt "rm /tmp/file.txt ? y/n"
+    before executing for each file.
+
+    find /tmp -name "*.tmp" -ok rm {} \;
+    # Prompts before each deletion
+
+    find /home -name "core" -ok rm {} \;
+    # Confirm before removing each core dump
+
+
+================================================================
+SECTION 12 - 2>/dev/null: THE STANDARD PATTERN
+================================================================
+
+Almost every real-world find command from / produces errors.
+The original shows this in one example without explanation.
+
+Why you always need 2>/dev/null for system-wide searches:
+    find / -name "*.conf"
+    # Produces: find: '/proc/tty/driver': Permission denied
+    #           find: '/root': Permission denied
+    #           find: '/sys/kernel/debug': Permission denied
+    #           ... hundreds of these
+
+    find / -name "*.conf" 2>/dev/null
+    # Clean output, errors silently discarded
+
+Alternatives:
+    sudo find / -name "*.conf"           # suppress by having permission
+    find / -name "*.conf" 2>/dev/null    # standard: discard stderr
+
+Redirecting errors to a log instead of discarding:
+    find / -name "*.conf" 2>/tmp/find_errors.txt
+    # Save errors for review later
+
+Seeing ONLY the errors (to audit what you cannot read):
+    find / -name "*.conf" 2>&1 1>/dev/null | grep "Permission denied"
+
+
+================================================================
+SECTION 13 - LFCS AND RHCSA EXAM PATTERNS
+================================================================
+
+These are the specific find commands most likely to appear
+on the LFCS and RHCSA exams. None are in the original.
+
+Security auditing:
+    # All SUID files on the system:
+    find / -perm -4000 -type f 2>/dev/null
+
+    # All SGID files:
+    find / -perm -2000 -type f 2>/dev/null
+
+    # SUID or SGID (either):
+    find / -perm /6000 -type f 2>/dev/null
+
+    # World-writable files (security risk):
+    find / -perm -0002 -type f 2>/dev/null
+
+    # World-writable directories:
+    find / -perm -0002 -type d 2>/dev/null
+
+    # Files with no valid owner:
+    find / -nouser 2>/dev/null
+
+    # Files with no valid group:
+    find / -nogroup 2>/dev/null
+
+    # SUID files not owned by root (suspicious):
+    find / -perm -4000 -not -user root -type f 2>/dev/null
+
+Ownership searches:
+    # All files owned by a specific user:
+    find / -user alice 2>/dev/null
+
+    # All files owned by a specific group:
+    find / -group developers 2>/dev/null
+
+    # Files not owned by root in /etc:
+    find /etc -not -user root -type f 2>/dev/null
+
+Disk management:
+    # Large files for cleanup:
+    find / -type f -size +100M 2>/dev/null
+
+    # Files not accessed in 90 days (candidates for archival):
+    find /home -atime +90 -type f
+
+    # Log files older than 30 days:
+    find /var/log -name "*.log" -mtime +30
+
+    # Empty files:
+    find / -type f -empty 2>/dev/null
+
+    # Empty directories:
+    find / -type d -empty 2>/dev/null
+
+Permission changes:
+    # Make all .sh files executable:
+    find /scripts -name "*.sh" -exec chmod +x {} +
+
+    # Fix web server permissions (files 644, dirs 755):
+    find /var/www -type f -exec chmod 644 {} +
+    find /var/www -type d -exec chmod 755 {} +
+
+    # Recursively set ownership:
+    find /var/www -exec chown www-data:www-data {} +
+
+Finding recently changed files (exam scenario):
+    # Files modified in last 24 hours:
+    find /etc -mtime -1 -type f
+
+    # Files changed (ctime) since a reference file was modified:
+    find /etc -newer /etc/passwd -type f
+
+    # Files modified between two dates:
+    find /var/log -newermt "2024-01-01" ! -newermt "2024-02-01"
+
+
+================================================================
+SECTION 14 - COMPLETE REAL-WORLD PIPELINES
+================================================================
+
+The original has two pipeline examples. These are the patterns
+actually used in production.
+
+Disk cleanup:
+    # Find and remove old log files:
+    find /var/log -name "*.log" -mtime +30 -exec rm {} +
+
+    # Find large files, show them, optionally delete:
+    find / -type f -size +500M -printf "%s\t%p\n" 2>/dev/null | \
+        sort -rn | head -20
+
+    # Find and compress old logs in place:
+    find /var/log -name "*.log" -mtime +7 -not -name "*.gz" \
+         -exec gzip {} +
+
+    # Find logs, compress and move to archive:
+    find /var/log -name "*.log" -mtime +30 \
+         -exec gzip {} \; \
+         -exec mv {}.gz /archive/logs/ \;
+
+Security audits:
+    # Full SUID audit with details:
+    find / -perm -4000 -type f -printf "%M\t%u\t%p\n" 2>/dev/null | sort
+
+    # Baseline SUID list (save and compare later):
+    find / -perm /6000 -type f 2>/dev/null | sort > /root/suid_baseline.txt
+    # Later: compare with new scan
+    diff /root/suid_baseline.txt <(find / -perm /6000 -type f 2>/dev/null | sort)
+
+    # Find and fix world-writable files:
+    find /var/www -perm -0002 -type f -exec chmod o-w {} +
+
+Backup and archiving:
+    # Find files changed in last 24 hours for incremental backup:
+    find /home -mtime -1 -type f -print0 | \
+        xargs -0 tar -czf /backup/daily_$(date +%Y%m%d).tar.gz
+
+    # Archive specific file types:
+    find /home -name "*.pdf" -print0 | \
+        xargs -0 tar -czf /backup/pdfs.tar.gz
+
+    # Copy directory tree preserving structure:
+    find /etc -name "*.conf" -exec cp --parents {} /backup/etc/ \;
+
+Bulk file operations:
+    # Replace text in multiple files:
+    find /var/www -name "*.html" -exec sed -i 's/oldtext/newtext/g' {} +
+
+    # Find and rename files (requires loop or rename command):
+    find /home -name "*.jpeg" -exec bash -c 'mv "$1" "${1%.jpeg}.jpg"' _ {} \;
+
+    # Set permissions based on type:
+    find /project \( -type f -exec chmod 644 {} + \) \
+                  -o \( -type d -exec chmod 755 {} + \)
+
+Combining with grep for content search:
+    # Find files containing a pattern (efficient):
+    find /etc -type f -exec grep -l "PermitRootLogin" {} +
+    # Faster than: grep -r "PermitRootLogin" /etc
+
+    # Find and show matching lines with filename:
+    find /var/log -name "*.log" -exec grep -H "Failed password" {} +
+
+    # Find recently modified configs that contain a pattern:
+    find /etc -mtime -7 -type f -exec grep -l "password" {} +
+
+
+================================================================
+SECTION 15 - BSD vs GNU find DIFFERENCES
+================================================================
+
+The original mentions this but gives wrong information. Correct reference:
+
+Feature                 GNU find (Linux)            BSD find (macOS/FreeBSD)
+---------------------------------------------------------------------------
+-maxdepth               supported                   supported
+-mindepth               supported                   supported
+-iname                  supported                   supported (macOS)
+-printf                 supported                   NOT supported
+-regex                  supported (BRE)             supported
+-regextype              supported                   NOT supported
+-perm /mode             supported                   NOT supported (use +mode)
+-perm +mode             deprecated (use /)          supported
+-execdir                supported                   supported
+-delete                 supported                   supported
+-ls                     supported                   supported
+-newermt                supported                   NOT supported
+-daystart               supported                   NOT supported
+--help                  supported                   NOT supported
+-xdev / -mount          both work (synonyms)        -mount only (no -xdev)
+
+For portable scripts:
+    Use -exec {} \; instead of -exec {} + (safer but slower)
+    Use -perm -mode instead of -perm /mode
+    Avoid -printf (use -exec ls instead on BSD)
+    Avoid -newermt (use -newer file instead)
+    Use -newer file for time comparisons instead of -newermt "string"
+
+macOS specific note:
+    macOS ships BSD find but you can install GNU find:
+    brew install findutils
+    # GNU find is then available as gfind
+    gfind / -printf "%s\t%p\n"   # use gfind for GNU features on macOS
+
+
+================================================================
+SECTION 16 - FIND VS ALTERNATIVES
+================================================================
+
+Not covered in the original.
+
+locate / mlocate:
+    locate filename         # search a pre-built database (very fast)
+    locate -i filename      # case insensitive
+    locate "*.conf"         # wildcard search
+    updatedb                # update the database (usually runs daily)
+
+    find vs locate:
+    locate is fast but shows stale results (database not always current)
+    find is slow but always accurate and current
+    locate cannot filter by permissions, size, owner, etc.
+    Use locate to find a file quickly
+    Use find when results must be current or need filtering
+
+fd (modern find alternative):
+    fd "pattern"            # find files matching pattern, recursive
+    fd -e conf              # find by extension (no glob needed)
+    fd -t f "pattern"       # files only
+    fd -H "pattern"         # include hidden files
+    fd -x command {}        # execute command (like find -exec)
+
+    sudo apt install fd-find    # Debian/Ubuntu (command: fdfind or fd)
+    sudo dnf install fd-find    # RHEL/Fedora
+
+    fd is faster than find, has better defaults, uses gitignore,
+    and has cleaner syntax. Not available on all systems by default.
+
+When to use each tool:
+    find        universal, always available, full featured, LFCS/RHCSA exam
+    locate      quick lookup by name when database is fresh
+    fd          faster and cleaner syntax when installed
+    grep -r     when searching file CONTENTS, not filenames
+    ls -R       quick recursive listing (less filtering capability)
+    du          when focus is disk usage not finding files
+
+
+================================================================
+END OF FINDMISSING.TXT
+================================================================
+
