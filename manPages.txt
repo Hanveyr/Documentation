@@ -323,3 +323,775 @@ Update the MANPATH environment variable to include the new directory:
 export MANPATH="/usr/local/share/man:$MANPATH"
 Verify the custom man page:
 man mycommand
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+One year later
+
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+
+
+------manPagesMissing.txt------
+Everything missing from manPages.txt.
+Read this alongside the existing manPages.txt in this repo.
+None of this repeats what is already there.
+
+
+================================================================
+SECTION 1 - BEFORE YOU USE MAN: THE HELP HIERARCHY
+================================================================
+
+There are four tools for getting help in Linux, and you should
+know which one to reach for first. manPages.txt only covers man.
+
+----------------------------------------------------------------
+1a. --help (fastest, always try this first)
+----------------------------------------------------------------
+
+Almost every command accepts --help or -h as a flag.
+It prints a short usage summary directly to the terminal
+without opening a pager. Much faster than man for quick lookups.
+
+    ls --help
+    grep --help
+    tar --help
+    systemctl --help
+
+When to use it: you just want to see what flags are available
+or remind yourself of the syntax. You already know the command.
+
+When NOT to use it: you want to understand what a command
+actually does or read detailed descriptions of behavior.
+--help output is a summary, not a manual.
+
+Some commands use -h instead of --help:
+    curl -h
+    ssh -h
+
+Some commands accept both:
+    wget --help
+    wget -h
+
+
+----------------------------------------------------------------
+1b. help - for bash builtins (man does not work for these)
+----------------------------------------------------------------
+
+This is one of the most common points of confusion for beginners.
+
+bash builtins are commands built directly into the shell itself:
+    cd, echo, alias, source, export, read, set, unset, type,
+    history, jobs, fg, bg, kill, wait, exit, return, break,
+    continue, eval, exec, trap, umask, ulimit, and many more.
+
+man cd returns nothing (or a useless stub) on most systems
+because cd is not a separate program with a man page.
+The correct command is:
+
+    help cd          # shows full documentation for cd
+    help echo        # shows full documentation for the echo builtin
+    help alias       # shows alias documentation
+    help             # lists ALL bash builtins
+
+    help -d cd       # one-line description only
+    help -s cd       # shows synopsis/syntax only
+    help -m cd       # shows output in man page format
+
+How to tell if something is a builtin before looking it up:
+    type cd          # output: cd is a shell builtin
+    type ls          # output: ls is /usr/bin/ls  (not a builtin)
+    type -a echo     # shows ALL locations (builtin AND /bin/echo)
+
+
+----------------------------------------------------------------
+1c. info - more complete than man for GNU tools
+----------------------------------------------------------------
+
+Many GNU tools (bash, grep, awk, coreutils, gcc) have info pages
+that are more detailed and up to date than their man pages.
+The man page for these tools often just says "see the info page."
+
+    info ls          # full coreutils documentation for ls
+    info bash        # complete bash reference (much more than man bash)
+    info grep        # complete grep documentation
+    info coreutils   # entire GNU coreutils manual in one place
+
+Navigation inside info:
+    Arrow keys / PgUp PgDn - scroll
+    n               - next node
+    p               - previous node
+    u               - up one level
+    l               - go back (like browser back button)
+    Tab             - jump to next link
+    Enter           - follow a link
+    q               - quit
+    ?               - show all keybindings
+    s or /          - search forward
+    index-search    - search the index: press i then type term
+
+pinfo - a better info reader (install separately):
+    pinfo ls         # same content, nicer interface with color and links
+    sudo apt install pinfo     # Debian/Ubuntu
+    sudo dnf install pinfo     # RHEL/Fedora
+
+When to use info over man:
+    For any GNU tool, especially bash, coreutils, grep, awk, sed.
+    If the man page seems short or says "see info page," use info.
+
+
+----------------------------------------------------------------
+1d. tldr - simplified practical examples
+----------------------------------------------------------------
+
+Not installed by default but worth knowing about.
+Shows practical examples of common commands instead of full docs.
+
+    tldr tar         # shows the most common tar use cases
+    tldr find        # common find examples
+    tldr rsync       # common rsync patterns
+
+    sudo apt install tldr      # Debian/Ubuntu
+    sudo dnf install tldr      # RHEL/Fedora
+
+After installing, update the database first:
+    tldr --update
+
+tldr is not a replacement for man. It is a quick-start
+cheat sheet. Use man when you need the full picture.
+
+The decision tree:
+    Quick syntax reminder       ->  command --help
+    Shell builtin               ->  help command
+    GNU tool full reference     ->  info command
+    Common practical examples   ->  tldr command
+    Full authoritative docs     ->  man command
+    Can't find it anywhere      ->  apropos keyword
+
+
+================================================================
+SECTION 2 - MAN FLAGS MISSING FROM manPages.txt
+================================================================
+
+The existing doc covers man -k, man -f, man -a, man -t.
+These are also important and not covered:
+
+man -K  (uppercase K) - full text search across ALL man pages
+    man -K "tcp handshake"     # search body text of every man page
+    man -K password            # finds every page mentioning "password"
+
+    This is slow because it reads every man page file.
+    It prompts you for each match - press Enter to view,
+    type n to skip to the next match, or q to quit searching.
+    Use man -k (lowercase) first. Only use -K when -k finds nothing.
+
+man -w  - show the file path of a man page without opening it
+    man -w ls                  # output: /usr/share/man/man1/ls.1.gz
+    man -w 5 passwd            # path to the section 5 passwd man page
+    man -aw ls                 # paths for all sections that have ls
+
+    Useful for: finding where documentation is stored,
+    copying man pages, or checking if a page exists.
+
+man -l  - read a local file as if it were a man page
+    man -l ./myscript.1        # view a man page file you wrote
+    man -l /path/to/any.1.gz   # view any roff-formatted file
+
+    Useful for: testing a man page you are writing before installing it.
+
+man -P  - specify a pager program just for this invocation
+    man -P cat ls              # dump man page to stdout with no pager
+    man -P "less -+F" ls       # open with less but disable follow mode
+    man -P most ls             # use the 'most' pager if installed
+
+man -d  - debug mode, shows how man is searching for pages
+    man -d ls                  # shows which directories were searched
+
+man -e  - specify character encoding
+    man -e UTF-8 ls
+
+man --no-hyphenation
+    man --no-hyphenation ls    # disables word-hyphenation at line ends
+                               # useful when saving to file
+
+man --no-justification
+    man --no-justification ls  # disables right-justification of text
+
+
+================================================================
+SECTION 3 - mandb: REBUILDING THE DATABASE
+================================================================
+
+manPages.txt says "install man-pages" to fix missing entries
+but never explains why apropos and whatis sometimes return
+nothing even when the man page clearly exists.
+
+apropos and whatis work by searching a database, not by reading
+man pages directly. That database is built by mandb.
+
+When the database gets stale:
+    apropos ssh        # returns "nothing appropriate" even though man ssh works
+    whatis curl        # returns "curl: nothing appropriate"
+
+Fix: rebuild the database
+    sudo mandb         # scan all man directories and rebuild the database
+    sudo mandb -c      # force complete rebuild (ignores cache)
+    sudo mandb -q      # quiet mode, suppress progress output
+
+When to run mandb:
+    After installing new packages that include man pages
+    After installing software from source into /usr/local
+    After adding a new path to MANPATH
+    After creating your own man pages
+
+On most modern systems with systemd, mandb runs automatically
+via a daily cron job or systemd timer. If apropos returns nothing
+on a fresh install or after a manual software install,
+run sudo mandb first before assuming the page does not exist.
+
+Check when it last ran:
+    ls -la /var/cache/man/         # see the cache files and their dates
+
+On Debian/Ubuntu:
+    cat /var/lib/man-db/auto-update    # shows last auto-update time
+
+
+================================================================
+SECTION 4 - COMPLETE less NAVIGATION INSIDE MAN
+================================================================
+
+manPages.txt lists Space, b, /, ?, n, N, h, q.
+Man pages are displayed using less as the pager.
+Every less shortcut works inside man. Here is the full set.
+
+The existing doc does not say that man uses less underneath.
+This matters because the same keys work in any less session:
+reading log files, viewing text files, etc.
+
+MOVEMENT:
+    Space or f      - forward one full page
+    b               - back one full page
+    d               - forward half a page
+    u               - back half a page
+    j or Down       - forward one line
+    k or Up         - back one line
+    g or <          - jump to very beginning of the page (top)
+    G or >          - jump to very end of the page (bottom)
+    Ng              - jump to line number N  (example: 50g jumps to line 50)
+    50%             - jump to 50% through the document
+    NP%             - jump to N percent through (example: 25% jumps to 25%)
+    Right arrow     - scroll right (useful for wide output)
+    Left arrow      - scroll left
+
+SEARCH:
+    /pattern        - search forward for pattern
+    ?pattern        - search backward for pattern
+    n               - next match in same direction
+    N               - previous match (reverses direction)
+    &pattern        - show ONLY lines matching pattern (filter view)
+                      clear it by typing & with empty pattern
+    -I              - toggle case-insensitive search on/off
+                      (type -I while inside man, no Enter needed)
+
+MARKS (bookmarks):
+    ma              - set mark named 'a' at current position
+    'a              - return to mark named 'a'
+                      any letter works as a mark name
+
+MULTIPLE FILES:
+    :n              - next file (when man was called with -a)
+    :p              - previous file
+    :f              - show current file name and position
+
+DISPLAY:
+    -S              - toggle line wrapping on/off (chop long lines)
+    =               - show current file info and position percentage
+    ctrl+g          - same as =
+
+FOLLOW MODE:
+    F               - follow mode - watches for new content at end of file
+                      works like tail -f on log files
+                      not useful for man pages but useful to know about
+                      press ctrl+c to exit follow mode
+
+OPEN IN EDITOR:
+    v               - open the current man page in your $EDITOR
+                      if EDITOR=vim, opens in vim at the current position
+                      changes are NOT saved back (read-only for man pages)
+                      useful for copying text without mouse
+
+QUIT:
+    q or Q          - quit
+    ZZ              - also quits (vim users will use this by habit)
+
+
+================================================================
+SECTION 5 - APROPOS IN DEPTH
+================================================================
+
+manPages.txt covers basic apropos usage.
+These options are missing:
+
+apropos -s  - search only specific sections
+    apropos -s 1 list        # only search section 1 (user commands)
+    apropos -s 5 config      # only search section 5 (file formats)
+    apropos -s 1,8 network   # search sections 1 and 8
+    apropos -s 3 malloc      # only C library functions
+
+apropos -r  - treat search term as a regex
+    apropos -r '^ls'         # find pages whose name starts with ls
+    apropos -r 'file.*system' # find pages matching that regex
+    apropos -r '(copy|move)' # pages mentioning copy OR move
+
+apropos -e  - exact word match (same as whatis, but more explicit)
+    apropos -e ls            # only exact match for "ls", not "lsof" etc.
+
+apropos -l  - do not truncate output at terminal width
+    apropos -l password      # show full descriptions without cutting off
+
+apropos -a  - require ALL keywords to match (AND logic)
+    apropos -a network interface   # pages mentioning BOTH words
+    # Default apropos does OR logic (any keyword matches)
+
+apropos -w  - treat keywords as wildcard patterns
+    apropos -w 'ls*'         # find ls, lsof, lsblk, lspci, etc.
+
+Practical search patterns:
+    apropos -s 1 -r '^git'   # all git subcommands in section 1
+    apropos -a disk format   # commands related to both disk and format
+    apropos -s 5 -r 'conf'   # config file formats with conf in the name
+
+
+================================================================
+SECTION 6 - COMPLETE ENVIRONMENT VARIABLES FOR MAN
+================================================================
+
+manPages.txt lists MANPATH, MANWIDTH, and MANPAGER without
+explaining what they all do or showing working examples.
+
+MANPATH - where man looks for pages
+    echo $MANPATH              # see current value
+    export MANPATH="/usr/local/share/man:$MANPATH"   # add a directory
+
+    To find where man is currently looking:
+    manpath                    # command that prints the effective MANPATH
+    man --path                 # same output
+
+MANWIDTH - control line width of output
+    export MANWIDTH=80         # wrap at 80 columns
+    export MANWIDTH=100        # wrap at 100 columns
+    MANWIDTH=60 man ls         # set just for one invocation
+
+MANPAGER - choose what program displays man pages
+    export MANPAGER=less       # default
+    export MANPAGER=more       # use more instead
+    export MANPAGER='less -s'  # less with specific options
+
+    # Use vim as your man pager (read-only):
+    export MANPAGER='vim -M +MANPAGER -'
+
+    # Use nvim (neovim):
+    export MANPAGER='nvim +Man!'
+
+    # Use bat (syntax highlighted cat):
+    export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+
+MANSECT - control which sections man searches and in what order
+    export MANSECT="1:1p:8:2:3:3p:4:5:6:7:9:0p:tcl:n:l:p:o"
+    # This is the default search order
+    # Change it to put section 8 before section 1 for sysadmin work:
+    export MANSECT="8:1:2:3:4:5:6:7:9"
+
+MANOPT - set default options for every man invocation
+    export MANOPT="--no-hyphenation --no-justification"
+    export MANOPT="-a"         # always show all sections
+
+PAGER - fallback if MANPAGER is not set
+    export PAGER=less
+
+GROFF_NO_SGR - use old-style formatting (for terminals that cannot
+               handle color escape codes)
+    export GROFF_NO_SGR=1
+
+
+================================================================
+SECTION 7 - FULL COLOR CONFIGURATION
+================================================================
+
+manPages.txt shows only two of the six LESS_TERMCAP variables
+and gives no working example. Here is the complete setup.
+
+man uses less + groff to render pages. The colors are controlled
+by LESS_TERMCAP_* variables that correspond to terminal escape codes.
+
+Variable meanings:
+    LESS_TERMCAP_mb   - start blinking
+    LESS_TERMCAP_md   - start bold (used for headings and option names)
+    LESS_TERMCAP_me   - end all modes (bold, blink, etc.)
+    LESS_TERMCAP_so   - start standout mode (used for search highlights)
+    LESS_TERMCAP_se   - end standout mode
+    LESS_TERMCAP_us   - start underline (used for arguments/values)
+    LESS_TERMCAP_ue   - end underline
+
+ANSI color codes:
+    \E[0m      - reset
+    \E[01m     - bold
+    \E[31m     - red
+    \E[32m     - green
+    \E[33m     - yellow
+    \E[34m     - blue
+    \E[35m     - magenta
+    \E[36m     - cyan
+    \E[37m     - white
+    01;32m     - bold green (combine bold with color)
+
+Complete working color setup - paste into ~/.bashrc:
+    export LESS_TERMCAP_mb=$'\E[01;31m'   # blinking: bold red
+    export LESS_TERMCAP_md=$'\E[01;36m'   # bold: bold cyan (headings)
+    export LESS_TERMCAP_me=$'\E[0m'       # end: reset
+    export LESS_TERMCAP_so=$'\E[01;44;33m' # standout: yellow on blue (search)
+    export LESS_TERMCAP_se=$'\E[0m'       # end standout: reset
+    export LESS_TERMCAP_us=$'\E[01;32m'   # underline: bold green (arguments)
+    export LESS_TERMCAP_ue=$'\E[0m'       # end underline: reset
+
+After adding to ~/.bashrc:
+    source ~/.bashrc
+    man ls             # headings now in cyan, arguments in green
+
+Alternative: use the MANROFFOPT approach (newer systems):
+    export MANROFFOPT="-c"   # force color output through groff
+
+Alternative: install most pager which has built-in color support:
+    sudo apt install most
+    export PAGER=most
+    export MANPAGER=most
+
+Alternative: install bat and use it as the pager:
+    sudo apt install bat
+    export MANPAGER="sh -c 'col -bx | bat -l man --paging=always'"
+    # bat gives syntax highlighting with no environment variable setup
+
+
+================================================================
+SECTION 8 - MAN FOR SHELL BUILTINS, CONFIG FILES, AND SYSCALLS
+================================================================
+
+These practical patterns are not in manPages.txt.
+
+Getting help for shell builtins via man:
+    man bash           # entire bash reference (huge, use / to search inside)
+    man builtins       # some systems have a dedicated builtins man page
+
+    Inside man bash, search for a specific builtin:
+    man bash
+    /^SHELL BUILTIN     # jump to the shell builtins section
+    /^   cd             # find the cd entry specifically
+
+The passwd problem - a real example of why sections matter:
+    man passwd         # shows section 1: the passwd command (change password)
+    man 5 passwd       # shows section 5: the /etc/passwd file format
+    man -a passwd      # shows BOTH, one after the other
+
+    This is the classic example everyone uses to explain sections.
+    Always think about which section you want:
+        Section 1 = the command
+        Section 5 = the config file or file format
+
+Other commands with entries in multiple sections:
+    man -a crontab     # section 1 (command) and section 5 (file format)
+    man -a hostname    # section 1 (command) and section 7 (protocol)
+    man -a socket      # section 2 (syscall) and section 7 (protocol)
+    man -a random      # section 4 (device) and section 7 (overview)
+    man -a signal      # section 2 (syscall) and section 7 (overview)
+    man -a intro       # section intro exists in sections 1, 2, 3, etc.
+                       # reading man 1 intro is a good starting point
+
+Reading the intro for each section:
+    man 1 intro        # introduction to user commands
+    man 2 intro        # introduction to system calls
+    man 3 intro        # introduction to library functions
+    man 8 intro        # introduction to sysadmin commands
+
+man 7 man              # the man page for the man page system itself
+man 7 man-pages        # conventions and standards for writing man pages
+man 7 hier             # description of the Linux filesystem hierarchy
+man 7 regex            # regular expression syntax reference
+man 7 signal           # Linux signal overview (all signals listed)
+man 7 boot             # Linux boot process
+man 7 locale           # locale system explanation
+
+
+================================================================
+SECTION 9 - READING SYNOPSIS NOTATION PROPERLY
+================================================================
+
+manPages.txt covers the notation but not how to read it in
+practice. This is where most beginners get confused.
+
+Take this SYNOPSIS from man cp:
+    cp [OPTION]... [-T] SOURCE DEST
+    cp [OPTION]... SOURCE... DIRECTORY
+    cp [OPTION]... -t DIRECTORY SOURCE...
+
+Reading rule 1: Square brackets mean optional
+    [OPTION]...    means zero or more options (all optional)
+    [-T]           means the -T flag is optional
+
+Reading rule 2: Items without brackets are REQUIRED
+    SOURCE         must be provided, no choice
+    DEST           must be provided
+
+Reading rule 3: ... means one or more / repeatable
+    SOURCE...      means one or more source files
+    [OPTION]...    means you can use multiple options
+
+Reading rule 4: Multiple lines in SYNOPSIS mean multiple modes
+    The three lines above show three different ways to call cp.
+    Line 1: copy one file to one destination
+    Line 2: copy one or more files into a directory
+    Line 3: same as line 2 but with destination specified by -t flag
+
+Reading rule 5: | means OR (choose one)
+    {a|b|c}        choose exactly one of a, b, or c
+    [-a|-b]        optionally choose one of -a or -b
+
+Reading rule 6: Underline or italic means substitute a real value
+    In the rendered man page, FILE appears in italics or underlined.
+    That means type your actual filename there, not the word FILE.
+
+Practical example - reading man tar SYNOPSIS:
+    tar [OPTION...] [FILE]...
+
+    This means:
+    - You can give zero or more options
+    - You can give zero or more files
+    - Everything is technically optional at the syntax level
+    - (The actual required options are explained in DESCRIPTION)
+
+    Real usage: tar -czf archive.tar.gz file1 file2
+    -czf is [OPTION...], archive.tar.gz and file1 file2 are [FILE]...
+
+The DESCRIPTION section overrides ambiguity in SYNOPSIS.
+When SYNOPSIS looks confusing, skip to DESCRIPTION for clarity.
+
+
+================================================================
+SECTION 10 - LOCALES AND LANGUAGE SUPPORT
+================================================================
+
+Man pages can be displayed in other languages if translations
+are installed. Not mentioned in manPages.txt.
+
+View a man page in a different language:
+    LANG=de_DE.UTF-8 man ls    # German (if German man pages installed)
+    LANG=fr_FR.UTF-8 man ls    # French
+    LANG=ja_JP.UTF-8 man ls    # Japanese
+    LANG=C man ls              # Force English regardless of system locale
+
+Install language-specific man pages (Debian/Ubuntu):
+    sudo apt install manpages-de       # German man pages
+    sudo apt install manpages-fr       # French man pages
+    sudo apt install manpages-ja       # Japanese man pages
+
+Check what language your system is using:
+    echo $LANG
+    locale                             # shows all locale settings
+
+Force English for all man pages permanently:
+    # Add to ~/.bashrc:
+    export LANG=en_US.UTF-8
+    # or just for man:
+    alias man='LANG=en_US.UTF-8 man'
+
+Why this matters: on a system with LANG set to a non-English
+locale, man pages sometimes display in the system language which
+can be confusing if you learned commands from English documentation.
+
+
+================================================================
+SECTION 11 - COMPRESSED MAN PAGES AND FILE FORMATS
+================================================================
+
+Not mentioned in manPages.txt.
+
+Man pages are stored as compressed files on disk.
+
+Check what they look like:
+    man -w ls                       # shows: /usr/share/man/man1/ls.1.gz
+    ls /usr/share/man/man1/ | head  # files end in .1.gz
+
+They are gzip compressed nroff/troff formatted text files.
+man decompresses and renders them automatically.
+
+To read the raw source of a man page:
+    man -w ls                       # get the file path
+    zcat /usr/share/man/man1/ls.1.gz  # decompress to stdout
+
+To read the raw roff markup:
+    zcat /usr/share/man/man1/ls.1.gz | head -30
+    # You will see .TH, .SH, .B, .I etc. - these are roff macros
+
+Man page file naming convention:
+    ls.1.gz        # command name . section number . gz
+    passwd.1.gz    # passwd command (section 1)
+    passwd.5.gz    # passwd file format (section 5)
+    fstab.5.gz     # fstab file format
+    socket.2.gz    # socket system call
+    socket.7.gz    # socket overview
+
+Man page locations by type:
+    /usr/share/man/        # main man pages installed by packages
+    /usr/local/share/man/  # man pages installed from source
+    /usr/share/man/man1/   # section 1 pages
+    /usr/share/man/man5/   # section 5 pages
+    ~/.local/share/man/    # user-specific man pages
+
+man page source formats:
+    .1 .2 .3 etc.     # uncompressed roff source
+    .1.gz             # gzip compressed (most common)
+    .1.bz2            # bzip2 compressed
+    .1.xz             # xz compressed
+
+
+================================================================
+SECTION 12 - col -bx vs col -b WHEN SAVING TO FILE
+================================================================
+
+manPages.txt shows:
+    man command | col -b > command.txt
+
+col -b strips backspace characters that man uses for bold/underline
+formatting. This is correct but incomplete.
+
+col -bx is often better:
+    man ls | col -bx > ls.txt
+
+The difference:
+    -b    strips backspaces used for overstrike formatting
+    -x    also expands tabs to spaces
+
+Without -x, some man pages save with literal tab characters
+that can cause misalignment in certain text editors or when
+processing with awk or grep.
+
+Other ways to save man pages to plain text:
+    # Method 1: col -bx (most common, cleanest output)
+    man ls | col -bx > ls.txt
+
+    # Method 2: use -P cat to bypass pager formatting entirely
+    man -P cat ls > ls.txt    # may still have control characters
+
+    # Method 3: groff to text directly
+    man -w ls                 # get the path first
+    zcat /usr/share/man/man1/ls.1.gz | groff -man -T ascii > ls.txt
+
+    # Method 4: convert to HTML
+    man -H ls                 # opens in browser if BROWSER is set
+    man ls | groff -man -T html > ls.html
+
+    # Method 5: convert to PDF (already in manPages.txt)
+    man -t ls | ps2pdf - ls.pdf
+
+
+================================================================
+SECTION 13 - SELF-REFERENTIAL MAN PAGES WORTH READING
+================================================================
+
+These are not mentioned in manPages.txt and are genuinely useful
+for anyone trying to understand the man system fully.
+
+    man man            # the man command's own man page
+    man 7 man          # overview of the man system and macros
+    man 7 man-pages    # conventions for writing man pages
+    man manpath        # the manpath command
+    man mandb          # the database update command
+    man 1 apropos      # apropos in full detail
+    man 1 whatis       # whatis in full detail
+    man 7 regex        # regex reference used by man search
+    man 5 man.conf     # man configuration file format
+    man 5 manpath      # manpath configuration
+
+    man groff          # the underlying text formatter
+    man 7 groff        # groff language overview
+    man 7 groff_char   # special characters in groff
+
+    man less           # complete less documentation
+    man lesskey        # customize less keybindings
+
+Recommended reading order for understanding the man system:
+    1. man 1 intro     # what user commands are
+    2. man man         # how the man command works
+    3. man 7 man-pages # how pages are written (context for reading)
+    4. man less        # understand your navigation tool fully
+    5. man mandb       # understand the database
+    6. man apropos     # understand searching
+
+
+================================================================
+SECTION 14 - PRACTICAL WORKFLOWS
+================================================================
+
+These real-world patterns tie everything together.
+
+Workflow 1: You have a task but don't know which command to use
+    apropos "disk usage"           # find commands related to disk usage
+    apropos -s 1 compress          # find section 1 commands for compression
+    man -k "network interface"     # same as apropos
+
+Workflow 2: You know the command but forgot a specific flag
+    ls --help | grep recur         # faster than opening man
+    man ls                         # then /recur to search inside
+
+Workflow 3: You need to understand a config file format
+    man 5 sshd_config              # SSH server config file format
+    man 5 crontab                  # crontab file format
+    man 5 fstab                    # filesystem table format
+    man 5 sudoers                  # sudoers file format
+    man 5 passwd                   # /etc/passwd format
+    man 5 shadow                   # /etc/shadow format
+    man 5 hosts                    # /etc/hosts format
+    man 5 resolv.conf              # DNS resolver config format
+    man 5 interfaces               # network interfaces file format
+
+Workflow 4: You see a function call in source code
+    man 2 open                     # the open() syscall
+    man 2 read                     # the read() syscall
+    man 3 printf                   # the C printf() function
+    man 3 malloc                   # the malloc() function
+
+Workflow 5: A command is not documented
+    command --help                 # try this first
+    help command                   # if it is a bash builtin
+    info command                   # if it is a GNU tool
+    sudo mandb && man command      # rebuild database and retry
+    find /usr/share/doc -name "*command*" -type f   # look for docs directly
+    ls /usr/share/doc/ | grep command               # find doc package name
+
+Workflow 6: You want to learn a command deeply
+    man command                    # read fully
+    info command                   # read if GNU tool
+    man -k command                 # find related pages
+    # Check SEE ALSO section at bottom of man page
+    # Read every page listed in SEE ALSO
+
+
+================================================================
+END OF MANPAGESMISSING.TXT
+================================================================
