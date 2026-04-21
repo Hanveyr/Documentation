@@ -3689,3 +3689,1265 @@ These additional labs cover more advanced and specialized use cases of awk and s
 
 
 This guide provides a detailed overview of using the awk and sed commands in Linux for text processing and manipulation. With practical examples, troubleshooting tips, and automation techniques, this document aims to help system administrators effectively manage text-processing tasks.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PART 2 UPDATED 1 YEAR LATER
+
+
+
+
+
+
+
+
+------awkSED Study Document - Missing Content Supplement------
+
+This file covers what the main document is missing or got wrong.
+Read this alongside the main guide.
+
+
+----------------------------------------------------------------
+SECTION 1 - ERRORS IN THE MAIN DOCUMENT (fix these in your head
+            when you read them)
+----------------------------------------------------------------
+
+ERROR 1: export FS
+------------------
+The main document shows this:
+
+    export FS=","
+    awk '{ print $1, $2 }' file.csv
+
+This does not work. FS is not read from the shell environment.
+Setting it with export does nothing. Use one of these instead:
+
+    awk -F',' '{ print $1, $2 }' file.csv
+    awk 'BEGIN { FS="," } { print $1, $2 }' file.csv
+
+
+ERROR 2: Assigning to NR
+------------------------
+The real-time log monitoring section does this:
+
+    NR = 0
+
+NR is a read-only built-in variable. You cannot reset it.
+Use your own counter variable instead:
+
+    tail -f /var/log/syslog | awk '
+    BEGIN { last_check = systime(); count = 0 }
+    {
+        count++
+        current_time = systime()
+        if (current_time - last_check >= 60) {
+            printf "Events per minute: %d\n", count
+            last_check = current_time
+            count = 0
+        }
+        if ($0 ~ /ERROR/) print strftime("%Y-%m-%d %H:%M:%S"), $0
+    }'
+
+
+ERROR 3: lastlog date comparison
+---------------------------------
+The user management section shows:
+
+    lastlog | awk '$4 < "30 days ago" {print $1}'
+
+This is a string comparison, not a date comparison. "30 days ago"
+is not a date value awk can compare against. This will produce
+wrong results. To find inactive users properly use:
+
+    lastlog | awk 'NR > 1 && $NF != "**Never" { print $1 }'
+
+For real inactive account detection, use the date math properly
+or rely on passwd/shadow aging fields instead.
+
+
+ERROR 4: Parallel averaging is mathematically wrong
+----------------------------------------------------
+The parallel processing section splits a file into chunks,
+averages each chunk separately, then averages those averages.
+Average of averages only equals the true average when all chunks
+are exactly the same size. For unequal splits it is wrong.
+
+To aggregate correctly, have each chunk output its sum AND count,
+then combine:
+
+    # Each worker outputs: sum count
+    awk '{ sum += $1; count++ } END { print sum, count }' segment_* > results.txt
+
+    # Aggregator
+    awk '{ total += $1; records += $2 } END { print total/records }' results.txt
+
+
+ERROR 5: Test suite claims 5 tests but only has 2
+--------------------------------------------------
+The test framework section prints "x/5 passed" but only two
+test functions are defined. The hardcoded 5 is wrong. Use:
+
+    echo "Tests completed: $((total-failed))/$total passed"
+
+where $total is actually counted from the tests you ran.
+
+
+ERROR 6: Memory buffering in awk is counterproductive
+------------------------------------------------------
+The "memory optimized" awk section manually buffers lines inside
+an array before processing them. This is backwards. Awk already
+streams line by line natively. Adding an in-memory buffer makes
+things slower and uses MORE memory, not less.
+
+If you need to process a large file efficiently, just process it
+directly. Awk's native streaming is already optimal:
+
+    awk '{ sum += $1 } END { print sum }' huge_file.txt
+
+The only time you need to buffer in awk is when you genuinely
+need to look at multiple lines together (like N-line sliding
+windows or multi-record patterns).
+
+
+----------------------------------------------------------------
+SECTION 2 - GAWK-SPECIFIC FUNCTIONS NOT LABELED IN THE DOCUMENT
+----------------------------------------------------------------
+
+The main document uses several functions that only exist in gawk.
+They will fail silently or error on mawk, nawk, BSD awk, or
+standard POSIX awk. Since the document targets RHCE/LFCS on
+RHEL/CentOS where gawk is the default, most will work for you.
+But you should know which are gawk-only when you encounter other
+systems (macOS, Alpine, minimal containers).
+
+gawk-only functions used in the document:
+
+    gensub(regexp, replacement, how [, target])
+        POSIX awk only has gsub() and sub(). gensub() is gawk.
+        It returns the modified string instead of modifying in-place
+        and supports & and \1 backreferences in replacements.
+        POSIX alternative: use sub() or gsub() with workarounds.
+
+    strftime(format [, timestamp])
+        Formats a timestamp. gawk-only.
+        POSIX alternative: pipe to the date command via system().
+
+    systime()
+        Returns current Unix timestamp. gawk-only.
+        POSIX alternative: "date +%s" | getline ts
+
+    strtonum(string)
+        Converts a string to a number, handling hex (0x...) and
+        octal (0...) prefixes. gawk-only.
+        POSIX alternative: use +0 for decimal, write your own hex parser.
+
+    asort(array) / asorti(array)
+        Sorts array values/indices in-place. gawk-only.
+        POSIX alternative: pipe to sort command.
+
+    PROCINFO array
+        PROCINFO["uid"], PROCINFO["pid"], etc. gawk-only.
+        POSIX alternative: "id -u" | getline uid
+
+    switch/case statements
+        gawk-only syntax. POSIX awk only has if/else if chains.
+
+    FPAT variable
+        Defines a pattern that each field must match rather than
+        a separator. Extremely useful for CSV with quoted commas.
+        gawk-only.
+        Example: awk 'BEGIN {FPAT="([^,]+)|(\"[^\"]+\")"} ...'
+
+    |& (two-way pipe)
+        gawk-only. Allows reading and writing to a coprocess.
+
+    @include and @load directives
+        gawk-only for loading external files and shared libraries.
+
+Quick compatibility check: if your script needs to be portable,
+restrict yourself to: print, printf, getline, sub, gsub, split,
+sprintf, length, substr, index, match, toupper, tolower, and the
+standard math functions.
+
+
+----------------------------------------------------------------
+SECTION 3 - IMPORTANT BUILT-IN VARIABLES THE DOCUMENT BARELY
+            COVERS OR SKIPS
+----------------------------------------------------------------
+
+RS - Record Separator
+---------------------
+The document covers FS heavily but barely mentions RS.
+RS defaults to newline, making each line one record.
+You can change it to process multi-line records:
+
+    # Process paragraph-separated records (blank line as separator)
+    awk 'BEGIN { RS="" } { print NR, $1 }' file.txt
+
+    # Use a specific delimiter as record separator
+    awk 'BEGIN { RS="---" } { print NR": "$0 }' file.txt
+
+    # In gawk, RS can be a full regex
+    awk 'BEGIN { RS="[0-9]+" } { print }' file.txt
+
+
+OFS - Output Field Separator
+-----------------------------
+The document shows OFS but misses a critical behavior:
+OFS is only inserted between fields when you assign to $0
+or trigger a field rebuild. Simply printing $1, $2 uses OFS,
+but $0 is not rebuilt until you do an assignment.
+
+    echo "a:b:c" | awk 'BEGIN{FS=":"; OFS=","} {print $1,$2,$3}'
+    # Output: a,b,c
+
+    echo "a:b:c" | awk 'BEGIN{FS=":"; OFS=","} {$1=$1; print $0}'
+    # Output: a,b,c  (the $1=$1 trick forces field rebuild)
+
+    echo "a:b:c" | awk 'BEGIN{FS=":"} {print $0}'
+    # Output: a:b:c  (no OFS, original line printed unchanged)
+
+
+FNR - Per-file record number
+-----------------------------
+The document uses NR throughout but FNR is important when
+processing multiple files. NR counts records across all files.
+FNR resets to 1 for each new file.
+
+    # Print header from first file only, data from all files
+    awk 'FNR==1 && NR!=1 { next } { print }' file1.csv file2.csv
+
+    # The classic two-file join uses NR==FNR to detect first file
+    awk 'NR==FNR { map[$1]=$2; next } { print $0, map[$1] }' keys.txt data.txt
+
+
+ENVIRON - Access shell environment
+-----------------------------------
+    awk 'BEGIN { print ENVIRON["HOME"] }' /dev/null
+    awk 'BEGIN { print ENVIRON["PATH"] }' /dev/null
+
+    # Useful for passing config into awk without -v
+    awk 'BEGIN { mode = ENVIRON["MODE"] } ...' file.txt
+
+
+ARGC and ARGV - Command line arguments
+---------------------------------------
+    awk 'BEGIN {
+        print "Number of arguments:", ARGC
+        for (i=0; i<ARGC; i++) print i, ARGV[i]
+    }' file1.txt file2.txt
+
+You can modify ARGV in BEGIN to control which files get processed.
+
+
+OFMT - Output format for numbers
+----------------------------------
+Controls how non-integer numbers are printed with print (not printf).
+Default is "%.6g". Useful when you want to control float precision
+without using printf everywhere.
+
+    awk 'BEGIN { OFMT="%.2f" } { print $1 + 0.0 }' file.txt
+
+
+CONVFMT - Conversion format
+-----------------------------
+Controls how numbers are converted to strings internally.
+Default is "%.6g". Rarely needed but can cause subtle bugs
+if you are comparing numbers that got converted to strings
+in an intermediate step.
+
+
+----------------------------------------------------------------
+SECTION 4 - GETLINE PROPERLY
+----------------------------------------------------------------
+
+The document mentions getline but does not cover its four forms
+or its hazards. This is tested on RHCE.
+
+Four forms of getline:
+
+    # Form 1: Read next line from current file into $0
+    # Updates $0, NF, NR, FNR
+    getline
+
+    # Form 2: Read next line into a variable
+    # Updates NR, FNR but NOT $0 or NF
+    getline var
+
+    # Form 3: Read from a file into $0
+    # Updates $0, NF but NOT NR or FNR
+    getline < "filename"
+
+    # Form 4: Read from a file into a variable
+    # Updates nothing except var
+    getline var < "filename"
+
+    # Form 5: Read from a command
+    "command" | getline var
+
+Always check the return value. getline returns 1 on success,
+0 on end of file, -1 on error:
+
+    while ((getline line < "file.txt") > 0) {
+        print line
+    }
+
+    # Never do this - breaks on read errors:
+    while (getline line < "file.txt") { print line }
+
+getline hazard with pipes: once you open a pipe it stays open
+for the rest of the script. If you call the same command in a
+loop it reads sequentially, not re-running the command each time.
+Close it explicitly when done:
+
+    while (("ls /tmp" | getline fname) > 0) {
+        print fname
+    }
+    close("ls /tmp")
+
+
+----------------------------------------------------------------
+SECTION 5 - AWK NUMERIC AND STRING COMPARISON GOTCHAS
+----------------------------------------------------------------
+
+Awk decides whether to compare as strings or numbers based on
+context. This causes subtle bugs that the document does not warn about.
+
+    # These look the same but behave differently:
+    awk '$1 == 10'   file.txt   # numeric comparison if $1 looks like a number
+    awk '$1 == "10"' file.txt   # always string comparison
+
+    # Padding zeros: "09" == "9" is FALSE as strings, TRUE as numbers
+    echo "09" | awk '{ if ($1 == 9) print "match" }'    # prints match (numeric)
+    echo "09" | awk '{ if ($1 == "9") print "match" }'  # no match (string)
+
+    # Uninitialized variables are "" and 0 simultaneously
+    awk 'BEGIN { if (x == "") print "empty string" }'  # prints
+    awk 'BEGIN { if (x == 0)  print "zero" }'          # also prints
+    awk 'BEGIN { if (!x)      print "falsy" }'         # also prints
+
+    # Force numeric comparison by adding 0
+    awk '$1+0 > 100 { print }' file.txt
+
+    # Force string comparison by concatenating empty string
+    awk '$1"" == "100" { print }' file.txt
+
+
+----------------------------------------------------------------
+SECTION 6 - SED ADDRESS TYPES (more complete than the document)
+----------------------------------------------------------------
+
+The document shows basic addresses but not the full picture.
+
+Line number addresses:
+    sed '5d'           file.txt   # delete line 5
+    sed '5,10d'        file.txt   # delete lines 5 through 10
+    sed '5,$d'         file.txt   # delete line 5 through end of file
+    sed '0,/pattern/d' file.txt   # delete from start to FIRST match
+                                  # (0 only valid in GNU sed ranges)
+
+Step addresses (GNU sed):
+    sed -n '0~2p'  file.txt   # print even lines (every 2nd starting at 0)
+    sed -n '1~2p'  file.txt   # print odd lines (every 2nd starting at 1)
+    sed '0~5d'     file.txt   # delete every 5th line
+
+Negation with !:
+    sed '/pattern/!d'  file.txt   # delete lines NOT matching pattern
+    sed '1!d'          file.txt   # delete everything except line 1
+
+Last line with $:
+    sed '$d'           file.txt   # delete last line
+    sed -n '$p'        file.txt   # print only last line
+
+
+----------------------------------------------------------------
+SECTION 7 - SED COMMANDS THE DOCUMENT SKIPS
+----------------------------------------------------------------
+
+q and Q - Quit
+--------------
+    sed '10q'  file.txt   # print first 10 lines then quit (like head)
+    sed '/pattern/q' file.txt   # print up to and including first match then quit
+    # Q (GNU sed) quits WITHOUT printing the current line
+    sed '10Q'  file.txt   # print only 9 lines (quits before printing line 10)
+
+
+r and R - Read file into output
+--------------------------------
+    sed '/marker/r extra.txt' file.txt
+    # Inserts the entire contents of extra.txt after every line matching "marker"
+
+    sed '3r header.txt' file.txt
+    # Inserts header.txt after line 3
+
+
+w - Write matching lines to file
+----------------------------------
+    sed -n '/ERROR/w errors.txt' logfile.log
+    # Writes all ERROR lines to errors.txt (silent, no stdout)
+
+    sed '/ERROR/w errors.txt' logfile.log
+    # Writes ERROR lines to errors.txt AND prints all lines to stdout
+
+
+= - Print line number
+----------------------
+    sed -n '/pattern/=' file.txt
+    # Prints the line number of every matching line
+    # Useful for finding line numbers before editing
+
+
+e - Execute (GNU sed)
+----------------------
+    sed 's/^/echo /e' commands.txt
+    # Treats each line as a shell command and executes it
+    # Security risk if input is untrusted - use carefully
+
+
+y - Transliterate (the document barely mentions this)
+------------------------------------------------------
+    sed 'y/abc/ABC/' file.txt   # replace a->A, b->B, c->C
+    sed 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/' file.txt
+    # This is tr-like behavior built into sed
+    # y does character-by-character replacement, not pattern replacement
+    # Both sides must be the same length
+
+
+In-place editing with backup (the document skips the backup syntax):
+----------------------------------------------------------------------
+    sed -i 's/old/new/' file.txt        # no backup - dangerous
+    sed -i.bak 's/old/new/' file.txt    # creates file.txt.bak before editing
+    sed -i'.bak' 's/old/new/' file.txt  # same thing, explicit quoting
+
+
+----------------------------------------------------------------
+SECTION 8 - SED BRANCHING (more depth than the document)
+----------------------------------------------------------------
+
+The document shows the hold space but does not clearly explain
+branching. Branching is how sed does conditionals and loops.
+
+b - Branch to label (unconditional)
+    sed ':top; s/aa/a/; /aa/b top' file.txt
+    # Label is "top", branch back while "aa" exists (remove duplicate a's)
+
+t - Branch to label if substitution succeeded since last t or line read
+    sed ':loop; s/old/new/; t loop' file.txt
+    # Keeps substituting until no more matches (for overlapping patterns)
+    # t only branches if the LAST s command made a change
+
+T - Branch to label if substitution did NOT succeed (GNU sed)
+    sed 's/pattern/match/; T skip; s/match/replacement/; :skip' file.txt
+    # Only runs second substitution if first one succeeded
+
+Practical branching example - remove all blank lines including
+lines with only spaces:
+    sed '/^[[:space:]]*$/d' file.txt
+
+Multi-line join with branching:
+    sed ':a; N; $!ba; s/\n/ /g' file.txt
+    # :a creates label "a"
+    # N appends next line to pattern space
+    # $!ba branches back to "a" if not last line
+    # Then replaces all newlines with spaces
+    # Result: entire file on one line
+
+
+----------------------------------------------------------------
+SECTION 9 - BRE vs ERE IN SED
+----------------------------------------------------------------
+
+The document uses -r and -E but never explains what they do.
+
+By default sed uses BRE (Basic Regular Expressions):
+    In BRE: ( ) { } + ? | must be escaped with \ to be special
+    sed 's/\(foo\)\+/bar/'  file.txt   # BRE: match one or more "foo"
+
+With -E (or -r on older GNU sed): ERE (Extended Regular Expressions):
+    In ERE: ( ) { } + ? | are special WITHOUT escaping
+    sed -E 's/(foo)+/bar/'  file.txt   # ERE: same thing, cleaner syntax
+
+Practical difference:
+    BRE: sed 's/[0-9]\{3\}-[0-9]\{4\}/REDACTED/'  file.txt
+    ERE: sed -E 's/[0-9]{3}-[0-9]{4}/REDACTED/'   file.txt
+
+Use -E for anything complex. BRE backslash requirements are
+a common source of bugs and are hard to read.
+
+Note: -E is POSIX standard. -r is GNU sed only (though common).
+Prefer -E for portability.
+
+
+----------------------------------------------------------------
+SECTION 10 - GNU vs BSD DIFFERENCES (proper table)
+----------------------------------------------------------------
+
+The document mentions this briefly. Here is the practical table
+that actually matters when you hit it on macOS or Alpine.
+
+Feature                      GNU sed (Linux)      BSD sed (macOS)
+------------------------------------------------------------------
+In-place with no backup      sed -i               sed -i '' (required)
+In-place with backup         sed -i.bak           sed -i .bak
+Extended regex flag          -E or -r             -E only (-r not supported)
+\+ in BRE                    supported            NOT supported
+\| alternation in BRE        supported            NOT supported
+Unbuffered output            --unbuffered         not available
+Step addresses (1~2)         supported            NOT supported
+\w word character class      supported            NOT supported
+Case-insensitive flag /I     supported            NOT supported
+
+Feature                      gawk                 mawk / nawk / BSD awk
+------------------------------------------------------------------
+gensub()                     yes                  no
+strftime() / systime()       yes                  no
+FPAT                         yes                  no
+switch/case                  yes                  no
+|& coprocess                 yes                  no
+Interval expressions {n,m}   yes                  mawk: no; nawk: varies
+Multidimensional arrays      yes                  yes (all awks)
+Pipe to getline              yes                  yes (all awks)
+
+The cross-platform wrapper script in the main document is
+the right approach when you need portability. Use it.
+
+
+----------------------------------------------------------------
+SECTION 11 - WHEN NOT TO USE AWK OR SED
+----------------------------------------------------------------
+
+The document does not cover this at all. Knowing when to reach
+for a different tool is part of being a good engineer.
+
+Use jq instead of awk/sed for JSON:
+    # The document shows this approach:
+    grep -o '"key": *"[^"]*"' file.json | sed 's/"key": *"//;s/"$//'
+
+    # This breaks on any real JSON: nested objects, arrays, multiline,
+    # escaped quotes, keys in different order, whitespace variations.
+
+    # Use jq:
+    jq -r '.key' file.json
+    jq -r '.[] | .name' array.json
+    jq -r 'to_entries[] | "\(.key)=\(.value)"' file.json
+
+    # jq is available on all modern RHEL/CentOS and is the right tool.
+
+
+Use python or perl when logic gets complex:
+    If your awk script is longer than 50 lines, has multiple
+    nested functions, or requires data structures beyond arrays,
+    you are probably fighting awk. Consider:
+
+    python3 -c "
+    import sys
+    for line in sys.stdin:
+        fields = line.strip().split(',')
+        if len(fields) > 2 and float(fields[2]) > 100:
+            print(fields[0], fields[1])
+    " < file.csv
+
+
+Use cut when you just need a column from a delimiter-separated file:
+    cut -d',' -f1,3 file.csv     # faster and simpler than awk for this case
+    cut -d: -f1,3 /etc/passwd    # get username and UID
+
+Use grep when you only need to filter lines:
+    grep "ERROR" logfile.log     # simpler and faster than awk '/ERROR/'
+
+Use tr when you need character transliteration:
+    tr 'a-z' 'A-Z' < file.txt   # simpler than awk toupper or sed y
+
+Use sort and uniq for deduplication and counting:
+    sort file.txt | uniq -c | sort -rn
+    # Simpler than the awk array counting pattern for basic use cases
+
+Use paste to join files by line:
+    paste file1.txt file2.txt    # simpler than awk NR==FNR for line joins
+
+
+----------------------------------------------------------------
+SECTION 12 - PRACTICAL DEBUGGING TECHNIQUES
+----------------------------------------------------------------
+
+The document has a debug framework but no quick debugging tips.
+
+Print to stderr without disrupting stdout pipeline:
+    awk '{ print "DEBUG: NR="NR" NF="NF > "/dev/stderr"; print }' file.txt
+
+Check what awk thinks the fields are:
+    echo "a:b:c" | awk -F: '{ for(i=1;i<=NF;i++) print i, $i }'
+
+Trace a sed script to see what it is doing:
+    # GNU sed: no built-in trace but you can use --debug in newer versions
+    sed --debug 's/old/new/' file.txt   # GNU sed 4.6+
+
+Check if gawk or mawk or nawk:
+    awk --version 2>&1 | head -1   # gawk prints version info
+    awk 'BEGIN { print PROCINFO["version"] }' 2>/dev/null || echo "not gawk"
+
+Test a sed command safely before using -i:
+    sed 's/old/new/' file.txt    # preview output without changing file
+    sed 's/old/new/' file.txt | diff file.txt -   # see exactly what changes
+    # THEN add -i once you are sure it is correct
+
+Dry-run in-place edit with diff:
+    sed 's/Port 22/Port 2222/' /etc/ssh/sshd_config | \
+        diff /etc/ssh/sshd_config -
+
+
+----------------------------------------------------------------
+SECTION 13 - LOCALE EFFECTS ON PATTERN MATCHING
+----------------------------------------------------------------
+
+The document mentions locale briefly but does not explain the
+actual impact, which can bite you on production systems.
+
+Character classes like [a-z] are locale-dependent:
+    In C/POSIX locale: [a-z] matches only ASCII lowercase a through z
+    In en_US.UTF-8 locale: [a-z] may match accented characters too,
+    and the range boundaries depend on collation order.
+
+This causes intermittent bugs when scripts run under different
+locales on different systems.
+
+Safe approach - use POSIX character classes instead of ranges:
+    [[:alpha:]]   instead of  [a-zA-Z]
+    [[:digit:]]   instead of  [0-9]
+    [[:alnum:]]   instead of  [a-zA-Z0-9]
+    [[:lower:]]   instead of  [a-z]
+    [[:upper:]]   instead of  [A-Z]
+    [[:space:]]   instead of  [ \t\n]
+    [[:print:]]   any printable character
+
+POSIX classes work consistently regardless of locale.
+
+Force C locale for predictable behavior in scripts:
+    LC_ALL=C awk '/[a-z]/' file.txt
+    LC_ALL=C sed 's/[a-z]/X/g' file.txt
+
+
+----------------------------------------------------------------
+SECTION 14 - COMPLETE LIST OF SED HOLD SPACE COMMANDS
+----------------------------------------------------------------
+
+The document shows one hold space example but not all commands.
+
+h   copy pattern space to hold space (overwrites hold space)
+H   append pattern space to hold space (with newline separator)
+g   copy hold space to pattern space (overwrites pattern space)
+G   append hold space to pattern space (with newline separator)
+x   exchange pattern space and hold space
+
+Hold space starts as an empty string at the beginning of the script
+and persists across lines. Pattern space is reset for each line.
+
+Common hold space patterns:
+
+Reverse a file (like tac):
+    sed -n '1!G; $p; h' file.txt
+    # G appends hold to pattern, h copies pattern to hold
+    # On last line, print the accumulated result
+
+Print the line before a match:
+    sed -n '/pattern/{ x; p; x }; h' file.txt
+    # h saves current line to hold each iteration
+    # On match, x swaps to get previous line, print, swap back
+
+Join every two lines:
+    sed 'N; s/\n/ /' file.txt
+    # N reads next line into pattern space
+    # Then substitutes the embedded newline with a space
+
+Delete trailing blank lines from a file:
+    sed -e '/./{ $d; N }; P; D' file.txt
+
+
+----------------------------------------------------------------
+SECTION 15 - AWK ARRAY OPERATIONS (delete, in, SUBSEP)
+----------------------------------------------------------------
+
+Neither file covers these properly even though the main doc uses
+delete and the `in` operator throughout without explaining them.
+
+delete - remove array elements
+-------------------------------
+    # Delete a single element
+    delete arr["key"]
+    delete arr[1]
+
+    # Delete the entire array (gawk and most modern awks)
+    delete arr
+
+    # POSIX-safe way to clear an entire array
+    split("", arr)    # split empty string into arr wipes it
+
+    # Check before deleting to avoid creating the element
+    if ("key" in arr) delete arr["key"]
+
+    # Practical example: remove duplicate lines preserving order
+    awk '!seen[$0]++' file.txt
+    # seen[$0]++ returns 0 (falsy) the first time a line is seen
+    # The ! inverts it: print line only when count was 0
+
+
+in - test array membership WITHOUT creating the element
+---------------------------------------------------------
+This is critical. Accessing arr["key"] in a condition CREATES
+the element as an empty string if it does not exist. Use `in`:
+
+    # WRONG - creates arr["key"] as "" if it does not exist
+    if (arr["key"] == "") print "not found"
+
+    # CORRECT - does not create the element
+    if (!("key" in arr)) print "not found"
+    if ("key" in arr) print arr["key"]
+
+    # Loop over array keys with for...in
+    for (key in arr) print key, arr[key]
+
+    # Delete while iterating is safe in gawk
+    for (key in arr) if (arr[key] == 0) delete arr[key]
+
+
+SUBSEP - multi-dimensional array separator
+-------------------------------------------
+Awk does not have true multi-dimensional arrays. What looks like
+arr[i,j] is actually arr[i SUBSEP j] where SUBSEP is a single
+character (default \034, which is unlikely to appear in data).
+
+    # These two are identical:
+    arr[1,2] = "value"
+    arr[1 SUBSEP 2] = "value"
+
+    # Test membership in a multi-dimensional array
+    if ((1,2) in arr) print "exists"
+
+    # Loop and split the key back apart
+    for (key in arr) {
+        n = split(key, parts, SUBSEP)
+        print parts[1], parts[2], arr[key]
+    }
+
+    # Practical use: frequency table by two fields
+    awk '{ count[$1,$2]++ } END { for (k in count) print k, count[k] }' file.txt
+
+
+----------------------------------------------------------------
+SECTION 16 - AWK FLOW CONTROL MISSING FROM BOTH FILES
+----------------------------------------------------------------
+
+next - skip to the next record
+--------------------------------
+next immediately stops processing the current record and moves
+to the next line of input. END block still runs at the end.
+
+    # Skip comment lines and blank lines
+    awk '/^#/ { next } /^$/ { next } { print }' file.txt
+
+    # Equivalent shorthand
+    awk '/^[#$]/ { next } { print }' file.txt
+
+    # Common pattern: process first file differently
+    awk 'NR==FNR { map[$1]=$2; next } { print $0, map[$1] }' a.txt b.txt
+    # next here skips the second block for all lines in the first file
+
+
+exit - stop processing and run END block
+-----------------------------------------
+exit stops reading input and jumps to the END block.
+Calling exit inside END terminates immediately with no loop.
+
+    # Stop after finding first match (like grep -m 1)
+    awk '/pattern/ { print; exit }' file.txt
+
+    # Exit with a status code
+    awk '/ERROR/ { print; exit 1 }' file.txt
+    echo $?   # returns 1
+
+    # exit in END block - terminates without re-entering END
+    awk 'END { print "done"; exit 0 }' file.txt
+
+    # Practical: validate a file and bail on first error
+    awk 'NF != 3 { print "Bad line:", NR; exit 1 }
+         END    { if (NR > 0) print "All lines valid" }' file.txt
+
+
+nextfile - skip remaining lines in current file (gawk)
+-------------------------------------------------------
+Jumps to the first line of the next input file.
+POSIX awk does not have nextfile. gawk only.
+
+    # Print only the first line of each file
+    gawk 'FNR==1 { print FILENAME": "$0; nextfile }' *.log
+
+    # Check if a pattern exists in any of many files
+    gawk '/ERROR/ { print FILENAME; nextfile }' /var/log/*.log
+
+
+BEGINFILE and ENDFILE (gawk 4.0+)
+-----------------------------------
+Run a block at the start and end of each input file.
+Not available in POSIX awk.
+
+    gawk 'BEGINFILE { print "=== Processing:", FILENAME }
+          /ERROR/   { errors++ }
+          ENDFILE   { print errors, "errors in", FILENAME; errors=0 }
+         ' /var/log/*.log
+
+
+----------------------------------------------------------------
+SECTION 17 - AWK STRING OPERATIONS NOT EXPLAINED IN EITHER FILE
+----------------------------------------------------------------
+
+String concatenation
+---------------------
+Awk concatenates strings by placing them next to each other.
+There is no + operator for strings. This trips up people from
+other languages.
+
+    awk 'BEGIN { a = "hello"; b = " world"; print a b }'
+    # Output: hello world
+
+    awk 'BEGIN { print "value=" 42 }'
+    # Output: value=42  (42 is converted to string automatically)
+
+    # Building a string in a loop
+    awk '{ line = line " " $1 } END { print line }' file.txt
+
+    # Concatenation vs addition - context decides
+    awk 'BEGIN { a = "3"; b = "4"; print a+b, a b }'
+    # Output: 7  34   (numeric context gives 7, string context gives 34)
+
+
+sub() vs gsub() - the full picture
+-------------------------------------
+Both replace regex matches. sub() replaces only the FIRST match.
+gsub() replaces ALL matches and returns the number of replacements.
+
+    echo "aaa" | awk '{ sub(/a/, "b"); print }'    # Output: baa
+    echo "aaa" | awk '{ gsub(/a/, "b"); print }'   # Output: bbb
+
+    # & in replacement means "the matched text"
+    echo "hello" | awk '{ gsub(/l/, "[&]"); print }'   # Output: he[l][l]o
+    echo "hello" | awk '{ sub(/l+/, "[&]"); print }'   # Output: he[ll]o
+
+    # To use a literal & in replacement, escape it
+    echo "hello" | awk '{ gsub(/l/, "\\&"); print }'   # Output: he&&o
+
+    # Operate on a specific field, not $0
+    awk '{ gsub(/foo/, "bar", $2); print }' file.txt
+
+    # gsub returns count of replacements
+    awk '{ n = gsub(/ERROR/, "ERR"); if (n>0) print n, "replacements on line", NR }' file.txt
+
+
+match() with RSTART and RLENGTH
+----------------------------------
+match() finds a regex in a string and sets two built-in variables:
+RSTART: position of match (1-based), 0 if no match
+RLENGTH: length of match, -1 if no match
+
+    echo "foo123bar" | awk '{ if (match($0, /[0-9]+/)) print substr($0, RSTART, RLENGTH) }'
+    # Output: 123
+
+    # Check if a field contains a pattern (not just the whole line)
+    awk '{ if (match($2, /^[0-9]+$/)) print "field 2 is numeric:", $2 }' file.txt
+
+    # gawk extended match() captures groups into an array
+    echo "2024-01-15" | gawk '{ match($0, /([0-9]{4})-([0-9]{2})-([0-9]{2})/, a)
+                                 print "year:", a[1], "month:", a[2], "day:", a[3] }'
+
+
+substr() - extract part of a string
+-------------------------------------
+substr(string, start [, length])
+start is 1-based. If length is omitted, goes to end of string.
+
+    awk '{ print substr($0, 1, 5) }' file.txt    # first 5 characters
+    awk '{ print substr($0, 6) }' file.txt       # from position 6 to end
+    awk '{ print substr($1, length($1)-1) }' file.txt  # last 2 chars of field 1
+
+    # Combined with match() to extract a pattern
+    awk '{ if (match($0,/[0-9]+/)) print substr($0,RSTART,RLENGTH) }' file.txt
+
+
+index() - find substring position
+------------------------------------
+index(string, find) returns position of find in string, or 0.
+
+    awk '{ if (index($0, "ERROR") > 0) print NR": "$0 }' file.txt
+
+    # Use to check field contains a substring (faster than regex for literals)
+    awk '{ if (index($2, ".conf") > 0) print }' file.txt
+
+
+split() - divide a string into an array
+-----------------------------------------
+n = split(string, array [, separator])
+Returns number of elements. array is indexed 1 to n.
+
+    # Split a field by a delimiter
+    awk '{ n = split($1, parts, ":"); for(i=1;i<=n;i++) print parts[i] }' file.txt
+
+    # Split with a regex separator
+    awk '{ n = split($0, words, /[[:space:]]+/); print n, "words" }' file.txt
+
+    # Split an IP address
+    echo "192.168.1.100" | awk '{ split($0,a,"."); print "last octet:", a[4] }'
+
+    # split() clears the array first - safe to reuse
+    awk '{ split($0, a, ":"); print a[1] }' /etc/passwd
+
+
+sprintf() - format a string without printing
+----------------------------------------------
+Works exactly like printf but returns the formatted string
+instead of printing it.
+
+    awk '{ label = sprintf("%-10s %05d", $1, $2); print label }' file.txt
+
+    # Build a filename from fields
+    awk '{ outfile = sprintf("/tmp/output_%s.txt", $1); print $0 > outfile }' file.txt
+
+    # Pad a number with zeros
+    awk '{ printf "%s\n", sprintf("%06d", $1) }' file.txt
+
+
+$NF and $(NF-1) - last fields
+-------------------------------
+NF is the number of fields. $NF is always the last field.
+$(NF-1) is the second-to-last field.
+
+    awk '{ print $NF }' file.txt           # print last field of each line
+    awk '{ print $(NF-1) }' file.txt       # print second-to-last field
+    awk 'END { print NR }' file.txt        # print total number of lines
+
+    # Practical: get the last path component (like basename)
+    echo "/usr/local/bin/awk" | awk -F/ '{ print $NF }'
+    # Output: awk
+
+    # Get process name from ps output
+    ps aux | awk '{ print $NF }'
+
+
+Assigning to NF - truncate or extend fields
+--------------------------------------------
+You can set NF to change how many fields a line has.
+
+    # Remove last field from every line
+    awk '{ NF--; print }' file.txt
+
+    # Keep only first 3 fields
+    awk '{ NF=3; print }' file.txt
+
+    # Add a new field (field 5 when only 3 exist - pads with empty fields)
+    awk '{ $5="new"; print }' file.txt
+
+
+Dynamic regex vs literal regex
+--------------------------------
+In awk, /pattern/ is a compiled literal regex. If you store a
+pattern in a variable and use it with ~, awk recompiles it each
+time (slower for large files but necessary for dynamic patterns).
+
+    # Literal regex - fast, pattern is fixed at parse time
+    awk '/ERROR/ { print }' file.txt
+
+    # Dynamic regex - pattern comes from a variable
+    pattern="ERROR"
+    awk -v pat="$pattern" '$0 ~ pat { print }' file.txt
+
+    # Dynamic regex from a field
+    awk 'NR==1 { pattern=$1; next } $0 ~ pattern { print }' patterns.txt data.txt
+
+    # WRONG - this compares $0 to the string "pat", not a regex
+    awk -v pat="ERROR" '$0 ~ "pat" { print }' file.txt   # matches literal "pat"
+
+    # The ~ and !~ operators
+    awk '$1 ~ /^[0-9]/ { print "starts with digit:", $1 }' file.txt
+    awk '$1 !~ /^[0-9]/ { print "does not start with digit:", $1 }' file.txt
+
+
+Output redirection in awk
+--------------------------
+The main document shows `print $1 > "output.txt"` but does not
+explain the full picture.
+
+    # Write to file (overwrites once, then appends within same awk run)
+    awk '{ print > "output.txt" }' file.txt
+    # Note: > does NOT truncate the file on every print. It opens once
+    # and appends within the same awk invocation.
+
+    # Append to existing file
+    awk '{ print >> "output.txt" }' file.txt
+
+    # Pipe to a command (pipe stays open for entire awk run)
+    awk '{ print | "sort -u" }' file.txt
+
+    # Write different output to different files based on content
+    awk '/ERROR/ { print > "errors.txt" }
+         /WARN/  { print > "warnings.txt" }
+         { print > "all.txt" }' logfile.log
+
+    # close() after writing - important if you will read the file later
+    # or if you need to reopen a pipe
+    awk '{ print > "tmp.txt" } END { close("tmp.txt"); while((getline line < "tmp.txt")>0) print line }' file.txt
+
+close() - why it matters
+--------------------------
+    # If you pipe to sort inside a loop, close and reopen to get fresh sort
+    awk '{
+        print | "sort > sorted_chunk.txt"
+        if (NR % 1000 == 0) {
+            close("sort > sorted_chunk.txt")
+        }
+    }' file.txt
+
+    # close() also flushes output files - important before reading them back
+    awk '{ print $1 > "/tmp/keys.txt" }
+         END { close("/tmp/keys.txt"); while ((getline k < "/tmp/keys.txt") > 0) print k }' file.txt
+
+
+----------------------------------------------------------------
+SECTION 18 - SED COMMANDS MISSING FROM BOTH FILES
+----------------------------------------------------------------
+
+sed n command (lowercase) - print and load next line
+------------------------------------------------------
+n prints the current pattern space (unless -n is active),
+then reads the next line of input into the pattern space.
+This is different from N which APPENDS without printing.
+
+    # Print every other line (odd lines only)
+    sed -n 'p; n' file.txt
+
+    # Process pairs of lines: print line 1, skip line 2
+    sed 'n; d' file.txt
+
+    # Print the line AFTER a pattern match
+    sed -n '/pattern/{ n; p }' file.txt
+
+    # Substitute only on the line after a match
+    sed '/pattern/{ n; s/old/new/ }' file.txt
+
+Difference between n and N:
+    n  - prints current line (if not -n), loads NEXT line into pattern space
+    N  - appends next line to pattern space with embedded \n, does NOT print
+
+
+sed P command (uppercase) - print first line of pattern space
+--------------------------------------------------------------
+When pattern space contains multiple lines (after N), P prints
+only up to the first embedded newline.
+
+    # Print only the first of each joined pair
+    sed 'N; P; D' file.txt    # sliding window of 2 lines, prints each first line
+
+    # Show context: print match and the line before it
+    sed -n '/pattern/{ x; p; x; p }; h' file.txt
+
+
+sed D command (uppercase) - delete first line of pattern space
+---------------------------------------------------------------
+Deletes up to and including the first embedded newline in pattern
+space, then restarts the cycle WITHOUT reading a new line.
+This is what makes sed loops work.
+
+    # Delete blank lines at start of file
+    sed '/./,$!d' file.txt
+
+    # Remove duplicate consecutive lines (like uniq)
+    sed '$!N; /^\(.*\)\n\1$/!P; D' file.txt
+    # N appends next, regex checks if both lines identical, P prints if not dup, D deletes first
+
+
+sed c command - replace entire matching line
+---------------------------------------------
+c\ replaces the entire current line (or range) with new text.
+The main doc never mentions this command at all.
+
+    # Replace a specific line entirely
+    sed '5c\This is the new line 5' file.txt
+
+    # Replace any line matching a pattern
+    sed '/^ServerName/c\ServerName www.example.com' /etc/httpd/conf/httpd.conf
+
+    # Replace a range of lines with a single line
+    sed '3,7c\Lines 3 through 7 replaced' file.txt
+
+    # Practical: update a config value regardless of current value
+    sed '/^Port /c\Port 2222' /etc/ssh/sshd_config
+
+
+Inserting newlines in sed replacement
+---------------------------------------
+Inserting a literal newline into sed output is not obvious.
+
+    # Method 1: backslash-newline in the replacement (portable)
+    sed 's/,/\
+/g' file.txt
+
+    # Method 2: use \n in replacement (GNU sed only)
+    sed 's/,/\n/g' file.txt
+
+    # Method 3: use $'\n' from bash
+    sed "s/,/$'\n'/g" file.txt
+
+    # Split CSV into one-value-per-line
+    sed 's/,/\n/g' data.csv   # GNU sed
+
+
+----------------------------------------------------------------
+SECTION 19 - WORD BOUNDARIES IN AWK AND SED
+----------------------------------------------------------------
+
+Neither file covers word boundary matching at all.
+
+In GNU sed:
+    \b  word boundary (GNU sed extension)
+    \B  non-word boundary (GNU sed extension)
+    \<  start of word
+    \>  end of word
+    \w  word character [[:alnum:]_]  (GNU extension)
+    \W  non-word character
+
+    # Match the whole word "error" not "errors" or "noerror"
+    sed -n '/\berror\b/p' file.txt
+    sed -n '/\<error\>/p' file.txt   # same, older syntax
+
+    # Replace whole word only
+    sed 's/\bfoo\b/bar/g' file.txt
+
+In gawk:
+    \b  word boundary (in gawk regex)
+    \B  non-word boundary
+    \w  word character
+    \W  non-word character
+    \s  whitespace
+    \S  non-whitespace
+
+    gawk '/\<error\>/' file.txt
+    gawk '/\berror\b/' file.txt
+
+In POSIX awk (no gawk extensions):
+    No \b, \w, \< or \> support. Use character classes:
+
+    # Match "error" as a whole word using character class boundaries
+    awk '/^error$|^error[^[:alnum:]_]|[^[:alnum:]_]error$|[^[:alnum:]_]error[^[:alnum:]_]/' file.txt
+
+    # Simpler: use split or index for exact word matching
+    awk '{ n=split($0,words); for(i=1;i<=n;i++) if(words[i]=="error") print }' file.txt
+
+
+----------------------------------------------------------------
+SECTION 20 - PROCESSING COMPRESSED FILES
+----------------------------------------------------------------
+
+Neither file mentions compressed file processing at all.
+On real systems, logs and data are often gzip compressed.
+
+With zcat / gzip:
+    zcat file.gz | awk '{ print $1 }' > output.txt
+    zcat file.gz | sed 's/old/new/' | gzip > modified.gz
+
+    # Process multiple compressed files
+    zcat /var/log/syslog.*.gz | awk '/ERROR/ { count++ } END { print count }'
+
+    # Process both compressed and uncompressed together
+    zcat access.log.gz access.log.1.gz | cat - access.log | awk '{ print $1 }'
+
+With process substitution (bash):
+    # Treat command output as a file argument to awk
+    awk '{ print $1 }' <(zcat file.gz)
+
+    # Join a compressed file with a normal file
+    awk 'NR==FNR{map[$1]=$2;next}{print $0,map[$1]}' <(zcat keys.gz) data.txt
+
+    # Diff two processed streams
+    diff <(awk '{print $1}' file1.txt) <(awk '{print $1}' file2.txt)
+
+With bzip2 / xz:
+    bzcat file.bz2 | awk '{ print $1 }'
+    xzcat file.xz  | sed 's/old/new/'
+
+Reading gzip in gawk directly (gawk with gzip support):
+    # Not standard - use zcat pipeline instead for portability
+
+
+----------------------------------------------------------------
+SECTION 21 - WHAT AWK AND SED CANNOT DO
+----------------------------------------------------------------
+
+Neither file covers the limits of these tools. Knowing when
+something is simply not possible saves you hours of fighting.
+
+Awk and sed cannot do:
+    - Lookahead: (?=...) - not supported in either tool
+    - Lookbehind: (?<=...) - not supported in either tool
+    - Named capture groups: (?P<name>...) - not supported
+    - Non-greedy matching: *? or +? - not supported
+    - Recursive patterns - not supported
+    - True in-memory sort without piping to sort
+    - Network I/O (gawk has limited support via /inet/ but it is not portable)
+    - Binary file processing reliably (text tools, not binary tools)
+    - True random access within a file (forward-only streaming)
+
+For these, use:
+    perl -ne 'print if /(?<=prefix)pattern/'  file.txt   # lookahead/behind
+    grep -P 'pattern'                                     # PCRE in grep
+    python3, ruby for complex regex and data structures
+
+The awk regex engine is based on POSIX ERE (Extended Regular
+Expressions). The sed regex engine uses POSIX BRE by default
+or ERE with -E. Neither uses PCRE.
+
+
+----------------------------------------------------------------
+SECTION 22 - FILENAME VARIABLE AND MULTI-FILE PATTERNS
+----------------------------------------------------------------
+
+FILENAME - the current input file being processed
+--------------------------------------------------
+    # Print filename before each group of matches
+    awk '/ERROR/ { print FILENAME": "$0 }' /var/log/*.log
+
+    # Process each file separately - print header per file
+    awk 'FNR==1 { print "\n=== File:", FILENAME, "===" } { print }' *.txt
+
+    # Count matches per file
+    awk '/pattern/ { count[FILENAME]++ }
+         END { for (f in count) print count[f], f }' *.log
+
+    # In BEGIN, FILENAME is undefined (no file being read yet)
+    # In END, FILENAME is the name of the LAST file processed
+
+NR vs FNR for multi-file logic:
+    NR  = total records read across ALL files (never resets)
+    FNR = records read in the CURRENT file (resets for each file)
+
+    # Add line numbers restarting at 1 for each file
+    awk '{ print FNR, $0 }' file1.txt file2.txt
+
+    # Add sequential line numbers across all files
+    awk '{ print NR, $0 }' file1.txt file2.txt
+
+    # Detect when a new file starts
+    awk 'FNR==1 && NR!=1 { print "---" } { print }' file1.txt file2.txt
+
+
+----------------------------------------------------------------
+END OF SUPPLEMENT
+----------------------------------------------------------------
