@@ -153,3 +153,1457 @@ rm - remove files or directories
 
 mkdir - create new directories
     Usage: mkdir directory_name
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+One year later-
+
+
+
+
+
+
+
+
+
+------LinuxFileStructureComplete.txt------
+
+The Linux Filesystem: A Complete Guide
+Everything you need to understand the structure, naming,
+and reasoning behind how Linux organizes its files.
+
+
+================================================================
+PART 1 - THE FILESYSTEM HIERARCHY STANDARD (FHS)
+================================================================
+
+The Linux filesystem is not random. Every directory exists
+because of a deliberate international standard called the
+Filesystem Hierarchy Standard (FHS).
+
+The FHS is maintained by the Linux Foundation. It defines
+the directory structure and directory contents in Linux
+and other Unix-like operating systems. Current version: 3.0.
+
+Why it matters for you:
+    Every major Linux distribution — RHEL, Ubuntu, Debian,
+    Fedora, Arch, SUSE — follows the FHS. This means once
+    you learn where things live on one distro, you know where
+    to look on all of them. Configuration files are always
+    under /etc. Logs are always under /var/log. User programs
+    are always under /usr/bin. The FHS is why Linux sysadmins
+    can sit down at any Linux machine and immediately know
+    their way around.
+
+The two organizing principles behind every directory:
+    1. Shareable vs Unshareable
+       Shareable data can be shared between multiple machines
+       over a network (e.g. /usr, /opt).
+       Unshareable data is specific to one machine (e.g. /etc, /boot).
+
+    2. Static vs Variable
+       Static data does not change without admin action (e.g. /usr, /boot).
+       Variable data changes during normal operation (e.g. /var, /tmp).
+
+Read the FHS yourself:
+    man 7 hier             # the man page describing the hierarchy
+    # or online at: https://refspecs.linuxfoundation.org/fhs.shtml
+
+
+================================================================
+PART 2 - FUNDAMENTAL CONCEPTS BEFORE THE DIRECTORY LIST
+================================================================
+
+----------------------------------------------------------------
+2a. Everything is a file
+----------------------------------------------------------------
+
+In Linux, almost everything is represented as a file:
+    - Regular text and binary files      (obvious)
+    - Directories                        (special files that contain other files)
+    - Hard drives and partitions         (/dev/sda, /dev/sda1)
+    - Terminals                          (/dev/tty1, /dev/pts/0)
+    - Keyboard, mouse, audio devices     (/dev/input/, /dev/audio)
+    - Kernel and process information     (/proc/cpuinfo, /proc/1/status)
+    - Hardware configuration             (/sys/class/net/)
+    - Network sockets and pipes          (appear as files in /proc/net)
+
+This is why Linux tools are so composable. cat, grep, awk, sed
+all work on files -- which means they work on almost everything.
+
+
+----------------------------------------------------------------
+2b. Inodes: what a file actually is
+----------------------------------------------------------------
+
+A file in Linux is not just a name and some data. It is two
+separate things that are linked together:
+
+    1. An INODE -- a data structure stored on disk that contains:
+       - File size
+       - Owner (UID) and group (GID)
+       - Permissions (read/write/execute for owner/group/others)
+       - Timestamps (created, modified, accessed)
+       - Number of hard links pointing to this inode
+       - Pointers to the actual data blocks on disk
+       - Does NOT contain the filename
+
+    2. A DIRECTORY ENTRY -- maps a filename to an inode number.
+       The filename is stored in the directory, not in the inode.
+
+What this means in practice:
+    - A single inode can have multiple filenames pointing to it.
+      These are called hard links. Both names are equal -- deleting
+      one does not delete the data until ALL hard links are removed.
+
+    - This is why `rm` is short for "remove link" not "remove file."
+      The inode (and data) is deleted only when the link count
+      reaches zero AND no process has the file open.
+
+    - You can have a file that has been "deleted" (link count 0)
+      but is still consuming disk space because a running process
+      still has it open. This is a common cause of "disk is full
+      but I deleted the files."
+
+    - /proc/PID/fd/ shows all file descriptors a process has open,
+      including deleted files.
+
+Checking inodes:
+    ls -i file.txt           # shows the inode number
+    ls -i /etc/passwd        # inode for passwd
+    stat file.txt            # shows inode, permissions, timestamps, link count
+    df -i                    # shows inode usage per filesystem
+                             # a filesystem can run out of inodes before
+                             # running out of space
+
+Hard links vs soft links (symlinks):
+    Hard link:  ln source.txt hardlink.txt
+        - Points directly to the same inode
+        - Both names are completely equal
+        - Cannot cross filesystem boundaries
+        - Cannot link to directories (usually)
+        - If original is deleted, hardlink still works
+
+    Soft link (symlink):  ln -s source.txt symlink.txt
+        - Points to a path (a filename), not an inode
+        - If the original is deleted, symlink is broken (dangling)
+        - Can cross filesystem boundaries
+        - Can point to directories
+        - Has its own inode
+
+
+----------------------------------------------------------------
+2c. What a directory actually is
+----------------------------------------------------------------
+
+A directory is a special type of file. Its contents are a table
+that maps filenames to inode numbers.
+
+Every directory always contains two special entries:
+    .   (dot)     -- the directory itself. Points to its own inode.
+    ..  (dotdot)  -- the parent directory. Points to parent's inode.
+
+At the root / directory, both . and .. point to the same inode.
+/ has no parent, so it points to itself.
+
+This is why:
+    cd .        does nothing (stay in current directory)
+    cd ..       goes up one level
+    cd ../..    goes up two levels
+    cd ../../some/path   relative path navigation
+
+
+----------------------------------------------------------------
+2d. Absolute vs Relative paths
+----------------------------------------------------------------
+
+Absolute path: starts with /. Always the same regardless of
+where you currently are.
+    /home/alice/documents/report.txt
+    /etc/ssh/sshd_config
+    /usr/bin/python3
+
+Relative path: starts without /. Interpreted relative to your
+current working directory (shown by pwd).
+    documents/report.txt   (from /home/alice/)
+    ../../etc/passwd        (up two levels then into etc)
+    ./script.sh             (a file in the current directory)
+    ~/documents/            (~ expands to your home directory)
+
+The ~ shortcut:
+    ~           expands to $HOME (/home/yourusername)
+    ~alice      expands to /home/alice (another user's home)
+    ~root       expands to /root
+
+cd shortcuts:
+    cd          go to home directory (same as cd ~)
+    cd -        return to previous directory (toggles back and forth)
+    cd ..       go up one directory
+    cd ../..    go up two directories
+    cd /        go to root
+
+
+----------------------------------------------------------------
+2e. Mount points: how Linux attaches filesystems
+----------------------------------------------------------------
+
+Windows uses drive letters: C:\ D:\ E:\
+Linux uses a single unified tree with / at the top.
+
+A filesystem (a formatted partition, USB drive, network share,
+etc.) is attached to the tree by mounting it at a directory.
+That directory is called the mount point.
+
+When you mount a filesystem at /mnt/usb:
+    - The contents of /mnt/usb/ show the USB drive's files
+    - Before mounting, /mnt/usb/ was an empty directory
+    - After unmounting, /mnt/usb/ is empty again
+    - The USB files did not move. The directory became a window
+      into a different filesystem.
+
+This is why:
+    /media  is for automatically mounted removable media
+    /mnt    is for manually mounted temporary filesystems
+    /       itself is a mounted filesystem (your root partition)
+    /boot   is often a separate mounted filesystem
+    /home   is often a separate mounted filesystem
+    /tmp    is often mounted as tmpfs (RAM)
+
+Every mounted filesystem has a type, device, mount point, and options.
+See them all:
+    mount                    # list all currently mounted filesystems
+    cat /proc/mounts         # same, from kernel's perspective
+    cat /etc/fstab           # filesystems to mount at boot
+
+
+----------------------------------------------------------------
+2f. Virtual filesystems: /proc and /sys are not real
+----------------------------------------------------------------
+
+Two directories look like normal directories but are fundamentally
+different from everything else.
+
+/proc and /sys are virtual filesystems. They do not exist on disk.
+They are entirely created by the kernel in RAM when the system boots.
+When you read /proc/cpuinfo, the kernel generates that text on the
+fly in response to your read. Nothing is stored on disk.
+
+Why this matters:
+    - You cannot delete these files in a meaningful way
+    - Changes to most /proc files do not survive a reboot
+    - The files have no size on disk (stat shows size 0)
+    - They are a window into the live state of the running kernel
+    - This is how sysctl works: reading/writing /proc/sys/ files
+      reads/writes kernel parameters in real time
+
+Types of virtual filesystem (VFS) in Linux:
+    procfs  - mounted at /proc    - process and kernel info
+    sysfs   - mounted at /sys     - device and driver info
+    tmpfs   - mounted at /tmp, /run, /dev/shm - RAM-backed storage
+    devtmpfs - mounted at /dev    - device files
+    cgroups  - mounted at /sys/fs/cgroup - resource control
+
+
+----------------------------------------------------------------
+2g. tmpfs: when directories live in RAM
+----------------------------------------------------------------
+
+/tmp and /run are usually mounted as tmpfs, a filesystem that
+lives entirely in RAM (and swap if needed).
+
+Consequences:
+    - Extremely fast reads and writes (no disk I/O)
+    - Contents are completely erased on reboot (by definition --
+      RAM does not persist without power)
+    - Size is limited by available RAM
+    - Does not wear out SSDs
+
+Check if /tmp is tmpfs:
+    mount | grep tmp
+    df -Th | grep tmp         # shows type as tmpfs
+
+Why /var/tmp exists separately:
+    /tmp     - tmpfs - cleared on reboot. For truly temporary files.
+    /var/tmp - on disk - survives reboot. For files that need to
+               persist across reboots but are still temporary in nature.
+
+
+----------------------------------------------------------------
+2h. The /bin → /usr/bin merger on modern systems
+----------------------------------------------------------------
+
+This is one of the most important things missing from most guides.
+
+Traditional layout (old systems, still used on some distros):
+    /bin    essential user binaries (ls, cp, cat, etc.)
+    /sbin   essential system binaries (ifconfig, mount, etc.)
+    /lib    essential shared libraries
+    /usr/bin    all other user binaries
+    /usr/sbin   all other system binaries
+    /usr/lib    all other libraries
+
+The idea was: /bin, /sbin, /lib could be on a small root partition
+and the system could boot and do basic recovery without /usr being
+mounted. This made sense in the 1980s when disks were tiny.
+
+Modern layout (RHEL 7+, Ubuntu 20.04+, Debian 10+, Arch, Fedora):
+    /bin    -> symlink to /usr/bin    (they are the same directory)
+    /sbin   -> symlink to /usr/sbin   (they are the same directory)
+    /lib    -> symlink to /usr/lib    (they are the same directory)
+    /lib64  -> symlink to /usr/lib64  (they are the same directory)
+
+Check this on your system:
+    ls -la / | grep -E "^l"   # shows symlinks in /
+    ls -la /bin               # shows: /bin -> usr/bin
+
+The reason for the change:
+    - Modern initramfs (initial RAM filesystem) handles early boot
+      without needing a separate /bin. The old split became pointless.
+    - Having two places for binaries caused confusion and bugs.
+    - The usr-merge is now standard across all major distributions.
+
+What this means for you:
+    - When you see /bin/bash in a script, it still works. The
+      symlink redirects it to /usr/bin/bash.
+    - You will find ls in /usr/bin/ls, not /bin/ls on merged systems.
+    - Do not write new scripts assuming /bin and /usr/bin are separate.
+    - Use /usr/bin/env python3 in scripts rather than /usr/bin/python3
+      for maximum portability.
+
+
+================================================================
+PART 3 - EVERY DIRECTORY: FULL EXPLANATION
+================================================================
+
+----------------------------------------------------------------
+/ - The root directory
+----------------------------------------------------------------
+
+Name origin: No name. Just a forward slash. It is the root of
+the entire tree. Everything in the system lives under this point.
+
+The root of the filesystem tree. Every absolute path starts here.
+There is exactly one root directory on a running Linux system.
+
+    ls /         # see all top-level directories
+    cd /         # go to root
+    pwd          # prints / when you are here
+
+The root directory is not /root. Common confusion:
+    /        the root of the entire filesystem tree (everyone's root)
+    /root    the home directory of the root USER (administrator only)
+
+These are completely separate things. See /root entry below.
+
+
+----------------------------------------------------------------
+/bin/ - Binary executables
+----------------------------------------------------------------
+
+Name origin: "bin" is short for BINARY. Programs are binary
+files (compiled machine code) as opposed to text scripts.
+
+Contains essential command-line programs that every user needs.
+These are the commands that must be available even in single-user
+mode or during early boot before /usr is mounted.
+
+Examples of what lives here:
+    ls, cp, mv, rm, mkdir, cat, echo, grep, bash, sh, tar,
+    gzip, chmod, chown, ln, ps, kill, date, pwd, df, du
+
+On modern systems (usr-merged):
+    /bin is a symlink to /usr/bin.
+    All binaries effectively live in /usr/bin.
+
+    Check: ls -la /bin   # shows -> usr/bin if merged
+
+Why the distinction existed: During early boot or rescue mode,
+only the root partition was guaranteed to be mounted. /usr might
+be on a separate partition. Having critical tools in /bin meant
+the system could function even without /usr.
+
+
+----------------------------------------------------------------
+/boot/ - Boot loader files
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "bootstrap." The process of starting a
+computer is called bootstrapping because the machine "pulls
+itself up by its own bootstraps" -- it has to load a program
+to load a program.
+
+Contains everything the system needs to start up:
+
+    vmlinuz         the compressed Linux kernel image
+                    "vmlinuz" = Virtual Memory LINUx Zipped
+    vmlinuz-5.x.x   versioned kernel (multiple can coexist)
+    initrd.img      Initial RAM Disk -- a tiny temporary root
+                    filesystem loaded into RAM before the real
+                    root is mounted. Contains drivers needed to
+                    find and mount the real root filesystem.
+    initramfs-*     Modern version of initrd (cpio archive)
+    System.map      kernel symbol table (for debugging)
+    config-5.x.x    kernel configuration used to compile this kernel
+
+    /boot/grub/     GRUB2 bootloader configuration and modules
+    /boot/grub/grub.cfg   the main GRUB config (auto-generated)
+    /boot/grub/grub2/     on RHEL/Fedora systems
+
+    /boot/efi/      EFI System Partition contents (UEFI systems)
+    /boot/efi/EFI/  bootloaders for different operating systems
+
+Important notes:
+    - /boot is often its own separate partition
+    - It must be readable by the BIOS/UEFI before the OS loads
+    - On UEFI systems, the EFI partition is usually FAT32 formatted
+    - Never fill /boot -- no space in /boot = system cannot update kernels
+    - On RHEL: grub2-mkconfig -o /boot/grub2/grub.cfg updates GRUB
+
+
+----------------------------------------------------------------
+/dev/ - Device files
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "device." Every hardware device and
+many virtual devices appear as a file here.
+
+Contains device files. These are special files that act as
+interfaces between software and hardware (or virtual devices).
+Reading from or writing to these files talks directly to devices.
+
+Device file types:
+    b  (block device)  - devices that store data in blocks
+                         hard drives, SSDs, USB drives
+                         read/write random access
+    c  (character device) - devices that send/receive data
+                            one character at a time
+                            keyboards, mice, terminals, serial ports
+
+Examples:
+    /dev/sda        first SATA/SCSI hard drive
+    /dev/sda1       first partition on sda
+    /dev/sdb        second hard drive
+    /dev/nvme0n1    first NVMe SSD
+    /dev/nvme0n1p1  first partition on NVMe SSD
+    /dev/tty        current terminal
+    /dev/tty1       first virtual console (Ctrl+Alt+F1)
+    /dev/pts/0      first pseudo-terminal (SSH session, terminal emulator)
+    /dev/null       the black hole -- discard anything written to it,
+                    return nothing when read. Used to silence output.
+    /dev/zero       produces infinite stream of null bytes
+                    used to create empty files: dd if=/dev/zero of=file bs=1M count=100
+    /dev/random     cryptographically secure random data (blocks when entropy is low)
+    /dev/urandom    non-blocking random data (use this for most purposes)
+    /dev/stdin      standard input  (file descriptor 0)
+    /dev/stdout     standard output (file descriptor 1)
+    /dev/stderr     standard error  (file descriptor 2)
+    /dev/loop0      loop device (mount a file as if it were a disk)
+    /dev/mapper/    device mapper devices (LVM, LUKS encrypted volumes)
+    /dev/input/     keyboard, mouse, joystick input events
+    /dev/shm/       shared memory -- tmpfs for inter-process communication
+
+/dev is managed by udev (the device manager daemon).
+When you plug in a USB drive, udev creates the device file automatically.
+
+    ls -la /dev/sd*     # see all detected disk devices
+    lsblk               # better view of block devices
+    ls /dev/pts/        # see all open pseudo-terminals
+
+
+----------------------------------------------------------------
+/etc/ - System configuration files
+----------------------------------------------------------------
+
+Name origin: DISPUTED and important to know both stories.
+
+    Historical: In early Unix, /etc was literally "et cetera" --
+    a catch-all for anything that didn't fit elsewhere. Files that
+    didn't belong in /bin, /lib, /usr ended up dumped in /etc.
+
+    Modern official: The FHS defines /etc as "Editable Text
+    Configuration." This is a backronym (acronym made up after the
+    fact) but it's a useful mnemonic. All files here ARE editable
+    text configuration files.
+
+    The "Nervous System" analogy from the original doc is accurate:
+    change files here and you change how the entire system behaves.
+
+What lives here: system-wide configuration only.
+    User-specific configuration lives in the user's home directory.
+    No binaries, no libraries, no user data.
+
+Critical files:
+    /etc/passwd         user account information
+                        format: username:x:UID:GID:comment:home:shell
+                        the "x" means password hash is in shadow
+
+    /etc/shadow         password hashes and aging information
+                        readable only by root
+                        format: user:hash:lastchange:min:max:warn:inactive:expire
+
+    /etc/group          group definitions
+                        format: groupname:x:GID:member1,member2
+
+    /etc/fstab          filesystems to mount at boot
+                        see fstab.txt in this repo for full coverage
+
+    /etc/hosts          static hostname to IP address mappings
+                        checked before DNS
+                        127.0.0.1 localhost
+
+    /etc/hostname       the machine's hostname (one line)
+
+    /etc/resolv.conf    DNS server configuration
+                        nameserver 8.8.8.8
+
+    /etc/sudoers        who can run what with sudo
+                        edit with: visudo (never edit directly)
+
+    /etc/ssh/           SSH daemon and client configuration
+    /etc/ssh/sshd_config  server configuration
+    /etc/ssh/ssh_config   client configuration
+
+    /etc/crontab        system-wide cron schedule
+    /etc/cron.d/        additional cron job drop-ins
+    /etc/cron.daily/    scripts run daily by cron
+    /etc/cron.hourly/   scripts run hourly
+    /etc/cron.weekly/   scripts run weekly
+    /etc/cron.monthly/  scripts run monthly
+
+    /etc/systemd/       systemd configuration
+    /etc/systemd/system/  drop-in unit files and overrides
+
+    /etc/network/       network configuration (Debian/Ubuntu)
+    /etc/NetworkManager/ NetworkManager configuration
+    /etc/netplan/       Netplan YAML network config (Ubuntu)
+
+    /etc/apt/           APT package manager config (Debian/Ubuntu)
+    /etc/yum.repos.d/   DNF/YUM repo definitions (RHEL/Fedora)
+    /etc/dnf/           DNF package manager config
+
+    /etc/profile        system-wide shell initialization for login shells
+    /etc/bashrc         system-wide bash configuration for interactive shells
+
+    /etc/os-release     OS identification file
+                        cat /etc/os-release  shows distro name and version
+
+    /etc/issue          text displayed at the login prompt
+    /etc/motd           message of the day (shown after login)
+
+Important subdirectories:
+
+/etc/skel/
+    Skeleton directory. When a new user is created with useradd,
+    the contents of /etc/skel/ are copied into their new home directory.
+    This is how every new user automatically gets .bashrc, .profile,
+    .bash_logout, etc.
+
+    ls -la /etc/skel/      # see what every new user starts with
+    # Add files here to give all future users a custom starting config
+
+/etc/profile.d/
+    Drop-in shell scripts that are automatically sourced (run) when
+    any user logs in. Instead of editing /etc/profile directly,
+    drop a .sh file here.
+
+    ls /etc/profile.d/     # see scripts that run at every login
+    # Example: /etc/profile.d/myapp.sh
+    # export MYAPP_HOME=/opt/myapp
+    # export PATH=$PATH:$MYAPP_HOME/bin
+
+/etc/sudoers.d/
+    Drop-in files for sudo rules. Instead of editing /etc/sudoers,
+    create a file here. Safer and easier to manage.
+
+    # Example: /etc/sudoers.d/alice
+    # alice ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart nginx
+
+/etc/pam.d/
+    PAM (Pluggable Authentication Modules) configuration.
+    Controls how authentication works for each service.
+    See PAM.txt in this repo.
+
+/etc/ld.so.conf.d/
+    Files here tell ldconfig where to find shared libraries.
+    After adding a new library path, run: sudo ldconfig
+
+
+----------------------------------------------------------------
+/home/ - User home directories
+----------------------------------------------------------------
+
+Name origin: LITERALLY "home." Your personal space on the system.
+Analogous to "My Documents" on Windows but much more important --
+your shell configuration, application settings, SSH keys, and
+personal files all live here.
+
+Structure:
+    /home/alice/       alice's home directory
+    /home/bob/         bob's home directory
+
+Each user's home directory contains:
+    .bashrc            personal bash configuration (aliases, exports)
+    .bash_profile      personal login shell configuration
+    .bash_history      command history
+    .ssh/              SSH keys and known_hosts
+    .ssh/authorized_keys  public keys allowed to log in as this user
+    .config/           application configuration (XDG standard)
+    .local/            user-specific data and binaries
+    .local/bin/        user's personal scripts (add to PATH)
+    .cache/            application cache data
+    Desktop/           desktop files (graphical environments)
+    Documents/         documents
+    Downloads/         downloads
+
+Hidden files (dotfiles):
+    Any file or directory starting with . is hidden.
+    ls shows them only with the -a flag.
+    ls -a        shows all files including hidden
+    ls -A        shows hidden files but NOT . and ..
+
+    Dotfiles are the Linux convention for configuration files.
+    ~/.vimrc, ~/.gitconfig, ~/.tmux.conf are all examples.
+
+Home directory shortcut:
+    ~           expands to /home/currentuser
+    ~alice      expands to /home/alice
+    $HOME       environment variable containing home path
+
+On servers: users may not have a real home directory.
+System accounts (daemon, www-data, nobody) often have:
+    /var/lib/daemon/    as home
+    /nonexistent        as a placeholder home that doesn't exist
+    /usr/sbin/nologin   as shell (prevents interactive login)
+
+
+----------------------------------------------------------------
+/lib/ , /lib32/ , /lib64/ - Shared libraries
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "library." Shared code libraries that
+multiple programs use, analogous to DLL files on Windows.
+
+/lib     essential libraries for /bin and /sbin binaries
+/lib64   64-bit libraries (primary on 64-bit systems)
+/lib32   32-bit compatibility libraries
+
+On usr-merged systems: /lib -> /usr/lib (symlink)
+
+What a shared library is:
+    Programs often need common functionality: reading files,
+    doing math, handling network connections. Instead of every
+    program containing this code itself, it is compiled into
+    a shared library (.so file) that all programs can use.
+
+    This saves disk space and RAM (one copy in memory shared
+    by all programs using it). It also means security fixes
+    to a library (like libc or OpenSSL) fix every program
+    that uses it at once.
+
+Library naming convention:
+    libname.so.MAJOR.MINOR
+    libc.so.6           the C standard library, major version 6
+    libssl.so.1.1       OpenSSL library
+    libm.so.6           the math library
+
+Kernel modules live here too:
+    /lib/modules/       kernel loadable modules (.ko files)
+    /lib/modules/5.x.x/ modules for a specific kernel version
+
+    lsmod               list currently loaded kernel modules
+    modprobe modulename load a kernel module
+    modprobe -r modulename  unload a module
+
+    ldconfig            update the library cache after new libs installed
+    ldd /usr/bin/ls     show what shared libraries ls uses
+
+
+----------------------------------------------------------------
+/lost+found/ - Recovered file fragments
+----------------------------------------------------------------
+
+Name origin: LITERALLY "lost and found" -- like the box at
+a school where unclaimed items end up.
+
+Found in the root of every ext2/ext3/ext4 filesystem.
+Created automatically when the filesystem is formatted.
+
+What it contains:
+    When fsck (filesystem check) runs after an unclean shutdown
+    and finds file data that is not connected to any directory
+    (orphaned inodes), it places that data in /lost+found.
+    The files will have numeric names (their inode numbers)
+    because the original filenames are lost.
+
+    ls /lost+found/    # usually empty on healthy systems
+
+When to look here:
+    After a crash or forced shutdown, if you are missing files,
+    check /lost+found. You may find your data there under a
+    numbered name.
+
+Important notes:
+    - /lost+found only exists on ext filesystems
+    - btrfs, xfs, zfs handle this differently
+    - You need root to access it
+    - Each filesystem has its own /lost+found at its root
+      (e.g., if /home is a separate partition, it has
+      /home/lost+found)
+
+
+----------------------------------------------------------------
+/media/ - Auto-mounted removable media
+----------------------------------------------------------------
+
+Name origin: REFERS TO removable storage media (USB, CD, DVD).
+
+When you plug in a USB drive, insert a CD, or connect an external
+drive, the system (via udev and udisks2 or automount) mounts it
+here automatically.
+
+    /media/username/DRIVE_LABEL/    typical Ubuntu/Debian path
+    /media/usb0/                    common path on some systems
+    /media/cdrom/                   CD-ROM mount point
+    /run/media/username/LABEL/      used on RHEL/Fedora systems
+
+After inserting a USB:
+    ls /media/           # see what auto-mounted
+    ls /run/media/$USER/ # on RHEL/Fedora
+
+To unmount safely before removing:
+    umount /media/username/DRIVELABEL
+    # or in graphical desktop: click "eject" in file manager
+
+
+----------------------------------------------------------------
+/mnt/ - Manual temporary mount points
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "mount." A scratch area for mounting.
+
+A conventional location for manual, temporary mounts by
+the system administrator. Unlike /media which is automatic,
+/mnt is for mounts you do yourself on purpose.
+
+Common uses:
+    mount /dev/sdb1 /mnt            # mount second drive temporarily
+    mount -t nfs server:/share /mnt # mount an NFS network share
+    mount -o loop image.iso /mnt    # mount an ISO file as a filesystem
+
+During system rescue or installation work:
+    # When booting from a live USB to fix a broken system,
+    # you mount the broken system's root partition here:
+    mount /dev/sda1 /mnt
+    chroot /mnt            # change root into the broken system
+    # now you can run grub-install, passwd, etc. on the broken system
+
+/mnt vs /media:
+    /media  automatic, managed by the desktop/udev
+    /mnt    manual, managed by the system administrator
+
+
+----------------------------------------------------------------
+/opt/ - Optional third-party software
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "optional." Software that is outside
+the normal package manager distribution.
+
+Contains self-contained, third-party application packages
+that do not follow the standard FHS directory split (their
+binaries, libraries, config, and data are all together in
+one place instead of spread across /usr/bin, /etc, /var).
+
+Common residents:
+    /opt/google/chrome/     Google Chrome installed from .deb/.rpm
+    /opt/zoom/              Zoom video conferencing
+    /opt/teamviewer/        TeamViewer
+    /opt/pycharm/           JetBrains PyCharm IDE
+    /opt/atlassian/         Atlassian products (Jira, Confluence)
+    /opt/oracle/            Oracle database
+
+Convention: each application gets its own subdirectory:
+    /opt/myapp/bin/         executables
+    /opt/myapp/lib/         libraries
+    /opt/myapp/etc/         configuration
+    /opt/myapp/share/       data files
+
+To use a program in /opt, add it to your PATH:
+    export PATH=$PATH:/opt/myapp/bin
+
+/opt vs /usr/local:
+    /usr/local  for software you compiled and installed yourself
+    /opt        for pre-packaged third-party commercial/large software
+
+
+----------------------------------------------------------------
+/proc/ - Process and kernel information (virtual filesystem)
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "process." Originally just for process
+info. Now contains much more kernel information.
+
+A virtual filesystem (procfs) created entirely in RAM by the
+kernel. Nothing here is stored on disk. It is a live window
+into the kernel's current state.
+
+Process directories:
+    /proc/1/            init/systemd (PID 1)
+    /proc/1234/         the process with PID 1234
+    /proc/$$/           the current shell process
+    /proc/self/         always points to the calling process
+
+    Inside each PID directory:
+    /proc/1234/status   process state, memory, owner
+    /proc/1234/cmdline  the command that started this process
+    /proc/1234/fd/      file descriptors this process has open
+    /proc/1234/maps     memory mappings
+    /proc/1234/net/     network connections this process has
+    /proc/1234/cwd      symlink to current working directory
+    /proc/1234/exe      symlink to the executable file
+
+System information files:
+    /proc/cpuinfo       detailed CPU information
+    /proc/meminfo       detailed memory usage information
+    /proc/uptime        seconds since boot, seconds idle
+    /proc/loadavg       1/5/15 minute load averages
+    /proc/version       kernel version string
+    /proc/mounts        currently mounted filesystems
+    /proc/partitions    known disk partitions
+    /proc/filesystems   filesystems the kernel supports
+    /proc/modules       loaded kernel modules
+    /proc/net/          network statistics
+    /proc/net/dev       network interface statistics
+    /proc/net/tcp       current TCP connections
+    /proc/net/route     kernel routing table
+    /proc/diskstats     disk I/O statistics
+    /proc/swaps         swap space information
+    /proc/interrupts    hardware interrupt counts
+    /proc/sys/          KERNEL TUNABLE PARAMETERS (see below)
+
+/proc/sys/ - the most important part for sysadmins:
+    Files here are live kernel parameters you can read and write.
+    Reading the file shows the current value.
+    Writing to the file changes the kernel behavior IMMEDIATELY.
+
+    cat /proc/sys/net/ipv4/ip_forward   # is IP forwarding on? (0=no 1=yes)
+    echo 1 > /proc/sys/net/ipv4/ip_forward  # enable IP forwarding NOW
+
+    This is exactly what sysctl does under the hood:
+    sysctl net.ipv4.ip_forward           # same as reading the file
+    sysctl -w net.ipv4.ip_forward=1      # same as writing to the file
+
+    Important sysctl paths:
+    /proc/sys/kernel/       kernel behavior
+    /proc/sys/net/          network stack
+    /proc/sys/vm/           virtual memory
+    /proc/sys/fs/           filesystem limits
+
+    Changes made directly to /proc/sys/ do not survive reboot.
+    To make permanent: add to /etc/sysctl.conf or /etc/sysctl.d/*.conf
+    Then run: sysctl -p  to apply without rebooting
+
+Practical use:
+    cat /proc/cpuinfo | grep "model name" | head -1   # CPU model
+    cat /proc/meminfo | grep MemTotal                  # total RAM
+    cat /proc/loadavg                                  # system load
+    ls /proc/ | grep -E '^[0-9]+$' | wc -l           # count running processes
+
+
+----------------------------------------------------------------
+/root/ - Home directory for the root user
+----------------------------------------------------------------
+
+Name origin: THE HOME of the "root" user (superuser/admin).
+
+The home directory of the root user specifically. NOT the root
+of the filesystem (that is just /).
+
+Why it is not /home/root:
+    Deliberate design decision. /home may be on a separate
+    partition that might not be mounted in emergency situations.
+    Root must always be able to log in even if /home fails to mount.
+    By placing root's home at /root, it is always on the root
+    partition (/) and always accessible.
+
+    This means root can always recover a broken system even if
+    /home is corrupt or not yet mounted.
+
+Access:
+    Only root can access /root
+    Regular users cannot cd into /root
+    sudo ls /root    # even with sudo, path must use /root
+
+Contains:
+    .bashrc, .bash_profile, .ssh/, and all the same dotfiles
+    as a normal user home directory, but for root.
+    Root's SSH authorized_keys: /root/.ssh/authorized_keys
+
+
+----------------------------------------------------------------
+/run/ - Runtime application data
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "run." Data that applications need while
+they are RUNNING but that does not need to persist after reboot.
+
+Mounted as tmpfs (RAM). Cleared completely on every reboot.
+Replaced the old /var/run and /var/lock directories.
+On modern systems: /var/run -> /run and /var/lock -> /run/lock
+
+What lives here:
+    /run/PID files      process IDs of running daemons
+                        example: /run/sshd.pid contains the PID of sshd
+    /run/lock/          lock files (prevent two instances of a program running)
+    /run/user/          per-user runtime directories
+    /run/user/1000/     runtime data for user with UID 1000
+    /run/systemd/       systemd runtime data
+    /run/dbus/          D-Bus socket
+    /run/NetworkManager/ NetworkManager runtime files
+
+Example use:
+    cat /run/sshd.pid               # PID of the SSH daemon
+    ls /run/user/$(id -u)/          # your runtime directory
+
+
+----------------------------------------------------------------
+/sbin/ - System administration binaries
+----------------------------------------------------------------
+
+Name origin: "s" = SYSTEM, "bin" = binary. Binaries for
+system administration as opposed to regular user binaries.
+
+Traditionally contained commands for system administration
+that were typically only run by root:
+    ifconfig, ip, route, iptables, fdisk, fsck, mkfs,
+    mount, umount, reboot, shutdown, init, swapon, swapoff,
+    useradd, groupadd, chroot, ldconfig, modprobe
+
+On usr-merged systems: /sbin -> /usr/sbin (symlink)
+
+The distinction between /bin and /sbin has always been
+somewhat arbitrary and was further blurred because most
+/sbin commands can actually be run by regular users
+(they just need root PRIVILEGES to do anything useful).
+The usr-merge completed the collapse of this distinction.
+
+
+----------------------------------------------------------------
+/snap/ - Snap packages
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "Snappy" -- the original project name
+for Canonical's package format.
+
+Contains directories for snap packages. Snaps are containerized
+application packages that bundle all their dependencies.
+Managed by the snapd daemon.
+
+    /snap/bin/          snap command executables (symlinks)
+    /snap/core/         core snap providing the base runtime
+    /snap/firefox/      Firefox snap package (Ubuntu default)
+
+Only present on systems where snapd is installed.
+Mainly Ubuntu/Canonical systems.
+
+    snap list           # list installed snaps
+    snap find firefox   # search for a snap
+    snap install vlc    # install a snap
+
+
+----------------------------------------------------------------
+/srv/ - Service data
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "serve." Data served TO external clients.
+
+Data that is served by this machine to other machines or clients.
+Web server document roots, FTP server files, etc.
+
+    /srv/www/           web server content
+    /srv/ftp/           FTP server content
+    /srv/git/           git repositories served over git protocol
+
+In practice: many web servers use /var/www instead of /srv/www.
+Both exist in the wild. /srv is the FHS standard. /var/www is
+a common older convention that persists on many systems.
+
+/srv vs /var:
+    /srv    data you serve to other systems (web files, FTP files)
+    /var    data that varies (logs, databases, mail spools)
+
+
+----------------------------------------------------------------
+/sys/ - Kernel and hardware information (virtual filesystem)
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "system." System-level kernel interface.
+
+A virtual filesystem (sysfs). Like /proc but more organized
+and focused specifically on hardware and kernel subsystems.
+Added in Linux 2.6 to provide a cleaner interface than /proc.
+
+/proc vs /sys - the key difference:
+    /proc   focused on PROCESSES and kernel internal state
+            some of it is messy and unorganized (historical)
+    /sys    focused on DEVICES and DRIVERS
+            deliberately organized as a hierarchy matching
+            the kernel's internal device tree
+            more structured, more modern
+
+Structure:
+    /sys/block/         block devices (disks)
+    /sys/class/         devices organized by class
+    /sys/class/net/     network interfaces
+    /sys/class/block/   block devices
+    /sys/class/input/   input devices
+    /sys/bus/           buses (PCI, USB, platform, etc.)
+    /sys/devices/       the complete device tree
+    /sys/kernel/        kernel state and configuration
+    /sys/module/        loaded kernel modules and their parameters
+    /sys/fs/            filesystem information
+    /sys/fs/cgroup/     control group hierarchy
+    /sys/power/         power management
+
+Practical use:
+    # See all network interfaces
+    ls /sys/class/net/
+
+    # Get MAC address of eth0
+    cat /sys/class/net/eth0/address
+
+    # Check if eth0 is up (1=up 0=down)
+    cat /sys/class/net/eth0/operstate
+
+    # Get battery charge level (on laptops)
+    cat /sys/class/power_supply/BAT0/capacity
+
+    # Get CPU temperature (if driver supports it)
+    cat /sys/class/thermal/thermal_zone0/temp
+
+    # Trigger LED on/off (if supported)
+    echo 1 > /sys/class/leds/led0/brightness
+
+
+----------------------------------------------------------------
+/tmp/ - Temporary files
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "temporary." Files that only need to
+exist for a short time.
+
+Scratch space for applications. Anyone can write here.
+World-writable with the sticky bit set (see permissions below).
+Usually cleared on every reboot (tmpfs) or periodically cleaned
+by systemd-tmpfiles or tmpwatch.
+
+    ls -la / | grep tmp   # shows drwxrwxrwt -- the t is the sticky bit
+
+The sticky bit on a directory:
+    Anyone can create files in /tmp (world-writable).
+    BUT: you can only delete files YOU OWN.
+    The sticky bit prevents users from deleting each other's temp files.
+
+/tmp vs /var/tmp:
+    /tmp        usually tmpfs (RAM), cleared on reboot
+                use for truly temporary files (one session)
+    /var/tmp    on real disk, survives reboot
+                use for temporary files that need to persist longer
+
+    ls -la /tmp        # see what's currently in /tmp
+    df -h /tmp         # see if it is tmpfs and how full it is
+
+Common uses:
+    - Editors create .swp and .tmp files here while editing
+    - Package installers use it during installation
+    - Compilers use it for intermediate build files
+    - Applications use it for IPC (socket files, lock files)
+
+
+----------------------------------------------------------------
+/usr/ - Unix System Resources
+----------------------------------------------------------------
+
+Name origin: WIDELY MISUNDERSTOOD.
+    Common misconception: "user" -- as in user's files.
+    Actual meaning: "Unix System Resources" or historically
+    "User System Resources."
+
+    /usr is NOT for user home directories -- that is /home.
+    /usr is the second major hierarchy of system software.
+
+/usr is sometimes called the "secondary hierarchy."
+On a default install, /usr consumes most of the disk space.
+It is theoretically shareable across multiple machines
+(read-only NFS mount of /usr from a central server).
+
+Subdirectories of /usr:
+
+/usr/bin/
+    All user commands that are not required for single-user
+    mode boot. On usr-merged systems, /bin -> /usr/bin so
+    ALL user commands are effectively here.
+    python3, gcc, git, vim, ssh, nano, curl, wget, etc.
+    This is the largest directory in terms of number of files.
+
+/usr/sbin/
+    System administration commands not required for boot.
+    On usr-merged systems, /sbin -> /usr/sbin.
+    httpd, sshd, named, ntpd, etc.
+
+/usr/lib/
+    Libraries for /usr/bin and /usr/sbin.
+    On usr-merged systems, /lib -> /usr/lib.
+
+/usr/local/
+    THE MOST IMPORTANT SUBDIRECTORY FOR SYSADMINS.
+    Software installed manually (from source, not package manager)
+    goes here. Mirrors the structure of /usr:
+
+    /usr/local/bin/     manually installed commands
+    /usr/local/sbin/    manually installed sysadmin commands
+    /usr/local/lib/     manually installed libraries
+    /usr/local/etc/     manually installed config files
+    /usr/local/share/   manually installed shared data
+    /usr/local/man/     manually installed man pages
+    /usr/local/src/     source code of manually installed software
+
+    Why this matters:
+    Package manager files go in /usr/bin, /usr/lib, etc.
+    Your hand-compiled software goes in /usr/local/bin, etc.
+    This separation means package manager upgrades never
+    overwrite your custom-compiled software.
+    /usr/local/bin is typically in PATH by default.
+
+/usr/share/
+    Architecture-independent data files. Files that work
+    the same on any CPU architecture (x86, ARM, etc.).
+
+    /usr/share/man/         man page files for all commands
+    /usr/share/doc/         package documentation
+    /usr/share/locale/      translation files (internationalisation)
+    /usr/share/icons/       application icons
+    /usr/share/fonts/       system fonts
+    /usr/share/applications/ .desktop files (application launchers)
+    /usr/share/bash-completion/ bash tab completion scripts
+    /usr/share/zsh/         zsh completions
+
+/usr/include/
+    C header files (.h files) for system libraries.
+    Needed to compile C/C++ programs that use system libraries.
+    #include <stdio.h> resolves to /usr/include/stdio.h
+
+    /usr/include/linux/     Linux kernel header files
+    /usr/include/sys/       POSIX system interface headers
+    /usr/include/net/       network-related headers
+
+/usr/src/
+    Source code. Primarily:
+    /usr/src/linux/         or /usr/src/linux-headers-VERSION/
+    Kernel header files used when compiling kernel modules.
+    Required for building out-of-tree kernel modules (e.g., Nvidia drivers).
+
+    On Debian/Ubuntu: linux-headers package installs here
+    On RHEL: kernel-devel package installs here
+
+
+----------------------------------------------------------------
+/var/ - Variable data
+----------------------------------------------------------------
+
+Name origin: SHORT FOR "variable." Files that vary in size
+and content during normal operation.
+
+The /var hierarchy holds all the data that changes constantly:
+logs grow, databases are updated, mail arrives, print jobs queue.
+
+/var/log/
+    System and application log files. The most important
+    subdirectory for troubleshooting.
+
+    /var/log/syslog         general system log (Debian/Ubuntu)
+    /var/log/messages       general system log (RHEL/Fedora)
+    /var/log/auth.log       authentication events (Debian/Ubuntu)
+    /var/log/secure         authentication events (RHEL/Fedora)
+    /var/log/kern.log       kernel messages
+    /var/log/dmesg          kernel ring buffer (boot messages)
+    /var/log/cron           cron job execution log
+    /var/log/maillog        mail server log
+    /var/log/nginx/         Nginx web server logs
+    /var/log/apache2/       Apache web server logs
+    /var/log/httpd/         Apache logs (RHEL)
+    /var/log/journal/       systemd journal (binary format)
+    /var/log/apt/           APT package manager logs
+    /var/log/dpkg.log       package install/remove history
+
+    Viewing logs: see LOGS.txt in this repo for full coverage.
+
+/var/lib/
+    Persistent application state. Data that applications need
+    to persist between restarts but is not configuration.
+
+    /var/lib/mysql/         MySQL/MariaDB database files
+    /var/lib/postgresql/    PostgreSQL database files
+    /var/lib/docker/        Docker images, containers, volumes
+    /var/lib/dpkg/          APT package database (what is installed)
+    /var/lib/rpm/           RPM package database
+    /var/lib/systemd/       systemd state
+    /var/lib/NetworkManager/ NetworkManager connection state
+
+/var/cache/
+    Cached data that can be regenerated if deleted.
+    Deleting this frees space but may slow things down temporarily.
+
+    /var/cache/apt/archives/   downloaded .deb package files
+    /var/cache/dnf/            downloaded .rpm package files
+    /var/cache/man/            pre-formatted man pages (mandb cache)
+    /var/cache/nginx/          Nginx proxy cache
+    /var/cache/fontconfig/     font cache
+
+    Safe to clear:
+    sudo apt clean             # clears /var/cache/apt/archives
+    sudo dnf clean all         # clears DNF cache
+
+/var/spool/
+    Data waiting to be processed (queued). "Spool" is an old
+    acronym for Simultaneous Peripheral Operations On-Line.
+
+    /var/spool/cron/        user cron jobs (managed by crontab)
+    /var/spool/mail/        incoming mail for users
+    /var/spool/cups/        printer job queue
+    /var/spool/at/          scheduled at jobs
+
+/var/mail/
+    User mailboxes. Each user has a file named after them:
+    /var/mail/alice     all mail delivered to alice
+
+/var/tmp/
+    Temporary files that survive reboot. Like /tmp but on
+    real disk and not cleared on boot.
+    Used for larger temporary files or work that spans reboots.
+
+/var/run/
+    On modern systems: symlink to /run
+    Legacy path. Applications and documentation may still
+    reference /var/run. The symlink ensures they work.
+
+/var/lock/
+    On modern systems: symlink to /run/lock
+    Lock files that prevent two instances of a program running.
+
+
+================================================================
+PART 4 - PERMISSIONS AND HOW THEY APPLY TO DIRECTORIES
+================================================================
+
+The full permissions system is in fileAccess.txt in this repo.
+This covers the specific ways directory permissions differ
+from file permissions -- a common confusion point.
+
+Permission bits: rwx (read, write, execute)
+    On a FILE:
+        r = can read the file contents
+        w = can write to / modify the file
+        x = can execute the file as a program
+
+    On a DIRECTORY -- DIFFERENT MEANINGS:
+        r = can LIST the directory contents (ls)
+        w = can CREATE, DELETE, and RENAME files IN the directory
+        x = can ENTER the directory (cd into it) and access
+            files within if you know their names
+
+    The x bit on directories is called the SEARCH bit.
+
+Common confusion: you need BOTH r and x to usefully work in
+a directory. r alone lets you list names but not access files.
+x alone lets you access files if you know their names but not
+list them.
+
+    chmod 711 /private    # owner can read/write/enter
+                          # others can enter and access files
+                          # but cannot list what's inside
+
+Special bits on directories:
+
+Sticky bit (t):
+    Set on /tmp and world-writable directories.
+    Users can only delete files they own, not files owned by others.
+    Shown as 't' in execute position: drwxrwxrwt
+
+    ls -la / | grep tmp   # drwxrwxrwt  <- the t is the sticky bit
+    chmod +t /shared      # add sticky bit
+
+SGID on directory (s in group execute):
+    New files created in the directory inherit the directory's
+    group ownership instead of the creator's primary group.
+    Used for collaborative directories.
+
+    ls -la | grep "^d.*s"  # find SGID directories
+    chmod g+s /shared      # set SGID
+
+Checking permissions:
+    ls -la /etc/shadow     # -rw-r----- root:shadow
+    stat /etc/passwd       # detailed permission information
+    namei -l /etc/shadow   # show permissions of each path component
+
+
+================================================================
+PART 5 - NAVIGATING THE FILESYSTEM
+================================================================
+
+Essential navigation commands (expanded from original):
+
+pwd     print working directory (where am I right now?)
+    pwd           # /home/alice/documents
+
+cd      change directory
+    cd /etc           # go to /etc (absolute path)
+    cd documents      # go to documents relative to current location
+    cd ..             # go up one level
+    cd ../..          # go up two levels
+    cd -              # return to previous directory (toggle)
+    cd ~              # go home
+    cd                # same as cd ~ (home with no argument)
+    cd ~bob           # go to bob's home directory (if permitted)
+
+ls      list directory contents
+    ls                  # basic listing
+    ls -l               # long format (permissions, size, dates)
+    ls -a               # show hidden files (. and ..)
+    ls -la              # long format including hidden files
+    ls -lh              # human readable file sizes (KB, MB, GB)
+    ls -lt              # sort by modification time, newest first
+    ls -ltr             # sort by time, oldest first (r=reverse)
+    ls -lS              # sort by size, largest first
+    ls -R               # recursive (show all subdirectories)
+    ls -i               # show inode numbers
+    ls -ld /etc         # show info about the directory itself not its contents
+    ls --color=auto     # colorize by file type
+
+tree    show directory structure visually (install separately)
+    tree /etc           # tree view of /etc
+    tree -L 2 /usr      # only 2 levels deep
+    tree -d /usr        # directories only
+
+find    search the filesystem (see Find.txt in this repo)
+    find /etc -name "*.conf"      # all .conf files under /etc
+    find / -name "passwd"         # find files named passwd anywhere
+
+Checking what is in a file before opening it:
+    file /usr/bin/ls      # shows: ELF 64-bit LSB executable...
+    file /etc/passwd      # shows: ASCII text
+    file /bin             # shows: symbolic link to usr/bin  (if merged)
+
+Understanding the prompt:
+    (base) alice@hostname:/etc$
+
+    (base)      active conda environment (or virtualenv)
+    alice       current username
+    @           separator
+    hostname    machine name
+    :           separator
+    /etc        current working directory
+    $           regular user prompt
+    #           root user prompt (never run as root unnecessarily)
+
+
+================================================================
+PART 6 - REFERENCE: FULL DIRECTORY TREE AT A GLANCE
+================================================================
+
+/                   root of everything
+├── bin  ->usr/bin  essential user commands (symlink on modern systems)
+├── boot            kernel, initramfs, bootloader
+├── dev             device files (disks, terminals, null, random)
+├── etc             system configuration
+│   ├── profile.d/  shell scripts run at every login
+│   ├── skel/       template for new user home dirs
+│   ├── sudoers.d/  sudo rule drop-ins
+│   ├── cron.d/     cron job drop-ins
+│   └── systemd/    systemd configuration
+├── home            user home directories
+│   └── username/   one per user
+├── lib  ->usr/lib  essential shared libraries (symlink on modern systems)
+├── lib64->usr/lib64 64-bit libraries (symlink on modern systems)
+├── lost+found      recovered file fragments (ext filesystems)
+├── media           auto-mounted removable media (desktop)
+├── mnt             manual temporary mount points (admin)
+├── opt             third-party self-contained software
+├── proc            VIRTUAL: process and kernel information
+│   ├── PID/        one directory per running process
+│   └── sys/        live kernel parameters (sysctl)
+├── root            home directory of the root user
+├── run             TMPFS: runtime data cleared at boot
+│   ├── lock/       lock files (/var/lock -> here)
+│   └── user/UID/   per-user runtime directory
+├── sbin ->usr/sbin system admin commands (symlink on modern systems)
+├── snap            snap packages (Ubuntu/snapd only)
+├── srv             data served to external clients
+├── sys             VIRTUAL: device and driver tree
+│   ├── class/      devices by class (net, block, input)
+│   └── fs/cgroup/  control groups
+├── tmp             TMPFS: temporary scratch space, world-writable+sticky
+├── usr             Unix System Resources (secondary hierarchy)
+│   ├── bin/        all user commands
+│   ├── include/    C header files
+│   ├── lib/        all libraries
+│   ├── local/      manually installed software (sysadmin builds)
+│   │   ├── bin/
+│   │   ├── lib/
+│   │   └── share/
+│   ├── sbin/       all system admin commands
+│   ├── share/      architecture-independent data
+│   │   ├── doc/    package documentation
+│   │   ├── man/    man pages
+│   │   └── locale/ translations
+│   └── src/        source code (kernel headers)
+└── var             variable data (changes during operation)
+    ├── cache/      regeneratable cache (apt, dnf, fonts)
+    ├── lib/        persistent app state (databases, package db)
+    ├── lock/ ->/run/lock  lock files
+    ├── log/        log files
+    ├── mail/       user mailboxes
+    ├── run/  ->/run  runtime data (legacy path, now symlink)
+    ├── spool/      queued data (print, mail, cron)
+    └── tmp/        temporary files that survive reboot
+
+
+================================================================
+END OF LINUXFILESTRUCTURECOMPLETE.TXT
+================================================================
+
+
