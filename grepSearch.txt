@@ -434,3 +434,965 @@ Best Practices for Using Grep:
     $ grep -in "pattern" file.txt
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    ---------------------------------------------------------
+    ---------------------------------------------------------
+    ---------------------------------------------------------
+    ---------------------------------------------------------
+
+    one year later -
+
+
+------grepSearchMissing.txt------
+
+Everything missing from grepSearch.txt.
+Read alongside the original. Nothing here repeats what is there.
+
+
+================================================================
+SECTION 1 - CORRECTIONS TO ERRORS IN THE ORIGINAL
+================================================================
+
+----------------------------------------------------------------
+ERROR 1: grep --threads=N does not exist
+----------------------------------------------------------------
+
+The original document lists:
+    grep --threads=N    # Multi-threading for large files
+
+This flag does not exist in GNU grep. Running it fails:
+    grep --threads=4 "pattern" file.txt
+    # grep: unrecognized option '--threads'
+
+GNU grep is single-threaded by design. For parallel grep across
+many files, use GNU parallel (see Section 8).
+
+
+----------------------------------------------------------------
+ERROR 2: grep --mmap was removed in 2010
+----------------------------------------------------------------
+
+The original lists:
+    grep --mmap    # Use mmap instead of read
+
+This option was removed in GNU grep 2.6 (released 2010).
+It does nothing on any current system. Remove it from your habits.
+
+Modern grep automatically uses efficient I/O. No flag needed.
+
+
+----------------------------------------------------------------
+ERROR 3: GREP_OPTIONS environment variable was removed in 2015
+----------------------------------------------------------------
+
+The original shows:
+    export GREP_OPTIONS="--color=auto"
+
+GREP_OPTIONS was removed in GNU grep 2.22 (released 2015).
+Setting it has no effect on any current system.
+
+The modern way to set default grep options:
+    # Create a shell alias in ~/.bashrc:
+    alias grep='grep --color=auto'
+    alias grep='grep --color=auto -n'   # always show line numbers
+
+    # Or use a shell function:
+    grep() { command grep --color=auto "$@"; }
+
+
+----------------------------------------------------------------
+ERROR 4: egrep and fgrep are deprecated
+----------------------------------------------------------------
+
+The original uses egrep as a current command. It is deprecated.
+
+    egrep "pattern" file    # deprecated - still works but should not use
+    fgrep "pattern" file    # deprecated
+
+Modern equivalents:
+    grep -E "pattern" file  # extended regex (replaces egrep)
+    grep -F "pattern" file  # fixed string (replaces fgrep)
+
+Use grep -E and grep -F in all scripts and documentation.
+
+
+----------------------------------------------------------------
+ERROR 5: -o has no description in the original options list
+----------------------------------------------------------------
+
+The original lists `-o` with nothing after it.
+
+-o    show only the MATCHED PART of the line, not the whole line
+
+    grep "error" syslog         # prints entire matching lines
+    grep -o "error" syslog      # prints only the word "error" for each match
+
+More useful with patterns:
+    grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' access.log
+    # extracts every IP address from the log (prints each IP on its own line)
+
+    grep -oE '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}' file.txt
+    # extracts every email address
+
+-o with -c distinction (critical):
+    grep -c "error" file        # counts LINES containing "error"
+    grep -o "error" file | wc -l  # counts total OCCURRENCES of "error"
+    # These give different numbers if "error" appears twice on one line
+
+
+================================================================
+SECTION 2 - BRE vs ERE vs PCRE: THE FOUNDATIONAL CONCEPT
+================================================================
+
+This is the most important thing missing from the original.
+Every grep pattern behaves differently depending on which
+regex engine you are using. Without understanding this,
+patterns that work in one mode silently fail in another.
+
+----------------------------------------------------------------
+2a. The three modes
+----------------------------------------------------------------
+
+BRE - Basic Regular Expressions (default grep, no flag)
+    The original Unix standard. Most metacharacters must be
+    escaped with backslash to be special. Without backslash
+    they are treated as literal characters.
+
+    grep "pattern" file         # uses BRE
+
+ERE - Extended Regular Expressions (grep -E)
+    The modern standard. Most metacharacters are special
+    WITHOUT backslash. Cleaner and easier to read.
+
+    grep -E "pattern" file      # uses ERE
+
+PCRE - Perl-Compatible Regular Expressions (grep -P)
+    Full Perl regex engine. Adds \d, \w, \s, lookaheads,
+    lookbehinds, non-greedy quantifiers, and more.
+    GNU grep only - does NOT work on macOS/BSD grep.
+
+    grep -P "pattern" file      # uses PCRE (GNU grep only)
+
+
+----------------------------------------------------------------
+2b. What changes between BRE and ERE
+----------------------------------------------------------------
+
+These characters behave differently:
+
+Character   In BRE                      In ERE (grep -E)
+---------   ------                      ----------------
++           literal +                   one or more (quantifier)
+?           literal ?                   zero or one (quantifier)
+|           literal |                   alternation (OR)
+(           literal (                   group start
+)           literal )                   group end
+{           literal {                   repetition start
+}           literal }                   repetition end
+\+          one or more (quantifier)    literal backslash+
+\|          alternation (OR)            literal backslash|
+\(          group start                 literal backslash(
+
+Examples showing the exact same intent in BRE vs ERE:
+
+    # Match "cat" OR "dog":
+    grep "cat\|dog" file        # BRE (backslash-pipe)
+    grep -E "cat|dog" file      # ERE (plain pipe)
+
+    # Match one or more digits:
+    grep "[0-9]\+" file         # BRE (backslash-plus)
+    grep -E "[0-9]+" file       # ERE (plain plus)
+
+    # Optional character:
+    grep "colou\?r" file        # BRE (backslash-question)
+    grep -E "colou?r" file      # ERE (plain question)
+
+    # Grouping with repetition:
+    grep "\(abc\)\+" file       # BRE
+    grep -E "(abc)+" file       # ERE
+
+The BRE versions look cluttered with backslashes.
+Use grep -E (ERE) for anything beyond simple patterns.
+
+
+----------------------------------------------------------------
+2c. What PCRE adds on top of ERE
+----------------------------------------------------------------
+
+These only work with grep -P:
+
+    \d          digit [0-9]
+    \D          non-digit [^0-9]
+    \w          word character [a-zA-Z0-9_]
+    \W          non-word character
+    \s          whitespace [ \t\n\r\f\v]
+    \S          non-whitespace
+    \b          word boundary
+    \B          non-word boundary
+    (?=...)     lookahead - match if followed by ...
+    (?!...)     negative lookahead
+    (?<=...)    lookbehind - match if preceded by ...
+    (?<!...)    negative lookbehind
+    (?:...)     non-capturing group
+    *?          non-greedy zero or more
+    +?          non-greedy one or more
+    ??          non-greedy zero or one
+
+    # Find lines with a digit followed by a letter:
+    grep -P '\d[a-z]' file.txt
+
+    # Find email addresses:
+    grep -P '\b[\w.+-]+@[\w-]+\.[\w.]+\b' file.txt
+
+    # Lines where "error" is preceded by "critical":
+    grep -P '(?<=critical )error' file.txt
+
+    # Lines with "fail" NOT preceded by "un":
+    grep -P '(?<!un)fail' file.txt
+
+PCRE portability warning:
+    grep -P works on GNU grep (Linux).
+    macOS ships BSD grep which does NOT support -P.
+    For portable scripts, use grep -E and POSIX classes instead.
+    Test on your target OS before using -P in scripts.
+
+
+----------------------------------------------------------------
+2d. POSIX character classes - the portable alternative to \d \w
+----------------------------------------------------------------
+
+These work in ALL grep modes (BRE, ERE, PCRE) on all systems.
+Use these instead of \d and \w for portable scripts.
+
+    [:alpha:]   letters (a-z A-Z)
+    [:digit:]   digits (0-9)
+    [:alnum:]   letters and digits
+    [:space:]   whitespace (space, tab, newline, etc.)
+    [:upper:]   uppercase letters
+    [:lower:]   lowercase letters
+    [:punct:]   punctuation characters
+    [:print:]   printable characters (includes space)
+    [:graph:]   printable non-space characters
+    [:cntrl:]   control characters
+    [:xdigit:]  hexadecimal digits (0-9 a-f A-F)
+
+Syntax: always inside double brackets [[ ]] or inside a bracket
+expression [ ]:
+    grep '[[:digit:]]' file.txt         # any digit
+    grep '[[:alpha:]][[:digit:]]' file  # letter followed by digit
+    grep -E '[[:upper:]]{3}[[:digit:]]{4}' file  # ABC1234 pattern
+    grep '[[:space:]]' file.txt         # lines containing whitespace
+
+    # Portable "find any digit" (works on Linux AND macOS):
+    grep '[[:digit:]]' file.txt         # use this
+    grep '\d' file.txt                  # only works with grep -P on GNU grep
+
+
+================================================================
+SECTION 3 - MISSING FLAGS WITH EXAMPLES
+================================================================
+
+-C N    show N lines of context (before AND after each match)
+    grep -C 3 "error" /var/log/syslog
+    # Shows 3 lines before and 3 lines after each error line
+    # Cleaner than -A 3 -B 3 when you want equal context both ways
+
+    grep -C 0 "pattern" file   # match line only (same as no context)
+
+-h    suppress filename prefix when searching multiple files
+    grep -h "error" /var/log/*.log
+    # Shows matching lines WITHOUT the filename prepended
+    # Opposite of -H which forces the filename
+
+-m N    stop after N matches (per file)
+    grep -m 1 "error" /var/log/syslog
+    # Stop as soon as first match found - much faster on large files
+    grep -m 5 "pattern" file   # find first 5 matches then stop
+
+-x    match only lines where the ENTIRE line equals the pattern
+    grep -x "exact line" file.txt
+    # Only matches a line that IS exactly "exact line"
+    # Not the same as ^exact line$ - -x anchors implicitly
+    grep -x "[0-9]*" file.txt   # lines containing ONLY digits
+
+-q    silent/quiet mode - produce no output, only exit code
+    grep -q "pattern" file
+    echo $?     # 0 = found, 1 = not found, 2 = error
+    # Use in scripts when you only care if the pattern exists, not where
+
+-f patterns.txt    read search patterns from a file (one per line)
+    # Create a file with patterns:
+    cat suspicious.txt
+    192.168.1.100
+    10.0.0.5
+    baduser
+    # Then search for all of them at once:
+    grep -f suspicious.txt /var/log/auth.log
+    # Much cleaner than: grep -e "192.168.1.100" -e "10.0.0.5" -e "baduser"
+
+-r vs -R    recursive search with and without following symlinks
+    grep -r "pattern" /etc/      # recursive, does NOT follow symlinks
+    grep -R "pattern" /etc/      # recursive, FOLLOWS symlinks
+    # On a system with symlinked directories this matters
+
+--include and --exclude    filter which files are searched
+    grep -r --include="*.conf" "listen" /etc/
+    grep -r --include="*.py" "import os" /opt/
+    grep -r --exclude="*.log" "password" /var/www/
+    grep -r --exclude-dir=".git" "TODO" /home/user/projects/
+    grep -r --exclude-dir={.git,node_modules,vendor} "debug" .
+    # Combining include and exclude:
+    grep -r --include="*.conf" --exclude-dir=".git" "ssl" /etc/
+
+-Z    output filename followed by null byte instead of newline
+    grep -rlZ "pattern" /etc/ | xargs -0 rm
+    grep -lZ "TODO" *.py | xargs -0 chmod 644
+    # Required when filenames may contain spaces or special characters
+    # Always pair -Z with xargs -0 for safe filename handling
+
+--color=always vs --color=auto
+    grep --color=auto "error" syslog   # color only when writing to terminal
+    grep --color=always "error" syslog | less -R  # color preserved through pipe
+    # Use always when piping to less or another program that renders color
+    # Use auto (or alias it) for interactive use
+
+-a    treat binary files as text
+    grep -a "pattern" binary_file
+    # Forces grep to search binary files as if they were text
+    # Useful for searching compiled binaries or data files
+
+-I    ignore binary files (opposite of -a)
+    grep -r -I "pattern" /usr/
+    # Skip binary files, only search text files
+
+-s    suppress error messages about unreadable files
+    grep -r -s "pattern" /proc/
+    # Useful when searching directories with permission-restricted files
+
+--null    separate filenames with null byte in output
+    grep -l --null "pattern" *.txt | xargs -0 wc -l
+    # Safe piping to xargs even with spaces in filenames
+
+
+================================================================
+SECTION 4 - EXIT CODES - CRITICAL FOR SCRIPTING
+================================================================
+
+The original barely mentions these. They are essential for any
+grep used in a script or conditional.
+
+Exit code 0:    at least one match was found
+Exit code 1:    no matches found (NOT an error condition)
+Exit code 2:    a real error occurred (bad regex, file not found, etc.)
+
+Most important implication:
+    grep returns exit code 1 when there are no matches.
+    This is the expected "not found" result, NOT a failure.
+    Shell scripts should handle all three cases:
+
+    if grep -q "pattern" file; then
+        echo "found"
+    elif [ $? -eq 1 ]; then
+        echo "not found"
+    else
+        echo "error occurred"
+    fi
+
+    # Simpler one-liners:
+    grep -q "error" /var/log/syslog && echo "errors found" || echo "all clear"
+
+    # Check file health:
+    grep -q "FAILED" /var/log/backup.log && mail -s "Backup failed" admin@company.com
+
+    # Silent check - no output, just exit code:
+    if grep -q "^alice:" /etc/passwd; then
+        echo "alice exists"
+    fi
+
+    # In set -e scripts (exit on error), grep "not found" will EXIT the script.
+    # Fix with:
+    grep "pattern" file || true    # prevent exit if not found
+    grep "pattern" file || :       # same, : is always true
+
+-q (quiet/silent) flag:
+    ALWAYS use -q when using grep in conditionals.
+    Without -q, grep prints matches to stdout even when you
+    only care about the exit code.
+
+    if grep "pattern" file; then  # pollutes stdout with matches
+    if grep -q "pattern" file; then  # clean - no output
+
+
+================================================================
+SECTION 5 - WORD BOUNDARIES: \b AND \< \>
+================================================================
+
+The original mentions -w and \b briefly but does not cover
+the full picture or explain the syntax differences.
+
+Three ways to match whole words:
+
+Method 1: -w flag (most portable)
+    grep -w "word" file.txt
+    # Matches "word" only when surrounded by non-word characters
+    # Works in all modes without knowing the regex syntax
+
+Method 2: \< and \> word boundary anchors (BRE/ERE, POSIX)
+    grep '\<word\>' file.txt      # BRE, no -E needed
+    grep -E '\<word\>' file.txt   # ERE
+    # \< = start of word boundary
+    # \> = end of word boundary
+    # These work on all Linux systems, not PCRE-specific
+
+Method 3: \b word boundary (PCRE only, requires -P)
+    grep -P '\bword\b' file.txt
+    # \b matches at the boundary between \w and \W characters
+    # Does NOT work without -P on Linux
+    # Does NOT work on macOS grep at all
+
+Practical examples:
+    grep -w "error" /var/log/syslog      # matches "error" not "errors"
+    grep '\<cat\>' file.txt              # "cat" not "category" or "scat"
+    grep -v '\<root\>' /etc/passwd       # lines without the word "root"
+
+    # Find "the" as a complete word, not inside "there" or "other":
+    grep -w "the" document.txt
+    echo "there other the their" | grep -w "the"  # matches: the
+
+
+================================================================
+SECTION 6 - MULTILINE MATCHING LIMITATION
+================================================================
+
+grep is fundamentally line-based. It reads one line at a time
+and cannot match patterns that span multiple lines.
+
+This is a common misconception, especially when coming from
+programming environments where regex handles multilines.
+
+What grep CANNOT do natively:
+    # Find "start" and "end" when they are on different lines:
+    grep "start.*end" file.txt   # fails if on different lines
+
+Workarounds:
+
+With grep -P and -z (null-terminated, treats file as one block):
+    grep -Pzo "start.*?end" file.txt
+    # -z: input uses null bytes as line separators (treats whole file as one line)
+    # -P: PCRE for non-greedy .*?
+    # o: show only match
+    # Warning: output may be hard to read, use carefully
+
+With tr to join lines then grep:
+    tr '\n' ' ' < file.txt | grep "pattern across lines"
+
+Better tools for multiline matching:
+    # pcregrep has native multiline support:
+    pcregrep -M "start.*?end" file.txt     # -M = multiline mode
+
+    # awk handles multiline naturally:
+    awk '/start/,/end/' file.txt           # print everything from start to end
+
+    # perl is the most powerful:
+    perl -0777 -ne 'print if /start.*end/s' file.txt
+    # -0777: slurp entire file into one string
+    # /s: . matches newline too
+
+    # sed for extracting between markers:
+    sed -n '/start/,/end/p' file.txt
+
+
+================================================================
+SECTION 7 - COMPRESSED FILE SEARCHING
+================================================================
+
+Completely absent from the original.
+
+When logs are rotated they are compressed. You cannot grep them
+directly without decompressing first. These tools handle it:
+
+zgrep - grep inside gzip compressed files
+    zgrep "error" /var/log/syslog.2.gz
+    zgrep -i "failed" /var/log/auth.log.1.gz
+    zgrep -l "critical" /var/log/*.gz   # list files containing matches
+    zgrep -r "pattern" /var/log/        # recursive through compressed files
+
+bzgrep - grep inside bzip2 compressed files
+    bzgrep "pattern" file.bz2
+
+xzgrep - grep inside xz compressed files
+    xzgrep "pattern" file.xz
+
+lzgrep - grep inside lzip compressed files
+    lzgrep "pattern" file.lz
+
+Mixing compressed and uncompressed in one search:
+    # Search all syslog files regardless of compression:
+    zgrep "error" /var/log/syslog /var/log/syslog.*.gz
+    # zgrep handles both compressed and uncompressed files
+
+    # Search entire rotated log history:
+    zgrep "Failed password" /var/log/auth.log /var/log/auth.log.*.gz | \
+        awk '{print $11}' | sort | uniq -c | sort -rn
+    # Complete login failure history including rotated compressed logs
+
+
+================================================================
+SECTION 8 - PARALLEL grep FOR LARGE SCALE SEARCHES
+================================================================
+
+For searching massive files or many files simultaneously.
+
+GNU parallel with grep:
+    # Search multiple files in parallel (much faster on many files):
+    find /var/log -name "*.log" | parallel grep "error" {}
+    find . -name "*.py" | parallel -j4 grep -l "import os" {}
+    # -j4 = 4 jobs simultaneously
+
+    # Named pipe approach for large single file:
+    parallel --pipepart -a bigfile.txt grep "pattern"
+
+ripgrep (rg) - modern grep replacement (install separately):
+    rg "pattern" .                  # recursive by default, very fast
+    rg "pattern" /var/log/
+    rg -i "error" --type log .      # case insensitive, log files only
+    rg -l "pattern" .               # list files with matches only
+    rg --stats "pattern" /etc/      # show statistics of search
+
+    Installation:
+    sudo apt install ripgrep        # Debian/Ubuntu
+    sudo dnf install ripgrep        # RHEL/Fedora
+
+    Why rg is faster:
+    - Uses multiple threads by default
+    - Respects .gitignore automatically
+    - Skips binary files automatically
+    - Written in Rust with SIMD optimizations
+
+ag (Silver Searcher) - another fast alternative:
+    ag "pattern" .
+    ag --python "pattern"           # search only Python files
+
+    Installation:
+    sudo apt install silversearcher-ag
+    sudo dnf install the_silver_searcher
+
+
+================================================================
+SECTION 9 - PRACTICAL SYSADMIN PATTERNS
+================================================================
+
+Every example in the original uses toy "file.txt" content.
+These are real patterns you will run on real systems.
+
+Log analysis:
+    # Find all errors in syslog:
+    grep -i "error\|critical\|failed\|warning" /var/log/syslog
+
+    # Count errors by type:
+    grep -oE "(error|critical|warning)" /var/log/syslog | sort | uniq -c | sort -rn
+
+    # Find kernel errors from today:
+    grep "$(date +%b\ %e)" /var/log/kern.log | grep -i error
+
+    # Authentication failures with attacker IPs:
+    grep "Failed password" /var/log/auth.log | awk '{print $11}' | \
+        sort | uniq -c | sort -rn | head -20
+
+    # Find all sudo usage:
+    grep "sudo:" /var/log/auth.log | grep "COMMAND"
+
+    # SSH login successes:
+    grep "Accepted" /var/log/auth.log | awk '{print $9, $11}'
+
+Configuration file searches:
+    # Find all listen/port directives in nginx:
+    grep -r "listen" /etc/nginx/ --include="*.conf"
+
+    # Find enabled sites in apache:
+    grep -r "ServerName" /etc/apache2/sites-enabled/
+
+    # Search all config files for a specific setting:
+    grep -r "PermitRootLogin" /etc/ssh/
+
+    # Find any config file referencing a hostname:
+    grep -rw "old-server.company.com" /etc/ 2>/dev/null
+
+    # Find config files containing passwords (audit):
+    grep -r --include="*.conf" -i "password\s*=" /etc/ 2>/dev/null
+
+Process and system:
+    # Find a process by name:
+    ps aux | grep -v grep | grep nginx
+
+    # Check if a service is listening on a port:
+    ss -tuln | grep ':80\b'
+
+    # Find what's using a file:
+    lsof | grep '/var/log/syslog'
+
+    # Check cron jobs mentioning a script:
+    grep -r "backup.sh" /etc/cron* /var/spool/cron/
+
+User and permission auditing:
+    # Find all users with bash shell:
+    grep -E "/bash$" /etc/passwd | cut -d: -f1
+
+    # Find SUID binaries:
+    find / -perm -4000 -type f 2>/dev/null | xargs ls -la
+
+    # Find world-writable files outside /tmp:
+    find / -perm -0002 -type f 2>/dev/null | grep -v "^/tmp\|^/proc"
+
+    # Users with UID 0 (should be only root):
+    awk -F: '$3 == 0 {print $1}' /etc/passwd
+
+    # Find files owned by deleted users:
+    find / -nouser 2>/dev/null
+
+Searching code and scripts:
+    # Find all TODOs in a project (excluding git and vendor dirs):
+    grep -r --include="*.py" --exclude-dir={.git,venv,vendor} "TODO\|FIXME\|HACK" .
+
+    # Find hardcoded IP addresses in code:
+    grep -rE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' --include="*.py" .
+
+    # Find all function definitions in Python:
+    grep -n "^def \|^    def " script.py
+
+    # Find all imports in Python files:
+    grep -h "^import\|^from" *.py | sort -u
+
+
+================================================================
+SECTION 10 - SAFE PIPING WITH -Z AND xargs -0
+================================================================
+
+When filenames contain spaces or special characters, normal
+piping from grep to xargs breaks. Use the null-terminated pattern.
+
+The problem:
+    # This breaks if any filename has a space:
+    grep -rl "pattern" /etc/ | xargs chmod 644
+    # "my config.conf" becomes "my" and "config.conf" as separate args
+
+The fix:
+    grep -rlZ "pattern" /etc/ | xargs -0 chmod 644
+    # -Z: grep outputs filenames separated by null bytes
+    # -0: xargs reads null-terminated input
+    # Handles ALL filenames safely regardless of spaces or special chars
+
+Always use this pattern when doing operations on grep results:
+    # Find and delete files containing pattern:
+    grep -rlZ "pattern" . | xargs -0 rm
+
+    # Find and edit files:
+    grep -rlZ "oldtext" . | xargs -0 sed -i 's/oldtext/newtext/g'
+
+    # Find and compress files:
+    grep -rlZ "pattern" /var/log/ | xargs -0 gzip
+
+    # Count lines in matching files:
+    grep -lZ "pattern" *.txt | xargs -0 wc -l
+
+
+================================================================
+SECTION 11 - GREP -c vs grep | wc -l
+================================================================
+
+The difference is important and the original never addresses it.
+
+grep -c "pattern" file:
+    Counts the number of LINES that contain the pattern.
+    If "error" appears 5 times on one line, that line counts as 1.
+
+    grep -c "error" /var/log/syslog    # number of lines with "error"
+
+grep -o "pattern" file | wc -l:
+    Counts the total number of OCCURRENCES of the pattern.
+    If "error" appears 5 times on one line, counts 5.
+
+    grep -o "error" /var/log/syslog | wc -l    # total times "error" appears
+
+Example showing the difference:
+    echo "error error error on one line" > test.txt
+    echo "just one error here" >> test.txt
+
+    grep -c "error" test.txt          # output: 2  (2 lines match)
+    grep -o "error" test.txt | wc -l  # output: 4  (4 total occurrences)
+
+When to use which:
+    grep -c: "how many log lines show errors today?"
+    grep -o | wc -l: "how many times does this word appear in this document?"
+
+Counting unique matches:
+    grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' access.log | \
+        sort -u | wc -l
+    # Count unique IP addresses in access log
+
+
+================================================================
+SECTION 12 - THE -- SEPARATOR FOR SPECIAL FILENAMES
+================================================================
+
+Completely absent from the original. Can cause subtle bugs.
+
+If a file is named starting with a hyphen, grep treats it as a flag:
+    grep "pattern" -v             # grep thinks -v is a flag, not a filename
+    # result: "grep: invalid option -- 'v'"
+
+Fix: use -- to separate flags from filenames:
+    grep "pattern" -- -v          # -v treated as a filename
+    grep -- "pattern" -v          # same
+
+Real-world case: files created accidentally with leading hyphens:
+    ls -la
+    # -rw-r--r-- 1 user user 100 Jan 1 -weirdfile.txt
+    grep "pattern" -- -weirdfile.txt     # safe
+    rm -- -weirdfile.txt                 # safe deletion too
+
+Also applies to files starting with other special characters.
+The -- convention works for any command, not just grep.
+
+
+================================================================
+SECTION 13 - READING PATTERNS FROM FILE (-f) IN DEPTH
+================================================================
+
+The original mentions -f but shows no practical example.
+
+Create a pattern file (one pattern per line):
+    cat /tmp/search_patterns.txt
+    Failed password
+    Invalid user
+    Connection refused
+    authentication failure
+    sudo: pam_unix
+
+Search all patterns at once:
+    grep -f /tmp/search_patterns.txt /var/log/auth.log
+
+    # Combine with other flags:
+    grep -if /tmp/patterns.txt /var/log/auth.log    # case insensitive
+    grep -cf /tmp/patterns.txt /var/log/auth.log    # count matches
+
+Combining -f with -e:
+    # Add extra patterns beyond those in the file:
+    grep -f patterns.txt -e "extra_pattern" logfile
+
+Generating pattern files dynamically:
+    # Build pattern list from another source:
+    cut -d: -f1 /etc/passwd > /tmp/usernames.txt
+    grep -f /tmp/usernames.txt /var/log/auth.log | grep "Failed"
+    # Find failed logins for any known username
+
+    # Block list from IP list:
+    grep -f blocked_ips.txt /var/log/nginx/access.log
+
+
+================================================================
+SECTION 14 - GREP WITH OTHER COMMANDS: PRACTICAL PIPELINES
+================================================================
+
+Real pipelines that matter for a sysadmin. The original only
+shows `ps aux | grep 'monitor'` as a pipeline example.
+
+ps aux | grep -v grep | grep nginx:
+    # Find nginx processes, filter out the grep process itself
+    # grep -v grep is the classic trick to remove the grep line
+
+journalctl + grep (modern systems):
+    journalctl | grep -E "error|crit|emerg" | tail -20
+    journalctl -u nginx | grep "error"
+    journalctl --since "1 hour ago" | grep -i failed
+
+    # Better: journalctl has built-in grep:
+    journalctl -g "error"           # journalctl's own grep (systemd 233+)
+    journalctl -p err               # show only error priority and above
+
+find + grep:
+    # Search only in recently modified files:
+    find /etc -mtime -7 -name "*.conf" | xargs grep -l "password"
+
+    # Search files larger than 1MB:
+    find /var/log -size +1M | xargs grep -l "error"
+
+    # Recursive grep on specific file types without --include:
+    find . -name "*.py" -exec grep -l "import requests" {} \;
+
+netstat/ss + grep:
+    ss -tuln | grep ":443"          # check if HTTPS port is listening
+    ss -tp | grep "ESTABLISHED" | grep ":22"   # active SSH connections
+
+    netstat -an | grep "TIME_WAIT" | wc -l     # count TIME_WAIT connections
+    netstat -an | grep -c "ESTABLISHED"        # count established connections
+
+dpkg/rpm + grep:
+    dpkg -l | grep python           # find installed Python packages (Debian)
+    rpm -qa | grep nginx            # find installed nginx packages (RHEL)
+    dpkg -l | grep "^ii" | grep -v "lib"   # installed packages, no libs
+
+history + grep:
+    history | grep "git commit"     # find past git commits
+    history | grep "tar"            # find past tar commands
+    history | grep -E "rm -rf|dd"  # find dangerous past commands
+
+Chaining greps:
+    cat /var/log/syslog | grep "nginx" | grep "error" | grep -v "404"
+    # Multiple grep filters are equivalent to AND logic
+    # Each pipe narrows the results further
+
+
+================================================================
+SECTION 15 - REGEX REFERENCE: FULL SYNTAX FOR ALL MODES
+================================================================
+
+Complete reference for patterns used with grep.
+
+Common to all modes (BRE, ERE, PCRE):
+    .           any single character (except newline by default)
+    *           zero or more of the preceding (greedy)
+    []          character class: match any one character inside
+    [^]         negated class: match any character NOT inside
+    ^           start of line (or start of string in some modes)
+    $           end of line
+    \           escape next character (or make it special, mode-dependent)
+
+Character classes:
+    [abc]       a, b, or c
+    [a-z]       lowercase letter (locale-dependent, prefer [[:lower:]])
+    [0-9]       digit (prefer [[:digit:]] for portability)
+    [a-zA-Z]    any letter (prefer [[:alpha:]])
+    [^abc]      anything except a, b, or c
+    [[:alpha:]]  any letter (POSIX, portable)
+    [[:digit:]]  any digit (POSIX, portable)
+    [[:alnum:]]  any letter or digit (POSIX)
+    [[:space:]]  any whitespace (POSIX)
+    [[:upper:]]  uppercase letter (POSIX)
+    [[:lower:]]  lowercase letter (POSIX)
+    [[:punct:]]  punctuation (POSIX)
+
+ERE additions (grep -E):
+    +           one or more of preceding
+    ?           zero or one of preceding
+    |           alternation (OR) between alternatives
+    ()          grouping
+    {n}         exactly n repetitions
+    {n,}        n or more repetitions
+    {n,m}       between n and m repetitions
+    \1 \2       backreferences to groups
+
+    grep -E "[0-9]{3}-[0-9]{4}" file    # phone number pattern
+    grep -E "(error|warn|info):" log    # match any of these prefixes
+    grep -E "^[A-Z][a-z]+$" file       # lines with one capitalized word
+
+PCRE additions (grep -P):
+    \d          digit
+    \D          non-digit
+    \w          word character [a-zA-Z0-9_]
+    \W          non-word character
+    \s          whitespace
+    \S          non-whitespace
+    \b          word boundary
+    \B          non-word boundary
+    \t          tab
+    \n          newline
+    (?:...)     non-capturing group
+    (?=...)     lookahead assertion
+    (?!...)     negative lookahead
+    (?<=...)    lookbehind assertion (fixed width)
+    (?<!...)    negative lookbehind
+    *?          non-greedy zero or more
+    +?          non-greedy one or more
+    ??          non-greedy zero or one
+
+Repetition reference:
+    *           0 or more
+    +           1 or more (ERE/PCRE)
+    ?           0 or 1 (ERE/PCRE)
+    \{n\}       exactly n (BRE: grep, ERE: grep -E)
+    \{n,\}      n or more
+    \{n,m\}     n to m
+    {n}         exactly n (ERE: grep -E)
+    {n,}        n or more (ERE)
+    {n,m}       n to m (ERE)
+
+
+================================================================
+SECTION 16 - USEFUL GREP PATTERNS FOR COMMON TASKS
+================================================================
+
+Email address extraction:
+    grep -oE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' file.txt
+
+IP address extraction (IPv4):
+    grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' logfile
+
+URL extraction:
+    grep -oE 'https?://[^ ]+' file.txt
+
+Phone number pattern:
+    grep -E '[0-9]{3}[-. ][0-9]{3}[-. ][0-9]{4}' file.txt
+
+MAC address:
+    grep -oE '([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}' file.txt
+
+Date patterns:
+    grep -E '[0-9]{4}-[0-9]{2}-[0-9]{2}' file.txt     # YYYY-MM-DD
+    grep -E '[0-9]{2}/[0-9]{2}/[0-9]{4}' file.txt     # MM/DD/YYYY
+
+Lines that are ONLY digits:
+    grep -E '^[0-9]+$' file.txt
+
+Lines that are ONLY letters:
+    grep -E '^[[:alpha:]]+$' file.txt
+
+Blank lines:
+    grep -c '^$' file.txt           # count blank lines
+    grep -v '^$' file.txt           # remove blank lines from output
+    grep -v '^[[:space:]]*$' file   # remove blank and whitespace-only lines
+
+Lines starting with comment (#) or blank:
+    grep -v '^[[:space:]]*#\|^[[:space:]]*$' /etc/ssh/sshd_config
+    # Clean view of config file without comments or blank lines
+    # Very commonly used when reading configs
+
+Lines with at least N words:
+    grep -E '^([^ ]+ ){3,}' file.txt   # at least 3 space-separated fields
+
+Find duplicate lines:
+    sort file.txt | uniq -d         # not grep, but related
+    grep -n "^" file.txt | sort -t: -k2 | uniq -d -f1   # grep approach
+
+Find lines with tab characters:
+    grep $'\t' file.txt             # bash $'...' handles literal tab
+
+Find lines longer than N characters:
+    grep -E '.{80,}' file.txt       # lines with 80 or more characters
+
+
+================================================================
+END OF GREPSEARCHMISSING.TXT
+================================================================
